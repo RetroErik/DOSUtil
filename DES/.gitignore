@@ -1,0 +1,13 @@
+# Editor and operating-system metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary build and test output
+*.log
+*.lst
+*.map
+*.tmp
+output.txt
+listing.txt

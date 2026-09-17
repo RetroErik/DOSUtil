@@ -1,0 +1,20 @@
+DES 1.1 - Description Enhanced System
+Copyright (C) 2026 Dag Erik Hages‘ter / Retro Erik
+
+Lists files and directories with descriptions from DESCRIPT.ION.
+Uses ColorDir colors when COLORDIR is set in AUTOEXEC.BAT.
+
+DESCRIPT.ION has one description per file, for example:
+  MONKEY.EXE Monkey Island  1990 EGA/VGA/ADLIB
+
+4DOS ColorDir uses COLORDIR to select colors by directory or extension.
+  SET ColorDir=dirs:bri mag; zip arj:bri blu; com exe:bri gre; bat: bri red; gif  jpg png:yel; txt me now:gre
+
+DES reads DESCRIPT.ION and COLORDIR itself; 4DOS is not required.
+
+To list one screen at a time use /P (just like DIR).
+In this mode, DES scrolls descriptions longer than 57 characters.
+To pause horizontal scrolling, use the PAUSE key on the keyboard.
+
+Usage: DES [path\pattern] [/P]
+       DES /? or DES /H   Show this help

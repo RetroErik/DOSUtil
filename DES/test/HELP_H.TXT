@@ -1,0 +1,15 @@
+DES 1.1
+Description Enhanced System
+Copyright (C) 2026 Dag Erik Hages‘ter / Retro Erik
+
+Lists files and directories with descriptions from DESCRIPT.ION.
+Uses ColorDir colors when COLORDIR is set in AUTOEXEC.BAT.
+
+DESCRIPT.ION has one description per file, for example:
+  GAME.EXE Starts the game
+
+4DOS ColorDir uses COLORDIR to select colors by directory or extension.
+DES reads DESCRIPT.ION and COLORDIR itself; 4DOS is not required.
+
+Usage: DES [path\pattern] [/P]
+       DES /? or DES /H   Show this help
