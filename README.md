@@ -18,7 +18,7 @@ So far, this repository contains a DOS directory utility and the startup files f
 
 See the [DES README](DES/README.md) for build instructions, usage, features, and testing information.
 
-See the [PicoMEM README](PicoMEM/README.md) for installation instructions, boot profiles, memory configuration, CD-ROM support, and required utilities.
+See the [PicoMEM startup files README](PicoMEM/README.md) for installation instructions, boot profiles, memory configuration, CD-ROM support, and required utilities.
 
 ## DES
 
