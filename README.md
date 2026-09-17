@@ -20,6 +20,12 @@ See the [DES README](DES/README.md) for build instructions, usage, features, and
 
 See the [PicoMEM README](PicoMEM/README.md) for installation instructions, boot profiles, memory configuration, CD-ROM support, and required utilities.
 
+## DES
+
+[DES (Description Enhanced System)](DES/) is a small, fast DOS directory utility and a practical replacement for the DOS/4DOS `DIR` command. It supports 4DOS-compatible `DESCRIPT.ION` file descriptions, `COLORDIR` colors, alphabetical sorting, pagination, and redirected output.
+
+Open the [DES project documentation](DES/README.md) for build instructions, usage examples, technical notes, and test information.
+
 ## Project Status
 
 This collection is growing. Additional DOS programs and configurations may be added over time.
