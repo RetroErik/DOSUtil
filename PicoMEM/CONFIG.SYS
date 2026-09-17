@@ -1,0 +1,51 @@
+SWITCHES=/f
+
+[menu]
+menucolor=14,1
+menuitem=EPCONV,  EuroPC / 286  ->  Conventional Memory
+menuitem=EPEMS,   EuroPC / 286  ->  Expanded Memory   (Pico EMS + CD)
+menuitem=386CONV, 386+          ->  Conventional Memory
+menuitem=386EMS,  386+          ->  Expanded Memory   (EMM386 + CD)
+menuitem=386XMS,  386+          ->  Extended Memory   (HIMEM + CD)
+menuitem=386UMB,  386+          ->  UMB, no EMS       (EMM386 /NOEMS + CD)
+menudefault=386XMS,10
+
+[EPCONV]
+
+[EPEMS]
+DEVICE=c:\picomem\pmemm.exe /n
+REM Device=EURO_EMS.DRV 128 /F ;Only used on EuroPC2 which has 768KB RAM
+DEVICE=c:\picomem\CDMKE.sys /P:250 /D:PicoCD1
+
+[386CONV]
+
+[386EMS]
+DEVICE=c:\dos\HIMEM.SYS /TESTMEM:OFF
+DEVICE=c:\dos\EMM386.EXE RAM
+DOS=HIGH,UMB
+DEVICEHIGH=c:\picomem\CDMKE.sys /P:250 /D:PicoCD1
+
+[386XMS]
+DEVICE=c:\dos\HIMEM.SYS /TESTMEM:OFF
+DOS=HIGH
+DEVICE=c:\picomem\CDMKE.sys /P:250 /D:PicoCD1
+
+[386UMB]
+DEVICE=c:\dos\HIMEM.SYS /TESTMEM:OFF
+DEVICE=c:\dos\EMM386.EXE NOEMS
+DOS=HIGH,UMB
+DEVICEHIGH=c:\picomem\CDMKE.sys /P:250 /D:PicoCD1
+
+[common]
+BREAK=ON
+FILES=30
+Stacks=9,256
+FCBS=1,0
+BUFFERS=20
+LastDrive=G
+REM NetDrive maps disk images; enable only when image mapping as a drive letter is needed.
+rem Device = C:\mTCP\NetDrive.sys
+REM IFSHLP is needed only when using Microsoft Network Client.
+rem Device=c:\net\ifshlp.sys
+Country=047,865,c:\dos\country.sys
+Shell=c:\4dos\4dos.com /p
