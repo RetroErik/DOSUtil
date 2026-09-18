@@ -36,6 +36,17 @@ Open the [DES project documentation](DES/README.md) for build instructions, usag
 
 Open the [QuitKey project documentation](QUITKEY/README.md) for how it works, usage, limitations, and which kinds of games it tends to work with.
 
+## Other Repositories
+
+Related DOS utilities, graphics programs, and demos are available in these repositories:
+
+| Repository | Description |
+|------------|-------------|
+| [CGA-Composite-to-VGA](https://github.com/RetroErik/CGA-Composite-to-VGA) | A DOS TSR that gives CGA composite games 16 colors on many VGA systems |
+| [PalSwap](https://github.com/RetroErik/PalSwap) | `PalSwap` and `PalSwapT`, programs that set the CGA palette to any color from the EGA (64) or VGA (256) palette |
+| [Plantronics-BMP-Viewer](https://github.com/RetroErik/Plantronics-BMP-Viewer) | A BMP image viewer for Plantronics graphics cards; supports uncompressed 320x200, 16-color BMP files |
+| [Boing-Plantronics](https://github.com/RetroErik/Boing-Plantronics) | An Amiga Boing ball demo written in assembly for PC and Plantronics graphics |
+
 ## Project Status
 
 This collection is growing. Additional DOS programs and configurations may be added over time.
