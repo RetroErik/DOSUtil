@@ -36,6 +36,7 @@ The program is designed for small, real-mode DOS systems:
 - Scrolls descriptions that are longer than the available line width when `/P` is active.
 - Reads and applies 4DOS-style `COLORDIR` rules without requiring 4DOS.
 - Does not require `ANSI.SYS` or `ANSI.COM`.
+- Does not calculate free disk space, avoiding the slow free-space calculation that can delay `DIR` on some FAT16 systems.
 - Supports `/H` and `/?` help screens.
 - Preserves useful output when standard output is redirected to a file or pipe.
 
@@ -88,6 +89,43 @@ DES /?               Show help
 ```
 
 The `/P` switch may appear before or after the path pattern.
+
+## Why DES Can Be Faster Than DIR
+
+On some older DOS systems, especially DOS 4 and later using large FAT16
+volumes, `DIR` may spend a long time calculating free disk space before it
+prints the directory listing. DES does not calculate or display free disk
+space. It can therefore avoid that particular delay and begin listing the
+directory much sooner.
+
+This is an intentional design choice, not a replacement for every use of
+`DIR`. Programs that need a free-space value still need to request it from
+DOS. DES is faster in this specific situation because it does not perform
+that extra operation.
+
+### FREESP and FREESPT
+
+`FREESP.COM` and `FREESPT.COM` are separate utilities by **ChartreuseK** that
+address the same slow DOS free-space calculation while continuing to use
+`DIR` or other programs that ask DOS for free space:
+
+- [`FREESP`](https://github.com/ChartreuseK/FREESP) is the non-TSR version.
+	Run it for a drive, for example `FREESP C`, to calculate the free space and
+	populate DOS's cached value before using `DIR`. It is intended for FAT16
+	systems and DOS 4.0 or later.
+- [`FREESPT`](https://github.com/ChartreuseK/FREESP) is the TSR version. It
+	intercepts DOS `INT 21h/AH=36h` free-space requests and calculates the value
+	when needed. It can monitor multiple drives, for example `FREESPT CDEF`.
+
+The [FREESP releases](https://github.com/ChartreuseK/FREESP/releases) provide
+pre-assembled `.COM` files. The project is also discussed in the
+[VOGONS technical thread](https://www.vogons.org/viewtopic.php?t=78816) and
+covered in [this Genesis8 article](https://www.genesis8bit.fr/archives/index.php?news_id=2139).
+
+DES does not need FREESP or FREESPT for its own directory listings because it
+does not calculate free space. These utilities remain useful if you want to
+keep using `DIR`, 4DOS, or other programs that depend on DOS free-space
+queries.
 
 ## DESCRIPT.ION
 
