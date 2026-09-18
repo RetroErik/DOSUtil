@@ -9,14 +9,18 @@ A collection of DOS programs and startup configurations created by **Dag Erik Ha
 
 ## Contents
 
-So far, this repository contains a DOS directory utility and the startup files for a PicoMEM-based DOS system:
+So far, this repository contains a DOS directory utility, a hotkey force-quit TSR, and
+the startup files for a PicoMEM-based DOS system:
 
 | Directory | Description |
 |-----------|-------------|
 | [`DES/`](DES/) | DES, a fast DOS directory utility with 4DOS-compatible descriptions and colors |
+| [`QUITKEY/`](QUITKEY/) | QuitKey, a TSR that force-quits DOS games with no exit option via a hotkey |
 | [`PicoMEM/`](PicoMEM/) | `AUTOEXEC.BAT`, `CONFIG.SYS`, and documentation for selectable PicoMEM DOS startup profiles |
 
 See the [DES README](DES/README.md) for build instructions, usage, features, and testing information.
+
+See the [QuitKey README](QUITKEY/README.md) for how it works, usage, and game compatibility notes.
 
 See the [PicoMEM startup files README](PicoMEM/README.md) for installation instructions, boot profiles, memory configuration, CD-ROM support, and required utilities.
 
@@ -25,6 +29,12 @@ See the [PicoMEM startup files README](PicoMEM/README.md) for installation instr
 [DES (Description Enhanced System)](DES/) is a small, fast DOS directory utility and a practical replacement for the DOS/4DOS `DIR` command. It supports 4DOS-compatible `DESCRIPT.ION` file descriptions, `COLORDIR` colors, alphabetical sorting, pagination, and redirected output.
 
 Open the [DES project documentation](DES/README.md) for build instructions, usage examples, technical notes, and test information.
+
+## QuitKey
+
+[QuitKey](QUITKEY/) is a small DOS TSR for old games that have no way to quit back to DOS. Once installed, pressing Ctrl+Alt+Q or F12 force-quits whatever program is currently running and returns straight to DOS, as if it had exited normally.
+
+Open the [QuitKey project documentation](QUITKEY/README.md) for how it works, usage, limitations, and which kinds of games it tends to work with.
 
 ## Project Status
 
