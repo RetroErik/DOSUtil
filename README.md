@@ -15,6 +15,7 @@ the startup files for a PicoMEM-based DOS system:
 | Directory | Description |
 |-----------|-------------|
 | [`DES/`](DES/) | DES, a fast DOS directory utility with 4DOS-compatible descriptions and colors |
+| [`DEDIT/`](DEDIT/) | DEDIT, a full-screen editor for 4DOS-compatible `DESCRIPT.ION` files |
 | [`QUITKEY/`](QUITKEY/) | QuitKey, a TSR that force-quits DOS games with no exit option via a hotkey |
 | [`PicoMEM/`](PicoMEM/) | `AUTOEXEC.BAT`, `CONFIG.SYS`, and documentation for selectable PicoMEM DOS startup profiles |
 
@@ -27,6 +28,10 @@ See the [PicoMEM startup files README](PicoMEM/README.md) for installation instr
 ## DES
 
 [DES (Description Enhanced System)](DES/) is a small, fast DOS directory utility and a practical replacement for the DOS/4DOS `DIR` command. It supports 4DOS-compatible `DESCRIPT.ION` file descriptions, `COLORDIR` colors, alphabetical sorting, pagination, and redirected output.
+
+[DEDIT](DEDIT/) is DES's full-screen companion editor. It merges the real
+directory contents with `DESCRIPT.ION`, visibly marks stale entries, uses
+`COLORDIR` colors, and saves through a temporary file with a backup.
 
 Open the [DES project documentation](DES/README.md) for build instructions, usage examples, technical notes, and test information.
 

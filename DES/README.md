@@ -149,6 +149,12 @@ Directory rules use `dirs`; file rules use extensions. DES applies colors direct
 
 See [Colordir readme.md](Colordir%20readme.md) for the more detailed ColorDir notes.
 
+## Related Projects
+
+[DEDIT - DESCRIPT.ION Editor](../DEDIT/README.md) is DES's full-screen companion
+editor. It shows every file and directory, identifies missing descriptions and
+stale entries, and safely maintains the `DESCRIPT.ION` files displayed by DES.
+
 ## Technical Notes
 
 - The source intentionally uses 8086/8088-compatible instructions. It avoids 186+, 286+, and 386-only instructions.
