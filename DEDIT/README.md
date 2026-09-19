@@ -135,6 +135,7 @@ Saving follows this sequence:
 2. Close the completed temporary file.
 3. Rename the old `DESCRIPT.ION` to `DESCRIPT.BAK`.
 4. Rename `DESCRIPT.$$$` to `DESCRIPT.ION`.
+5. Mark `DESCRIPT.ION` and `DESCRIPT.BAK` as hidden files.
 
 If writing fails, the original file is left in place.
 

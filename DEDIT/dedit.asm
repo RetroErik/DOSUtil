@@ -1586,6 +1586,10 @@ save_descriptions:
                 jc      .delete_temp_fail
 
                 ; Remove the prior backup, then rename current file to backup.
+                ; DOS will not delete a hidden file, so clear its attributes
+                ; before replacing it. Errors are harmless when it is absent.
+                mov     dx,bak_path
+                call    clear_file_attributes
                 mov     dx,bak_path
                 mov     ah,41h
                 int     21h
@@ -1602,6 +1606,13 @@ save_descriptions:
                 mov     ah,56h
                 int     21h
                 jc      .restore_backup
+
+                ; Both persistent description files are hidden DOS metadata.
+                ; Preserve any other attribute bits already carried by a file.
+                mov     dx,desc_path
+                call    set_hidden_attribute
+                mov     dx,bak_path
+                call    set_hidden_attribute
                 mov     byte [dirty],0
                 mov     word [status_ptr],saved_text
                 ret
@@ -1610,6 +1621,8 @@ save_descriptions:
                 mov     di,desc_path
                 mov     ah,56h
                 int     21h
+                mov     dx,desc_path
+                call    set_hidden_attribute
                 jmp     .fail
 .write_fail:
                 mov     bx,[save_handle]
@@ -1639,6 +1652,36 @@ prepare_save_paths:
                 mov     si,path_buf
                 mov     di,tmp_path
                 call    strcpy
+                ret
+
+; DX points to an ASCIZ path. Clear all attributes so an existing backup can
+; be deleted even when DEDIT marked it hidden during the preceding save.
+; Errors (including file not found) are intentionally ignored.
+clear_file_attributes:
+                push    ax
+                push    cx
+                mov     ax,4301h
+                xor     cx,cx
+                int     21h
+                pop     cx
+                pop     ax
+                ret
+
+; DX points to an ASCIZ path. Add the DOS hidden bit while retaining the
+; file's other attributes. Errors (including a missing first-save backup) are
+; intentionally ignored.
+set_hidden_attribute:
+                push    ax
+                push    cx
+                mov     ax,4300h
+                int     21h
+                jc      .done
+                or      cx,0002h
+                mov     ax,4301h
+                int     21h
+.done:
+                pop     cx
+                pop     ax
                 ret
 
 ; DX points to ASCIZ. Writes to save_handle.

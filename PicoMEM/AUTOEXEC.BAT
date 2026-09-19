@@ -44,4 +44,4 @@ IF "%CONFIG%"=="386UMB" LH shsucdx /Q+ /D:PicoCD1 /L:E
 IF "%CONFIG%"=="EPEMS"  shcdx86 /Q+ /D:PicoCD1 /L:E
 ECHO.
 SET E=%@CHAR[27]
-ECHO %E%[1;37mPicoMEM 2%E%[0m - CPU:%_CPU - Free Conv:%E%[1;37m%@DOSMEM[K]KB%E%[0m - Drives: %E%[1;37mC: - %_LASTDISK:%E%[0m - %E%[1;31mR%E%[1;33me%E%[1;32mt%E%[1;36mr%E%[1;35mo %E%[1;34mE%E%[1;31mr%E%[1;33mi%E%[1;32mk%E%[0m
+IF NOT "%_4VER%"=="" ECHO %E%[1;37mPicoMEM 2%E%[0m - CPU:%_CPU - Free Conv:%E%[1;37m%@DOSMEM[K]KB%E%[0m - Drives: %E%[1;37mC: - %_LASTDISK:%E%[0m - %E%[1;31mR%E%[1;33me%E%[1;32mt%E%[1;36mr%E%[1;35mo %E%[1;34mE%E%[1;31mr%E%[1;33mi%E%[1;32mk%E%[0m
