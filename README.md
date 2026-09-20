@@ -1,6 +1,6 @@
 # DOS Utilities and Programs
 
-A collection of DOS programs and startup configurations created by **Dag Erik Hagesaeter / Retro Erik**.
+A collection of DOS programs, Windows companion tools, and startup configurations created by **Dag Erik Hagesæter / Retro Erik**.
 
 [YouTube: Retro Hardware and Software](https://www.youtube.com/@RetroErik)
 
@@ -9,17 +9,19 @@ A collection of DOS programs and startup configurations created by **Dag Erik Ha
 
 ## Contents
 
-So far, this repository contains a DOS directory utility, a hotkey force-quit TSR, and
-the startup files for a PicoMEM-based DOS system:
+So far, this repository contains DOS directory tools, a modern Windows description editor, a hotkey force-quit TSR, and the startup files for a PicoMEM-based DOS system:
 
 | Directory | Description |
 |-----------|-------------|
 | [`DES/`](DES/) | DES, a fast DOS directory utility with 4DOS-compatible descriptions and colors |
 | [`DEDIT/`](DEDIT/) | DEDIT, a full-screen editor for 4DOS-compatible `DESCRIPT.ION` files |
+| [`Description Edit for Windows/`](Description%20Edit%20for%20Windows/) | A WinUI 3 editor and file browser for `DESCRIPT.ION` files on Windows 11 x64 |
 | [`QUITKEY/`](QUITKEY/) | QuitKey, a TSR that force-quits DOS games with no exit option via a hotkey |
 | [`PicoMEM/`](PicoMEM/) | `AUTOEXEC.BAT`, `CONFIG.SYS`, and documentation for selectable PicoMEM DOS startup profiles |
 
 See the [DES README](DES/README.md) for build instructions, usage, features, and testing information.
+
+See the [Description Edit for Windows README](Description%20Edit%20for%20Windows/README.md) for installation, portable use, network-drive support, and release packaging.
 
 See the [QuitKey README](QUITKEY/README.md) for how it works, usage, and game compatibility notes.
 
@@ -34,6 +36,12 @@ directory contents with `DESCRIPT.ION`, visibly marks stale entries, uses
 `COLORDIR` colors, and saves through a temporary file with a backup.
 
 Open the [DES project documentation](DES/README.md) for build instructions, usage examples, technical notes, and test information.
+
+## Description Edit for Windows
+
+[Description Edit for Windows](Description%20Edit%20for%20Windows/) is the modern WinUI 3 companion to DES and DEDIT. It edits descriptions for both folders and files, supports Unicode and network shares, removes stale `MISSING` entries, preserves backups, and can associate `.ION` files with the application.
+
+Windows users can install it from the self-contained x64 release ZIP or run it as a portable application. Open the [project documentation](Description%20Edit%20for%20Windows/README.md) for installation and usage instructions.
 
 ## QuitKey
 

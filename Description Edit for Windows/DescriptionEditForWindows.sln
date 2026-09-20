@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DescriptionEditForWindows.Core", "src\DescriptionEditForWindows.Core\DescriptionEditForWindows.Core.csproj", "{22170561-0D01-47AE-AACD-292008F86164}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DescriptionEditForWindows.Tests", "tests\DescriptionEditForWindows.Tests\DescriptionEditForWindows.Tests.csproj", "{49ABFB52-3556-4B5A-B3F4-7C813BCD4AD2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DescriptionEditForWindows", "src\DescriptionEditForWindows\DescriptionEditForWindows.csproj", "{B51C91B7-2115-4E16-AE39-E0BFF5DB48AD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{22170561-0D01-47AE-AACD-292008F86164}.Debug|x64.ActiveCfg = Debug|x64
+		{22170561-0D01-47AE-AACD-292008F86164}.Debug|x64.Build.0 = Debug|x64
+		{22170561-0D01-47AE-AACD-292008F86164}.Release|x64.ActiveCfg = Release|x64
+		{22170561-0D01-47AE-AACD-292008F86164}.Release|x64.Build.0 = Release|x64
+		{49ABFB52-3556-4B5A-B3F4-7C813BCD4AD2}.Debug|x64.ActiveCfg = Debug|x64
+		{49ABFB52-3556-4B5A-B3F4-7C813BCD4AD2}.Debug|x64.Build.0 = Debug|x64
+		{49ABFB52-3556-4B5A-B3F4-7C813BCD4AD2}.Release|x64.ActiveCfg = Release|x64
+		{49ABFB52-3556-4B5A-B3F4-7C813BCD4AD2}.Release|x64.Build.0 = Release|x64
+		{B51C91B7-2115-4E16-AE39-E0BFF5DB48AD}.Debug|x64.ActiveCfg = Debug|x64
+		{B51C91B7-2115-4E16-AE39-E0BFF5DB48AD}.Debug|x64.Build.0 = Debug|x64
+		{B51C91B7-2115-4E16-AE39-E0BFF5DB48AD}.Release|x64.ActiveCfg = Release|x64
+		{B51C91B7-2115-4E16-AE39-E0BFF5DB48AD}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+EndGlobal
