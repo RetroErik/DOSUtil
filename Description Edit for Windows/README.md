@@ -245,7 +245,9 @@ On some systems, the physical mouse wheel does not scroll the list while the poi
 
 ## Screenshots
 
-No release screenshot is included yet. A useful screenshot should show the WinUI interface, Unicode folder descriptions, selection of several stale rows, and the `MISSING` delete controls.
+![Description Edit for Windows showing a DESCRIPT.ION file on a network share](<Screenshots/Description Edit for Windows.png>)
+
+The WinUI 3 editor browsing a network share, with DES/4DOS colors applied to folders and files and descriptions editable directly in the list.
 
 ## Testing
 
