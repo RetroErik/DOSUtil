@@ -31,6 +31,12 @@ Description Edit for Windows opens a directory together with its `DESCRIPT.ION`.
 | **Encoding** | UTF-8, UTF-16 LE/BE, and legacy Windows ANSI input; UTF-8 BOM output |
 | **Backup behavior** | Safe temporary write plus `DESCRIPT.BAK` |
 
+## Screenshots
+
+![Description Edit for Windows showing a DESCRIPT.ION file on a network share](<Screenshots/Description Edit for Windows.png>)
+
+The WinUI 3 editor browsing a network share, with DES/4DOS colors applied to folders and files and descriptions editable directly in the list.
+
 ## Features
 
 - Modern Fluent/WinUI 3 appearance with light and dark theme support.
@@ -38,6 +44,7 @@ Description Edit for Windows opens a directory together with its `DESCRIPT.ION`.
 - Starts with `dirs:bri mag; zip arj:bri blu; com exe:bri gre; bat:bri red; gif jpg png:yel; txt me now:gre`.
 - Lets each user change or restore the colors from **Colors…**.
 - Uses English interface text on every Windows display language.
+- Uses a compact table layout so more folders and files fit on screen.
 - Shows real folders first, then files, then stale `MISSING` entries.
 - Displays Name, Type, Size, Modified, attributes, Description, and Status.
 - Edits folder and file descriptions directly in each row.
@@ -46,6 +53,8 @@ Description Edit for Windows opens a directory together with its `DESCRIPT.ION`.
 - Keeps deleted lines out of the next saved `DESCRIPT.ION`.
 - Double-clicks folders to browse into them and files to open them through Windows.
 - Supports Back, Up, Refresh, typed paths, and folder/file picker dialogs.
+- Supports the mouse Back button for folder history, like Windows File Explorer.
+- Refreshes the current folder with the toolbar button or `F5`.
 - Accepts UNC paths such as `\\server\share\games` in the path field.
 - Enumerates directories on a worker thread so network access does not block the UI thread.
 - Warns before discarding unsaved edits.
@@ -63,7 +72,7 @@ Description Edit for Windows opens a directory together with its `DESCRIPT.ION`.
 
 The release ZIP is self-contained for Windows 11 x64. The user does not need Visual Studio, the .NET SDK, or a separate Windows App Runtime installation.
 
-1. Download `DescriptionEditForWindows-1.0.3-win-x64.zip`.
+1. Download `DescriptionEditForWindows-1.0.5-win-x64.zip`.
 2. Extract the entire ZIP to a normal folder. Do not run the program from inside the ZIP viewer.
 3. Double-click `Install.cmd`.
 4. Start **Description Edit for Windows** from the Start Menu.
@@ -103,7 +112,7 @@ powershell -ExecutionPolicy Bypass -File .\package.ps1
 This publishes a self-contained x64 application and creates:
 
 ```text
-artifacts\DescriptionEditForWindows-1.0.3-win-x64.zip
+artifacts\DescriptionEditForWindows-1.0.5-win-x64.zip
 ```
 
 ### Install a source build for the current user
@@ -149,14 +158,17 @@ The Description field is editable. Enter the description and press `Ctrl+S` or c
 | Double-click a file | Open it through Windows |
 | Back / Up | Navigate through folders |
 | Refresh | Reload the directory and sidecar |
+| `F5` | Reload the directory and sidecar |
 | Save / `Ctrl+S` | Safely write descriptions and create a backup |
 | `Enter` in a description | Finish editing the row in memory without saving the file |
+| `Enter` on a selected row | Start editing and select that row's description |
 | `Esc` in a description | Cancel the current row edit and restore its previous text |
 | Clear a description | Remove it from the next saved sidecar |
 | Click **Delete** on a `MISSING` row | Remove that stale line |
 | Select stale rows and choose **Delete selected MISSING** | Remove all selected stale lines |
 | Select stale rows and press `Delete` | Remove all selected stale lines |
 | Type a path and press `Enter` | Open a local, mapped, or UNC path |
+| Mouse Back button | Return to the previous folder |
 
 Deleting a `MISSING` row changes only the in-memory document initially. The line is removed permanently when the document is saved. Normal file and folder rows cannot be deleted through this command.
 
@@ -243,11 +255,9 @@ On some systems, the physical mouse wheel does not scroll the list while the poi
 | `build.ps1` | Restore, build, and test entry point |
 | `package.ps1` | Self-contained release ZIP creator |
 
-## Screenshots
+## Application Icons
 
-![Description Edit for Windows showing a DESCRIPT.ION file on a network share](<Screenshots/Description Edit for Windows.png>)
-
-The WinUI 3 editor browsing a network share, with DES/4DOS colors applied to folders and files and descriptions editable directly in the list.
+The magenta-folder icon is the default executable and title-bar icon. A blue folder/editor alternative is also kept in `src/DescriptionEditForWindows/Assets` for future use.
 
 ## Testing
 

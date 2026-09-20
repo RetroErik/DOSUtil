@@ -7,6 +7,12 @@
     Title="Description Edit for Windows">
 
     <Grid x:Name="RootGrid" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.Resources>
+            <local:EntryForegroundConverter x:Key="EntryForegroundConverter" />
+        </Grid.Resources>
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="F5" Invoked="RefreshKeyboardAccelerator_Invoked" />
+        </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -61,8 +67,8 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8,8,0,0"
-                    Padding="12,6">
-                <Grid ColumnSpacing="8">
+                    Padding="8,4">
+                <Grid ColumnSpacing="6">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="230" />
                         <ColumnDefinition Width="90" />
@@ -87,23 +93,21 @@
                       Grid.Row="1"
                       SelectionMode="Extended"
                       DoubleTapped="EntriesList_DoubleTapped"
-                      KeyDown="EntriesList_KeyDown"
                       BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                       BorderThickness="1,0,1,1">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                         <Setter Property="Padding" Value="0" />
+                        <Setter Property="MinHeight" Value="32" />
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="core:FileEntry">
                         <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                                 BorderThickness="0,0,0,1"
-                                Tag="{x:Bind}"
-                                Loaded="EntryRow_Loaded"
-                                Padding="12,5">
-                            <Grid ColumnSpacing="8">
+                                Padding="8,2">
+                            <Grid ColumnSpacing="6">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="230" />
                                     <ColumnDefinition Width="90" />
@@ -114,25 +118,35 @@
                                     <ColumnDefinition Width="90" />
                                     <ColumnDefinition Width="70" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{x:Bind Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Grid.Column="1" Text="{x:Bind Type}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Grid.Column="2" Text="{x:Bind SizeDisplay}" VerticalAlignment="Center" HorizontalAlignment="Right" />
-                                <TextBlock Grid.Column="3" Text="{x:Bind ModifiedDisplay}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="4" Text="{x:Bind Attributes}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="0" Text="{x:Bind Name}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="1" Text="{x:Bind Type}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="2" Text="{x:Bind SizeDisplay}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Column="3" Text="{x:Bind ModifiedDisplay}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="4" Text="{x:Bind Attributes}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" />
                                 <TextBox Grid.Column="5"
                                          Tag="{x:Bind}"
                                          Text="{x:Bind Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}"
+                                         PlaceholderForeground="{Binding Converter={StaticResource EntryForegroundConverter}}"
                                          PlaceholderText="Enter a description"
                                          GotFocus="DescriptionBox_GotFocus"
                                          LostFocus="DescriptionBox_LostFocus"
                                          KeyDown="DescriptionBox_KeyDown"
-                                         MinWidth="200" />
-                                <TextBlock Grid.Column="6" Text="{x:Bind Status}" VerticalAlignment="Center" />
+                                         MinWidth="200"
+                                         Height="28"
+                                         MinHeight="28"
+                                         Padding="7,2"
+                                         VerticalContentAlignment="Center" />
+                                <TextBlock Grid.Column="6" Text="{x:Bind Status}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" />
                                 <Button Grid.Column="7"
                                         Content="Delete"
                                         Tag="{x:Bind}"
                                         Click="DeleteMissingRowButton_Click"
                                         IsEnabled="{x:Bind IsMissing}"
+                                        Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}"
+                                        Height="28"
+                                        MinHeight="28"
+                                        Padding="8,0"
                                         ToolTipService.ToolTip="Delete this MISSING line" />
                             </Grid>
                         </Border>

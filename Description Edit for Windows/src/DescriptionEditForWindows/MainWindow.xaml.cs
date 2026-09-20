@@ -5,7 +5,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using Windows.Graphics;
@@ -19,7 +18,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 {
     private readonly string initialPath;
     private readonly Stack<string> backHistory = new();
-    private readonly ObservableCollection<FileEntry> entries = new();
+    private readonly BulkObservableCollection<FileEntry> entries = new();
     private DescriptionDocument document;
     private bool dirty;
     private bool isLoading;
@@ -36,11 +35,18 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         this.initialPath = initialPath;
         InitializeComponent();
         EntriesList.ItemsSource = entries;
+        EntriesList.AddHandler(UIElement.KeyDownEvent,
+            new KeyEventHandler(EntriesList_KeyDown), true);
+        RootGrid.AddHandler(UIElement.PointerPressedEvent,
+            new PointerEventHandler(RootGrid_PointerPressed), true);
 
         IntPtr windowHandle = WindowNative.GetWindowHandle(this);
         WindowId windowId = Win32Interop.GetWindowIdFromWindow(windowHandle);
         AppWindow appWindow = AppWindow.GetFromWindowId(windowId);
         appWindow.Resize(new SizeInt32(1280, 780));
+        string iconPath = Path.Combine(AppContext.BaseDirectory,
+            "Assets", "DescriptionEditForWindows.ico");
+        if (File.Exists(iconPath)) appWindow.SetIcon(iconPath);
         appWindow.Closing += AppWindow_Closing;
 
         RootGrid.Loaded += async delegate
@@ -129,13 +135,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         foreach (FileEntry oldEntry in entries)
             oldEntry.PropertyChanged -= Entry_PropertyChanged;
-        entries.Clear();
         document = loaded;
         foreach (FileEntry entry in loaded.Entries)
-        {
             entry.PropertyChanged += Entry_PropertyChanged;
-            entries.Add(entry);
-        }
+        entries.ReplaceAll(loaded.Entries);
         PathBox.Text = loaded.DirectoryPath;
         DocumentText.Text = Path.GetFileName(loaded.FilePath);
         dirty = false;
@@ -198,10 +201,22 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void BackButton_Click(object sender, RoutedEventArgs e)
     {
+        await NavigateBackAsync();
+    }
+
+    private async Task NavigateBackAsync()
+    {
         if (backHistory.Count == 0) return;
         string target = backHistory.Peek();
         if (await LoadDirectoryAsync(target, false)) backHistory.Pop();
         UpdateNavigationButtons();
+    }
+
+    private async void RootGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(RootGrid).Properties.IsXButton1Pressed) return;
+        e.Handled = true;
+        await NavigateBackAsync();
     }
 
     private async void UpButton_Click(object sender, RoutedEventArgs e)
@@ -231,6 +246,18 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     private async void RefreshButton_Click(object sender, RoutedEventArgs e)
+    {
+        await RefreshDocumentAsync();
+    }
+
+    private async void RefreshKeyboardAccelerator_Invoked(
+        KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        await RefreshDocumentAsync();
+    }
+
+    private async Task RefreshDocumentAsync()
     {
         if (document != null) await LoadFileAsync(document.FilePath, false);
     }
@@ -293,6 +320,15 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void EntriesList_KeyDown(object sender, KeyRoutedEventArgs e)
     {
+        if (FindAncestor<TextBox>(e.OriginalSource as DependencyObject) != null) return;
+
+        if (e.Key == VirtualKey.Enter && EntriesList.SelectedItem is FileEntry selectedEntry)
+        {
+            e.Handled = true;
+            BeginDescriptionEdit(selectedEntry);
+            return;
+        }
+
         if (e.Key != VirtualKey.Delete) return;
         List<FileEntry> selected = EntriesList.SelectedItems
             .OfType<FileEntry>()
@@ -301,6 +337,19 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         if (selected.Count == 0) return;
         e.Handled = true;
         RemoveMissingEntries(selected);
+    }
+
+    private void BeginDescriptionEdit(FileEntry entry)
+    {
+        EntriesList.ScrollIntoView(entry);
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (EntriesList.ContainerFromItem(entry) is not ListViewItem container) return;
+            TextBox descriptionBox = FindDescendant<TextBox>(container);
+            if (descriptionBox == null) return;
+            descriptionBox.Focus(FocusState.Keyboard);
+            descriptionBox.SelectAll();
+        });
     }
 
     private void RemoveMissingEntries(IEnumerable<FileEntry> items)
@@ -361,17 +410,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void ReplaceEntries(IList<FileEntry> sorted)
     {
-        EntriesList.ItemsSource = null;
-        entries.Clear();
-        foreach (FileEntry entry in sorted) entries.Add(entry);
-        EntriesList.ItemsSource = entries;
-    }
-
-    private void EntryRow_Loaded(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Border { Tag: FileEntry entry } row) return;
-        Brush brush = ColorPreferences.Current.BrushFor(entry);
-        ApplyEntryBrush(row, brush);
+        entries.ReplaceAll(sorted);
     }
 
     private void DescriptionBox_GotFocus(object sender, RoutedEventArgs e)
@@ -422,26 +461,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         descriptionBeforeEdit = null;
     }
 
-    private static void ApplyEntryBrush(DependencyObject parent, Brush brush)
-    {
-        int count = VisualTreeHelper.GetChildrenCount(parent);
-        for (int index = 0; index < count; index++)
-        {
-            DependencyObject child = VisualTreeHelper.GetChild(parent, index);
-            if (child is TextBlock text)
-            {
-                if (brush == null) text.ClearValue(TextBlock.ForegroundProperty);
-                else text.Foreground = brush;
-            }
-            else if (child is TextBox box)
-            {
-                if (brush == null) box.ClearValue(Control.ForegroundProperty);
-                else box.Foreground = brush;
-            }
-            ApplyEntryBrush(child, brush);
-        }
-    }
-
     private async void ColorSettingsButton_Click(object sender, RoutedEventArgs e)
     {
         TextBox rulesBox = new()
@@ -473,8 +492,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         ColorPreferences.Current.SetRules(result == ContentDialogResult.Secondary
             ? ColorPreferences.DefaultRules
             : rulesBox.Text);
-        EntriesList.ItemsSource = null;
-        EntriesList.ItemsSource = entries;
+        DataTemplate template = EntriesList.ItemTemplate;
+        EntriesList.ItemTemplate = null;
+        EntriesList.ItemTemplate = template;
         StatusText.Text = "Colors updated.";
     }
 
@@ -503,7 +523,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private async void AboutButton_Click(object sender, RoutedEventArgs e)
     {
         await ShowMessageAsync("Description Edit for Windows",
-            "Version 1.0.3\nModern WinUI 3 editor for Norton/4DOS DESCRIPT.ION files." +
+            "Version 1.0.5\nModern WinUI 3 editor for Norton/4DOS DESCRIPT.ION files." +
             "\n\nBy Dag Erik Hagesæter / Retro Erik using Codex in VS Code\nhttps://www.youtube.com/@RetroErik");
     }
 
@@ -570,6 +590,20 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             if (current is T match) return match;
             current = VisualTreeHelper.GetParent(current);
+        }
+        return null;
+    }
+
+    private static T FindDescendant<T>(DependencyObject current) where T : DependencyObject
+    {
+        if (current == null) return null;
+        int count = VisualTreeHelper.GetChildrenCount(current);
+        for (int index = 0; index < count; index++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(current, index);
+            if (child is T match) return match;
+            T nested = FindDescendant<T>(child);
+            if (nested != null) return nested;
         }
         return null;
     }
