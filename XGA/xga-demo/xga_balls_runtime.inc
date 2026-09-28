@@ -143,6 +143,7 @@ set_xga_mode:
 .done:
     ret
 ; Probe two banks separated by 512 KB; a 512 KB card may mirror page 12.
+; Use ordinary byte values so the write does not trigger XGA test sequences.
 probe_vram:
     mov dx, [io_base]
     add dx, 8
@@ -151,14 +152,20 @@ probe_vram:
     mov al, 4
     out dx, al
     mov byte [es:0], 0x55
+    cmp byte [es:0], 0x55
+    jne .fail
     mov al, 12
     out dx, al
-    mov byte [es:0], 0xa5
-    cmp byte [es:0], 0xa5
+    mov byte [es:0], 0xc3
+    cmp byte [es:0], 0xc3
     jne .fail
     mov al, 4
     out dx, al
     cmp byte [es:0], 0x55
+    jne .fail
+    mov al, 12
+    out dx, al
+    cmp byte [es:0], 0xc3
     jne .fail
     xor al, al
     out dx, al
@@ -184,6 +191,7 @@ select_bank:
 wait_cp:
     push cx
     push dx
+    mov byte [cp_waiting], 0
     mov dx, 64
 .outer:
     mov cx, 0xffff
@@ -197,18 +205,60 @@ wait_cp:
     test byte [es:0x09], 0x80
     jz .done
 .retry:
+    cmp byte [cp_waiting], 0
+    jne .count
+    push ax
+    push bx
+    call read_pit
+    mov [cp_wait_start], ax
+    mov byte [cp_waiting], 1
+.count:
     loop .inner
     dec dx
     jnz .outer
+    cmp byte [cp_waiting], 0
+    je .timeout
+    pop bx
+    pop ax
+.timeout:
     pop dx
     pop cx
     stc
     ret
 .done:
+    cmp byte [cp_waiting], 0
+    je .ready
+    call read_pit
+    mov bx, [cp_wait_start]
+    sub bx, ax
+    shr bx, 1                 ; PIT channel 0 mode 3 counts down by two
+    movzx ebx, bx
+    add [wait_pit_ticks], ebx
+    pop bx
+    pop ax
+.ready:
     pop dx
     pop cx
     clc
     ret
+
+; Latch the free-running 8253/8254 counter without changing its mode.
+; PIT channel 0 receives approximately 1,193,182 clocks per second.
+read_pit:
+    push dx
+    mov dx, 0x43
+    xor al, al
+    out dx, al
+    mov dx, 0x40
+    in al, dx
+    mov ah, al
+    in al, dx
+    xchg al, ah
+    pop dx
+    ret
+
+cp_wait_start dw 0
+cp_waiting db 0
 
 restore_mode:
     cmp byte [mode_active], 0

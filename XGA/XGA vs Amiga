@@ -1,0 +1,120 @@
+# XGA og Amiga: hva maskinvaren faktisk gjør
+
+**By Dag Erik Hagesæter / Retro Erik using Codex in VS Code** ·
+[Retro Erik på YouTube](https://www.youtube.com/@RetroErik)
+
+Dette notatet sammenligner IBM PS/2 Model 55 SX (386SX 16 MHz) med MCA XGA-1
+og en Amiga 500 med OCS. «Bend the Blitter» er derimot en **Amiga AGA**-demo
+fra en konkurranse uten CPU-arbeid under effekten. Den er ikke en måling av
+Amiga 500 mot XGA-1.
+
+| Egenskap | XGA-1 i 55 SX | Amiga 500 / OCS |
+| --- | --- | --- |
+| Bildemodus brukt her | 640 × 480, 8 bit/piksel, 256 palettfarger | Typisk PAL 320 × 256 med opptil 32 ordinære farger; 640 × 256 med opptil 16 |
+| Piksellagring | 8-bits pikselkart i VRAM | Separate bitplan i Chip RAM |
+| Kopiering og tegning | Grafikkoprosessor med PxBlt, logiske miksoperasjoner, fyll og linjer | Blitter med kopiering, logiske mintermer, maskering, skift, fyll og linjer |
+| Andre effekter | Skjermstartadresse/panorering og én 64 × 64 maskinvaresprite, ofte brukt som peker | Copper, åtte spritekanaler, bitplanstyring og lyd-DMA |
+| Vilkårlig rotasjon/skalering av et bilde | Ingen enkel maskinvarekommando | Ingen enkel maskinvarekommando |
+
+Amigas HAM og Extra Half Brite gir særskilte fargemuligheter ut over de vanlige
+32 fargene, med egne begrensninger. «Amiga 500 kan maksimalt vise 320 × 256»
+er feil; høyoppløselige og interlaced modi finnes også. XGAs 256-fargers
+640 × 480-bilde er et annet arbeidsvolum enn et typisk OCS-spillbilde, så én
+FPS-verdi eller én båndbreddemåling kan ikke rangere arkitekturene.
+
+## Målt i vår demo
+
+`XBALLS.COM` fyller 640 × 480-skjermen og utfører deretter N kopier av en
+48 × 48-bitmap per ramme. Med venting på vertikal synkronisering avslått
+rapporterte brukeren følgende i **86Box 6.0 build 9001**, konfigurert som
+55 SX / XGA:
+
+| Kopier per ramme | FPS | Kopier per sekund, beregnet |
+| ---: | ---: | ---: |
+| 256 | 200 | 51 200 |
+| 512 | 103 | 52 736 |
+| 1024 | 52 | 53 248 |
+| 2048 | 26 | 53 248 |
+
+Den tilnærmet lineære skaleringen viser at mange VRAM-til-VRAM-kopier fungerer
+effektivt i *denne emuleringen*. Over 256 kopier tegnes den samme 16 × 16-ruten
+på nytt; 2048 betyr ikke 2048 forskjellige synlige kuler. FPS-tallet omfatter
+også CPU-kode, skjermfyll og måleomkostning. Tallene er ikke en måling av et
+fysisk XGA-kort, blitterens utnyttelsesgrad eller en Amiga 500. Se
+[demoens README](xga-demo/README.md) for kontrollene og målemetoden.
+
+Den senere sinusvarianten bruker **forskjellige** 24 × 24-kuler: med `V` av
+rapporterte brukeren 337 FPS ved 128 kuler og 170 FPS ved 256 kuler i 86Box.
+Dette svarer til omtrent 43 000 slike kopier per sekund, inklusive
+skjermfyll, koordinatberegning og øvrig programarbeid.
+
+Tidligere oppgitte «7–10 MB/s» for Amiga og «12–16 MB/s» for XGA hadde ingen
+definert test, pikselformat eller kilde. De bør ikke brukes som sammenligning.
+Verken klokkehastighetene 7 MHz og 16 MHz eller FPS fra ulike emulatorer gir
+alene en meningsfull faktor for CPU- eller blitterhastighet. En rettferdig
+test må spesifisere oppløsning, antall bitplan/biter per piksel, maskering,
+kopieringsareal, skjermvisning, minnekonflikter og faktisk maskinvare.
+
+## Roterende bitmap: hva «Bend the Blitter» gjør
+
+Ifølge [Blueberrys egen NFO](https://www.pouet.net/prod_nfo.php?which=105626)
+bruker «Bend the Blitter» **AGA Copperchunky med 80 × 50 blokker**. Copper og
+blitteren arbeider sammen: presise Copper-skrivinger endrer blitterens
+moduloregister *mens* den arbeider. Utvikleren oppgir åtte sykluser per
+teksturhenting med teknikken, mot 20 for hans sammenlignede, utrullede
+68000-kode. Det er en beskrivelse av denne bestemte algoritmen, ikke et
+generelt forhold mellom Amiga og XGA. Zoomens store «piksler» stemmer med
+den grove 80 × 50-samplingen. Effekten viser oppfinnsom programmering av
+eksisterende maskinvare, ikke en egen rotasjonsprosessor.
+
+Amiga-blitterens innebygde skift gjelder justering av ord/piksler under
+kopiering; det er ikke vilkårlig 2D-rotasjon. XGA har heller ikke en enkel
+«roter og skaler bilde»-operasjon i den dokumenterte grafikkoprosessoren.
+En XGA-versjon trenger derfor for eksempel beregnede kildekoordinater,
+forhåndsberegnede bilder eller kopiering av mange smale striper. Prosessor-
+og VRAM-kostnaden på 55 SX må måles før vi velger løsning. Enkelte arkadesystemer
+har egen maskinvare for skalering/rotasjon, men det sier ikke noe om denne
+Amiga- eller XGA-maskinvaren.
+
+## Syv flate kuler i et 3D-rom
+
+En midtkule og seks satellitter kan plasseres på ±X-, ±Y- og ±Z-aksene.
+For hver ramme roteres disse seks posisjonene, projiseres til skjermkoordinater
+og tegnes i dybderekkefølge. Kulene kan fortsatt være ferdige, flate bitmaps;
+bare posisjon og tilsynelatende størrelse endres. Med seks punkter eller en
+forhåndsberegnet tabell er CPU-arbeidet lite sammenlignet med hele
+skjermbildet.
+
+**XOR er ikke gjennomsiktighet.** XOR kombinerer fargeindeksenes bitmønstre
+og gir en ny indeks som avhenger av begge pikslene; det er ikke et gjennomsnitt
+av RGB-fargene. Ekte alfablending krever beregning eller en oppslagstabell.
+En stiplet/mønstret BitBLT kan gi en rask visuell tilnærming til halvtransparent
+overlapp. Dette kan bli en egen effekt, mens den nåværende ellipsebanen
+beholdes.
+
+## Vanlig VGA og VESA
+
+Å bygge samme NASM-kilde for vanlig VGA er ikke nok: XGA-koden skriver direkte
+til XGA-registere og bruker XGAs grafikkoprosessor. En VGA-variant trenger
+eget modusoppsett, palett, CPU-basert tegning/kopiering og håndtering av
+videominnets organisering.
+
+| Modus | Hva den gir | Relevans |
+| --- | --- | --- |
+| VGA BIOS 12h | 640 × 480 × 16, planært | Standard VGA, men ikke samme fargedybde som XGA-demoen |
+| VGA BIOS 13h | 320 × 200 × 256, pakket | Standard VGA og enkel CPU-tegning, men mye færre piksler |
+| VBE 101h | 640 × 480 × 256 | SVGA/VESA BIOS Extension; krever støtte på kortet og vanligvis bankbytte i DOS |
+
+Det finnes ikke én universelt «raskeste vanlige VGA 640 × 480»-modus:
+maskinvaren, minnebussen, VRAM-skrivingene og tegnealgoritmen avgjør.
+VBE 101h er den mest relevante CPU-baserte sammenligningen med XGA-bildet
+ved lik oppløsning og fargedybde, dersom et SVGA-kort med VBE er tilgjengelig.
+På et rent VGA-kort er 12h den standardiserte 640 × 480-modusen.
+
+## Kilder
+
+- [INMOS, *XGA Software Programmer’s Guide* (1991)](https://www.transputer.net/ibooks/72-oek-258-00/xgaprog.pdf): pikselkart, koprosessor, sprite og skjermrulling.
+- [Commodore, *Amiga Hardware Reference Manual*: blitter](https://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node0118.html), [oppløsninger](https://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node0004.html) og [skift/masker](https://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node011F.html).
+- [Blueberry/Loonies, «Bend the Blitter» NFO](https://www.pouet.net/prod_nfo.php?which=105626): utviklerens beskrivelse av algoritmen.
+- [IBM, *VGA/XGA Technical Reference* (1992)](https://bitsavers.org/pdf/ibm/pc/cards/IBM_VGA_XGA_Technical_Reference_Manual_May92.pdf): standard VGA-modi 12h og 13h.
+- [VESA, tilgjengelige VBE-standarder](https://vesa.org/vesa-standards/); [VBE 101h i produsentens VGA BIOS-manual](https://www.versalogic.com/wp-content/themes/vsl-new/assets/resources/support/pdf/69030BG.pdf).
