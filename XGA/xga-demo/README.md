@@ -14,6 +14,10 @@ bildet `assets/Dreams.bmp` i 640 × 480 med 256 farger og sammenligner tre måte
 
 ## Oversikt
 
+Prosjektet sammenligner tre måter å vise samme 640 × 480-utsnitt på: XGA-pan
+(`DREAMS`), BitBLT-kopiering (`DBLIT`) og CPU-kopiering (`DCPU`). V2 inneholder
+i tillegg den separate kule- og belastningsdemoen `XBALLS`.
+
 ## Versjoner
 
 **Versjon 1** er den fungerende og testede utgaven av alle tre programmene.
@@ -30,14 +34,15 @@ v1-kilden uten funksjonelle endringer. Nye COM-filer og diskettbilder bygges i
 `bin/v2/dreams_xga_v2_20260928_142112.img`. Brukeren har bekreftet at denne
 disketten starter DOS og kjører `DBLIT` i 86Box.
 
-Beskrivelsen nedenfor gjelder v1 og dagens uendrede v2-utgangspunkt.
+Tabellen viser panorama-programmene i v1 og v2, samt den separate `XBALLS`-demoen
+som bare finnes i v2.
 
-| Program | Oppdatering per løkke | Hensikt |
+| Program | Versjon | Oppdatering per løkke | Hensikt |
 | --- | --- | --- |
-| `DREAMS.COM` | Endrer XGAs skjermstartadresse | Viser panorering uten å kopiere hele skjermbildet hver gang |
-| `DBLIT.COM` | XGA BitBLT kopierer 640 × 480 piksler internt i VRAM | Måler maskinvareblitterens emulerte kopihastighet |
-| `DCPU.COM` | CPU leser fra banket VRAM via RAM og skriver til synlig VRAM | Sammenligning uten BitBLT |
-| `XBALLS.COM` | XGA-fyll og 7–2048 bitmap-kopier | Kuleeffekter og belastningstest |
+| `DREAMS.COM` | v1, v2 | Endrer XGAs skjermstartadresse | Viser panorering uten å kopiere hele skjermbildet hver gang |
+| `DBLIT.COM` | v1, v2 | XGA BitBLT kopierer 640 × 480 piksler internt i VRAM | Måler maskinvareblitterens emulerte kopihastighet |
+| `DCPU.COM` | v1, v2 | CPU leser fra banket VRAM via RAM og skriver til synlig VRAM | Sammenligning uten BitBLT |
+| `XBALLS.COM` | v2 | XGA-fyll og 7–2048 bitmap-kopier | Kuleeffekter og belastningstest |
 
 Bevegelsen er enkel fram-og-tilbake-panorering, beregnet per programløkke. Den
 verifiserte versjonen bruker ikke sinusbevegelse.
