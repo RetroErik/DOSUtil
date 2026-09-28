@@ -9,7 +9,7 @@ A collection of DOS programs, Windows companion tools, and startup configuration
 
 ## Contents
 
-So far, this repository contains DOS directory tools, a modern Windows description editor, a hotkey force-quit TSR, and the startup files for a PicoMEM-based DOS system:
+So far, this repository contains DOS directory tools, a modern Windows description editor, a hotkey force-quit TSR, XGA graphics demos, and the startup files for a PicoMEM-based DOS system:
 
 | Directory | Description |
 |-----------|-------------|
@@ -18,6 +18,7 @@ So far, this repository contains DOS directory tools, a modern Windows descripti
 | [`Description Edit for Windows/`](Description%20Edit%20for%20Windows/) | A WinUI 3 editor and file browser for `DESCRIPT.ION` files on Windows 11 x64 |
 | [`QUITKEY/`](QUITKEY/) | QuitKey, a TSR that force-quits DOS games with no exit option via a hotkey |
 | [`PicoMEM/`](PicoMEM/) | `AUTOEXEC.BAT`, `CONFIG.SYS`, and documentation for selectable PicoMEM DOS startup profiles |
+| [`XGA/xga-demo/`](XGA/xga-demo/) | Bootable DOS graphics demos for IBM PS/2 systems with MCA XGA, including panorama, BitBLT, CPU-copy, and animated-ball tests |
 
 See the [DES README](DES/README.md) for build instructions, usage, features, and testing information.
 
@@ -26,6 +27,14 @@ See the [Description Edit for Windows README](Description%20Edit%20for%20Windows
 See the [QuitKey README](QUITKEY/README.md) for how it works, usage, and game compatibility notes.
 
 See the [PicoMEM startup files README](PicoMEM/README.md) for installation instructions, boot profiles, memory configuration, CD-ROM support, and required utilities.
+
+## XGA Demo
+
+The XGA demo project contains bootable 640 × 480, 256-color graphics demos for
+IBM PS/2 systems with MCA XGA. It compares hardware panning, BitBLT, and CPU
+copying, and includes animated-ball effects and a graphics load test. See the
+[XGA demo README](XGA/xga-demo/README.md) for build instructions, controls, and
+86Box setup notes.
 
 ## DES
 
