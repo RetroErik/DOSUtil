@@ -1,6 +1,7 @@
-# Dreams XGA Demo — Version 2 in Development
+# XGA Demos — Version 2
 
-A bootable DOS graphics demo for an IBM PS/2 Model 55 SX with MCA XGA-1. The
+A bootable DOS graphics demo collection for an IBM PS/2 Model 55 SX with MCA
+XGA-1. The combined disk starts `XDEMO2` and also includes `XGADEMO`. The
 panorama programs display `assets/Dreams.bmp` at 640 × 480 in 256 colors and
 compare three ways to move a viewport. `XBALLS.COM` adds seven animation and
 BitBLT stress effects. `XVECTOR.COM` adds XGA line drawing, Area Fill tests,
@@ -29,6 +30,7 @@ Norwegian flag, and copy-count stress tests.
 | `DCPU.COM` | V1, V2 | CPU moves banked VRAM through a RAM row buffer | Comparison without BitBLT |
 | `XBALLS.COM` | V2 | XGA fills and masked copies of 7–2048 objects | Animation effects and stress testing |
 | `XVECTOR.COM` | V2 | CPU projection plus XGA line drawing, Area Fill, and masked BitBlt | Rotating cube, octahedron, torus, Boing Ball, crystal, and polygon stress |
+| `XDEMO2.COM` | V2 | XGA masked BitBlt, lines, and sprite HUD | Waving XGA title, flying stars, rotating solid, and scroller |
 | `XGADEMO.COM` | V2 | XGA solid fills and masked BitBlt | CGADEMO5 logo, raster waves, scroller, and PC-speaker score |
 
 **Version 1** is preserved in [`versions/v1/`](versions/v1/), including
@@ -37,10 +39,11 @@ from 20:00:09 and 20:35:22 on September 26, 2026. The user tested
 `versions/v1/bin/dreams_xga_20260926_203522.img` in 86Box; it boots `DBLIT`.
 The preserved V1 release is not edited during V2 development.
 
-**Version 2** is developed here. `xga_dreams.asm` currently has no functional
+**Version 2** is maintained here. `xga_dreams.asm` has no functional
 changes from V1. New COM files and disk images are placed in `bin/v2/`. The
 first V2 panorama image, `dreams_xga_v2_20260928_142112.img`, was confirmed
-to boot DOS and run `DBLIT` in 86Box.
+to boot DOS and run `DBLIT` in 86Box. Superseded V2 test images are kept in
+Git history; the combined collection is the current image in `bin/v2/`.
 
 ## Features
 
@@ -51,6 +54,8 @@ to boot DOS and run `DBLIT` in 86Box.
   FPS, CPU time, and wait time in an XGA hardware sprite.
 - `XVECTOR` rotates a wireframe cube, filled octahedron, filled torus, and
   faceted crystal, renders an XGA Boing Ball, and stresses Area Fill with moving triangles.
+- `XDEMO2` combines the BOB title, starfield, rotating octahedron, and scroller.
+- `XGADEMO` ports the CGADEMO5 logo, raster bars, scrollers, and music to XGA.
 
 ## Quick Start
 
@@ -60,18 +65,9 @@ Reference Disk. With `gfxcard = none`, the display was black from POST.
 Reference Disk configuration cleared errors 162/163. XGA needs 1 MiB of VRAM
 and an enabled 1 MiB or 4 MiB memory aperture in POS.
 
-Mount a bootable image as drive A:. The latest `XBALLS` image is
-[`bin/v2/xga_balls_v2_20260928_214224.img`](bin/v2/xga_balls_v2_20260928_214224.img).
-It starts `XBALLS` from `AUTOEXEC.BAT`. Press `Esc` to return to DOS.
-
-The current vector image is
-[`bin/v2/xga_vector_v2_20261001_110105.img`](bin/v2/xga_vector_v2_20261001_110105.img).
-It starts `XVECTOR` from `AUTOEXEC.BAT` and also contains `XBALLS.COM`.
-Press `Esc` to return to DOS.
-
-The `XDEMO2` boot image is
-[`bin/v2/xdemo2_v2_20261001_135212.img`](bin/v2/xdemo2_v2_20261001_135212.img).
-Mount it as drive A: in 86Box; `AUTOEXEC.BAT` starts `XDEMO2` automatically.
+Mount [`bin/v2/XGA-Demos_2026-10-01.img`](bin/v2/XGA-Demos_2026-10-01.img)
+as drive A: in 86Box. `AUTOEXEC.BAT` starts `XDEMO2`; press `Esc` to return
+to DOS, then run `XGADEMO` or another included demo from the A: prompt.
 It uses the XGA coprocessor for the waving three-color `XGA` BOB title, an
 outward-accelerating star field, the tumbling filled octahedron, and the
 bottom `Retro Erik - 2026` scroller. `1` toggles stars, `2` the title,
@@ -81,9 +77,8 @@ The bottom scroller uses one clipped masked copy per frame.
 Its original thin strokes remain intact; XDEMO2 scales palette entries to
 the XGA's 8-bit range for brighter title, solid, stars, and text.
 
-The CGA port is [`bin/v2/XGADEMO_20261001_133618.img`](bin/v2/XGADEMO_20261001_133618.img).
-Mount it as drive A:; DOS starts `XGADEMO` automatically. It needs an XGA
-card with 1 MiB VRAM, uses `XGAMASK.DAT` on the disk, and exits with `Esc`.
+`XGADEMO` needs an XGA card with 1 MiB VRAM, uses `XGAMASK.DAT` on the same
+disk, and exits with `Esc`.
 It uses XGA 640 x 480 in 256 colors, not a VGA graphics mode. The upper
 scroller keeps the original CGA ROM font and text; a cyan scroller below it
 recounts XGA's VGA-compatible coprocessor and hardware-filled raster bars,
@@ -140,9 +135,10 @@ python make_dreams_floppy.py --program DBLIT
 The script makes a timestamped image in `bin/v2/` without modifying the
 source disk. By default it uses the archived V1 DOS 6.22 disk. Use
 `--source <path>` to select another bootable 1.44 MB DOS disk, and
-`--program DREAMS`, `--program DCPU`, or `--program XBALLS` to choose the
-`AUTOEXEC.BAT` program. `BUILD.TXT` records the version, build time, and
-selected program. FAT timestamps come from the build time.
+`--program` to select the `AUTOEXEC.BAT` program. The combined image uses
+`--include-xgademo` to add `XGADEMO.COM` and `XGAMASK.DAT` alongside
+`XDEMO2.COM`. `BUILD.TXT` records the collection, build time, and selected
+program. FAT timestamps come from the build time.
 
 To reconvert the original image, run `python prepare_dreams.py` before NASM.
 This requires Pillow and ImageMagick. The script uses
@@ -197,9 +193,21 @@ text, music, and 252-frame raster sequence from `CGADEMO5-NASM.asm`. It also
 creates the 1-bit XGA mask included on the disk. Both CGA files and NASM on
 `PATH` are required to rebuild the assets.
 
-The CPU generates positions and the title's one-bit masks; the XGA draws the
-scene. The disk builder leaves the archived boot floppy untouched and checks
-all copied files byte for byte. Visual output still needs testing in 86Box.
+Build the combined dated image after building both programs and their assets:
+
+```text
+python make_xdemo_art.py
+nasm -f bin xdemo2.asm -o bin/v2/XDEMO2.COM -l bin/v2/XDEMO2.lst
+python make_cgademo_assets.py
+nasm -f bin xgademo.asm -o bin/v2/XGADEMO.COM -l bin/v2/XGADEMO.lst
+python make_dreams_floppy.py --program XDEMO2 --include-xgademo --output XGA-Demos_2026-10-01.img
+```
+
+The CPU generates positions and each frame's octahedron mask; the title mask
+is generated at build time. The XGA draws the scene. The disk builder leaves
+the archived boot floppy untouched and checks
+all copied files byte for byte. The combined disk still needs a boot test in
+86Box; the individual demos have been captured there.
 
 `XBALLS.COM` can also be copied to a DOS disk and run on a PS/2 with MCA
 XGA-1 or XGA-2 and 1 MiB VRAM. The disk builder reads the FAT files back and
@@ -393,6 +401,9 @@ and `WAIT` with `V` enabled and disabled.
 
 ## How XVECTOR Works
 
+XVECTOR scales its 0-63 palette channels to the XGA's 8-bit range for brighter
+vector and solid colors. The brightness change awaits a visual check in 86Box.
+
 In mode 1, the 386SX rotates eight cube vertices around the X and Y axes
 using a 256-step integer sine table, projects them, and selects the twelve
 edge endpoints. The XGA coprocessor receives each endpoint pair and draws
@@ -494,7 +505,7 @@ finish commands; CPU geometry and command setup remain part of the FPS cost.
 In 86Box, synchronous command emulation can also contribute to `CPU`.
 This is end-to-end demo throughput, not a standalone coprocessor benchmark.
 
-`XVECTOR.COM` is 42,893 bytes in the current build. Its VRAM layout uses the
+`XVECTOR.COM` is 42,897 bytes in the current build. Its VRAM layout uses the
 visible page at offset 0, hidden page at offset 307,200, 1-bit pattern map
 at offset 614,400, and cached Boing room at offset 652,800. The torus, Boing,
 and crystal modes temporarily remap the 1-bit pattern map to a 2,048-byte buffer
@@ -508,7 +519,7 @@ restores the previous DOS video mode.
 
 | Check | Status |
 | --- | --- |
-| NASM assembly and COM-size check | Passed; 42,893-byte `XVECTOR.COM` |
+| NASM assembly and COM-size check | Passed; 42,897-byte `XVECTOR.COM` |
 | Disk FAT read-back | Passed for `xga_vector_v2_20261001_110105.img` |
 | Area safety table generation | Passed for 512 rotation phases and all three meshes |
 | Static mode/register review | Passed for hidden-page setup, present BitBLT, bounded waits, and boundary XOR/mask settings |
@@ -568,6 +579,13 @@ performance on a 386SX-16 must be measured before choosing an approach.
 `versions/v1/` can be rebuilt, but new experiments belong in V2 files.
 
 ## Screenshots
+
+XDEMO2 running in 86Box with the XGA title, octahedron, starfield, and
+bottom scroller:
+
+![XDEMO2 running in 86Box](Screenshorts/xdemo2.png)
+
+[Watch XDEMO2 running in 86Box](Screenshorts/Xdemo2.mp4).
 
 XGADEMO running in 86Box with the TCB logo, raster bars, starfield, and two
 independent scrollers:

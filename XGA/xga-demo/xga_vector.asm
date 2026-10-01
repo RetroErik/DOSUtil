@@ -275,6 +275,9 @@ set_palette:
 %endif
 .color:
     lodsb
+%ifndef XDEMO
+    shl al, 2
+%endif
 %ifdef XDEMO2
     shl al, 2
 %endif

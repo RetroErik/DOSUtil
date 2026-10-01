@@ -1,4 +1,4 @@
-"""Create a bootable 1.44 MB DOS 6.22 Dreams v2 development disk.
+"""Create a bootable 1.44 MB DOS 6.22 XGA demos disk.
 
 Clone the user's DOS 6.22 image, retain its boot files, remove its setup
 utilities in the clone, and add the XGA programs plus the indexed artwork.
@@ -13,6 +13,8 @@ parser = ArgumentParser()
 parser.add_argument("--program", choices=("DREAMS", "DBLIT", "DCPU", "XBALLS", "XVECTOR", "XDEMO", "XDEMO2", "XGADEMO"),
                     default="DREAMS")
 parser.add_argument("--output", help="output filename (default: build timestamp)")
+parser.add_argument("--include-xgademo", action="store_true",
+                    help="include XGADEMO.COM and its XGAMASK.DAT artwork")
 parser.add_argument("--source", type=Path,
                     help="bootable DOS 6.22 source image (default: archived v1 disk)")
 args = parser.parse_args()
@@ -124,8 +126,10 @@ def add(name, payload):
 
 add(b"CONFIG  SYS", b"FILES=20\r\nBUFFERS=10\r\n")
 add(b"AUTOEXECBAT", ("@echo off\r\n" + args.program + "\r\n").encode("ascii"))
+description = ("XGA Demos collection" if args.include_xgademo
+               else "Dreams XGA version: 2 (development)")
 add(b"BUILD   TXT", (
-    f"Dreams XGA version: 2 (development)\r\n"
+    f"{description}\r\n"
     f"Build: {build_time:%Y-%m-%d %H:%M:%S %z}\r\n"
     f"Autoexec program: {args.program}.COM\r\n"
 ).encode("ascii"))
@@ -142,7 +146,7 @@ program_files.extend([
 ])
 if args.program == "XDEMO2":
     program_files.append((b"XDEMO2  COM", "XDEMO2.COM"))
-if args.program == "XGADEMO":
+if args.program == "XGADEMO" or args.include_xgademo:
     program_files.extend([
         (b"XGADEMO COM", "XGADEMO.COM"),
         (b"XGAMASK DAT", "XGAMASK.DAT"),

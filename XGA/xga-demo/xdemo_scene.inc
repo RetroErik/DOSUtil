@@ -681,10 +681,8 @@ xdemo_title:
 .done:
     ret
 
-; Bottom-of-screen scroller: each precomputed segment is a horizontal
-; stroke relative to the text's start; the live scroll offset and the
-; screen baseline are added here. Unsigned bounds checks double as
-; negative-coordinate rejects once a segment scrolls off the left edge.
+; XDEMO2 clips a one-bit text mask into a single XGA copy per frame.
+; XDEMO retains the original horizontal-line segments for its scroller.
 xdemo_scroll:
 %ifdef XDEMO2
     mov ax, [xdemo_scroll_x]
