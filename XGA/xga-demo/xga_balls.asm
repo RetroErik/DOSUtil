@@ -16,19 +16,25 @@ MASK_BASE equ BALL_BASE + BALL_SIZE * BALL_SIZE
 SMALL_SIZE equ 24
 SMALL_BASE equ MASK_BASE + BALL_SIZE * BALL_SIZE / 8
 SMALL_MASK_BASE equ SMALL_BASE + SMALL_SIZE * SMALL_SIZE * 4
-ORBIT_MASK_BASE equ SMALL_MASK_BASE + SMALL_SIZE * SMALL_SIZE / 8
-ORBIT_MASK_BYTES equ (80*80+88*88+96*96+104*104+112*112+120*120+128*128+136*136+144*144+152*152+160*160+168*168+176*176+184*184)/8
+ORBIT_BITMAP_BASE equ 9 * 65536 + 0x8000
+ORBIT_BITMAP_BYTES equ (80*80+88*88+96*96+104*104+112*112+120*120+128*128+136*136+144*144+152*152+152*152+160*160+168*168+176*176+176*176+184*184)
+ORBIT_MASK_BASE equ ORBIT_BITMAP_BASE + ORBIT_BITMAP_BYTES
+ORBIT_MASK_BYTES equ ORBIT_BITMAP_BYTES / 8
+ORBIT_BITMAP_FULL_PAGES equ ORBIT_BITMAP_BYTES / 4096
+ORBIT_DATA_PAGES equ (ORBIT_BITMAP_BYTES + ORBIT_MASK_BYTES + 4095) / 4096
+ORBIT_CHUNK_BYTES equ 16384
+ORBIT_PROGRESS_BASE equ 236 * SCREEN_W + 168 - 2 * 65536
 FLAG_SIZE equ 16
-FLAG_BASE equ 10 * 65536
+FLAG_BASE equ 15 * 65536
 FLAG_MASK_BASE equ FLAG_BASE + 3 * FLAG_SIZE * FLAG_SIZE
 MORPH_MASK_BASE equ FLAG_MASK_BASE + FLAG_SIZE * FLAG_SIZE / 8
-MORPH_COUNT equ 96
-MORPH_STRIDE equ MORPH_COUNT * 3
+MORPH_BALL_BASE equ MORPH_MASK_BASE + 8 * 36 * 5
+MORPH_COUNT equ 294
+MORPH_STRIDE equ MORPH_COUNT * 4
 FLAG_COUNT equ 33 * 24
 BLT_B_TO_A equ 0xA8218000
 BLT_MASKED equ 0xA8213000       ; source B, pattern C, destination A
 SOLID_A equ 0x08118000
-BLT_FLAT_MASKED equ 0x08113000 ; fixed foreground, pattern C, dest A
 
 start:
     push cs
@@ -152,6 +158,8 @@ start:
 .key5:
     cmp al, '5'
     jne .key6
+    call ensure_orbit_assets
+    jc .orbit_error
     cmp byte [effect], 4
     je .orbit_selected
     mov byte [effect], 4
@@ -173,9 +181,8 @@ start:
 .key7:
     cmp al, '7'
     jne .key_plus_check
+    call ensure_morph_balls
     mov byte [effect], 6
-    mov byte [morph_shape], 0
-    mov byte [morph_tick], 0
     mov word [visible_balls], MORPH_COUNT
     call enter_back_buffer
     call select_morph_maps
@@ -260,6 +267,8 @@ start:
 .space_ready:
     cmp byte [effect], 4
     jne .space_not_3d
+    call ensure_orbit_assets
+    jc .orbit_error
     movzx ax, byte [orbit_speed]
     mov [visible_balls], ax
     call enter_back_buffer
@@ -274,8 +283,7 @@ start:
 .space_not_flag:
     cmp byte [effect], 6
     jne .space_not_morph
-    mov byte [morph_shape], 0
-    mov byte [morph_tick], 0
+    call ensure_morph_balls
     mov word [visible_balls], MORPH_COUNT
     call enter_back_buffer
     call select_morph_maps
@@ -349,14 +357,7 @@ start:
 .not_flag_step:
     cmp byte [effect], 6
     jne .normal_step
-    inc byte [morph_tick]
-    cmp byte [morph_tick], 192
-    jb .frame
-    mov byte [morph_tick], 0
-    inc byte [morph_shape]
-    cmp byte [morph_shape], 5
-    jb .frame
-    mov byte [morph_shape], 0
+    add byte [fish_phase], 2
     jmp .frame
 .normal_step:
     add byte [phase], 2
@@ -368,6 +369,10 @@ start:
 .cp_timeout:
     call restore_mode
     mov dx, msg_cp_timeout
+    jmp .error
+.orbit_error:
+    call restore_mode
+    mov dx, msg_orbit_error
     jmp .error
 .no_vram:
     call restore_mode
@@ -404,7 +409,7 @@ set_palette:
     out dx, al
     inc dx
     mov si, ball_palette
-    mov cx, 408
+    mov cx, 744
 .color:
     lodsb
     out dx, al
@@ -414,7 +419,7 @@ set_palette:
     out dx, ax
     ret
 
-; Two 640x480 pages occupy banks 0..9; all art then fits in bank 9.
+; Two 640x480 pages occupy banks 0..9; orbit data starts in free bank 9 space.
 load_assets:
     mov ax, 0xa000
     mov es, ax
@@ -434,10 +439,7 @@ load_assets:
     mov si, small_mask
     mov cx, SMALL_SIZE * SMALL_SIZE / 16
     rep movsw
-    mov si, orbit_masks
-    mov cx, ORBIT_MASK_BYTES / 2
-    rep movsw
-    mov bx, 10
+    mov bx, 15
     call select_bank
     xor di, di
     mov si, flag_pixels
@@ -446,9 +448,310 @@ load_assets:
     mov si, flag_mask
     mov cx, FLAG_SIZE * FLAG_SIZE / 16
     rep movsw
-    mov si, morph_masks
-    mov cx, 4 * 32 * 32 / 16
+    ret
+
+ensure_morph_balls:
+    cmp byte [morph_loaded], 0
+    jne .ready
+    call generate_morph_balls
+    mov byte [morph_loaded], 1
+    mov ax, [cp_seg]
+    mov es, ax
+.ready:
+    ret
+
+generate_morph_balls:
+    mov ax, 0xa000
+    mov es, ax
+    mov bx, 15
+    call select_bank
+    cld
+    mov di, MORPH_MASK_BASE - FLAG_BASE
+    mov word [morph_radius], 8
+.mask_size:
+    mov ax, [morph_radius]
+    mul ax
+    mov [morph_radius_sq], ax
+    mov word [morph_y], -35
+.mask_row:
+    mov word [morph_x], -35
+.mask_byte:
+    xor bl, bl
+    mov cl, 1
+.mask_pixel:
+    mov ax, [morph_x]
+    imul ax
+    mov si, ax
+    mov ax, [morph_y]
+    imul ax
+    add ax, si
+    cmp ax, [morph_radius_sq]
+    jae .mask_outside
+    or bl, cl
+.mask_outside:
+    add word [morph_x], 2
+    shl cl, 1
+    jnz .mask_pixel
+    mov [es:di], bl
+    inc di
+    cmp word [morph_x], 35
+    jle .mask_byte
+    add word [morph_y], 2
+    cmp word [morph_y], 35
+    jle .mask_row
+    add word [morph_radius], 4
+    cmp word [morph_radius], 36
+    jle .mask_size
+    mov di, MORPH_BALL_BASE - FLAG_BASE
+    mov byte [morph_color_base], 128
+    mov bp, 5
+.color:
+    mov word [morph_radius], 8
+.size:
+    mov ax, [morph_radius]
+    mul ax
+    mov [morph_radius_sq], ax
+    mov word [morph_y], -35
+.row:
+    mov word [morph_x], -35
+.pixel:
+    mov ax, [morph_x]
+    imul ax
+    mov bx, ax
+    mov ax, [morph_y]
+    imul ax
+    add ax, bx
+    cmp ax, [morph_radius_sq]
+    jae .outside
+    mov bx, [morph_radius_sq]
+    sub bx, ax
+    mov ax, bx
+    xor dx, dx
+    div word [morph_radius]
+    imul ax, 6
+    mov bx, [morph_x]
+    imul bx, 3
+    sub ax, bx
+    mov bx, [morph_y]
+    shl bx, 2
+    sub ax, bx
+    cwd
+    idiv word [morph_radius]
+    add ax, 3
+    cmp ax, 1
+    jge .min_shade
+    mov ax, 1
+.min_shade:
+    cmp ax, 9
+    jle .write
+    mov ax, 9
+    jmp .write
+.outside:
+    xor ax, ax
+.write:
+    add al, [morph_color_base]
+    stosb
+    add word [morph_x], 2
+    cmp word [morph_x], 35
+    jle .pixel
+    add word [morph_y], 2
+    cmp word [morph_y], 35
+    jle .row
+    add word [morph_radius], 4
+    cmp word [morph_radius], 36
+    jle .size
+    add byte [morph_color_base], 10
+    dec bp
+    jnz .color
+    ret
+
+ensure_orbit_assets:
+    cmp byte [orbit_loaded], 0
+    jne .ready
+    call orbit_progress_init
+    call load_orbit_assets
+    jc .done
+    mov byte [orbit_loaded], 1
+    mov ax, [cp_seg]
+    mov es, ax
+.ready:
+    clc
+.done:
+    ret
+
+load_orbit_assets:
+    mov ax, 0x3d00
+    mov dx, orbit_file_name
+    int 0x21
+    jc .fail
+    mov [orbit_file_handle], ax
+    mov word [orbit_bank], 9
+    mov word [orbit_bank_offset], 0x8000
+    mov bp, ORBIT_DATA_PAGES
+.read_chunk:
+    mov ax, bp
+    cmp bp, ORBIT_DATA_PAGES - ORBIT_BITMAP_FULL_PAGES
+    jbe .raw_chunk_size
+    mov cx, 2048
+    sub ax, ORBIT_DATA_PAGES - ORBIT_BITMAP_FULL_PAGES
+    cmp ax, ORBIT_CHUNK_BYTES / 2048
+    jbe .chunk_pages_ready
+    mov ax, ORBIT_CHUNK_BYTES / 2048
+    jmp .chunk_pages_ready
+.raw_chunk_size:
+    mov cx, 4096
+    cmp ax, ORBIT_CHUNK_BYTES / 4096
+    jbe .chunk_pages_ready
+    mov ax, ORBIT_CHUNK_BYTES / 4096
+.chunk_pages_ready:
+    mov [orbit_chunk_pages], ax
+    mov [orbit_page_bytes], cx
+    mul cx
+    mov [orbit_chunk_bytes], ax
+    mov bx, [orbit_file_handle]
+    mov cx, ax
+    mov ah, 0x3f
+    mov dx, orbit_chunk
+    int 0x21
+    jc .close_fail
+    cmp ax, [orbit_chunk_bytes]
+    jne .close_fail
+    mov si, orbit_chunk
+.page:
+    mov bx, [orbit_bank]
+    call select_bank
+    mov ax, 0xa000
+    mov es, ax
+    mov di, [orbit_bank_offset]
+    cmp word [orbit_page_bytes], 4096
+    je .raw
+    mov cx, 2048
+    cld
+.unpack:
+    lodsb
+    mov ah, al
+    and al, 15
+    stosb
+    mov al, ah
+    shr al, 4
+    stosb
+    loop .unpack
+    jmp .next_data
+.raw:
+    mov cx, 2048
     rep movsw
+.next_data:
+    add word [orbit_bank_offset], 4096
+    jnz .next_page
+    inc word [orbit_bank]
+.next_page:
+    mov ax, ORBIT_DATA_PAGES
+    sub ax, bp
+    inc ax
+    call orbit_progress_update
+    dec bp
+    dec word [orbit_chunk_pages]
+    jnz .page
+    or bp, bp
+    jnz .read_chunk
+    mov bx, [orbit_file_handle]
+    mov ah, 0x3f
+    mov cx, 1
+    mov dx, orbit_chunk
+    int 0x21
+    jc .close_fail
+    test ax, ax
+    jnz .close_fail
+    mov bx, [orbit_file_handle]
+    mov ah, 0x3e
+    int 0x21
+    jc .fail
+    clc
+    ret
+.close_fail:
+    mov bx, [orbit_file_handle]
+    mov ah, 0x3e
+    int 0x21
+.fail:
+    stc
+    ret
+
+orbit_progress_init:
+    push ax
+    push bx
+    push cx
+    push di
+    push es
+    mov ax, 0xa000
+    mov es, ax
+    mov bx, 2
+    call select_bank
+    mov di, ORBIT_PROGRESS_BASE
+    mov bx, 12
+    cld
+.clear:
+    xor al, al
+    mov cx, 304
+    rep stosb
+    add di, SCREEN_W - 304
+    dec bx
+    jnz .clear
+    mov ax, 15 * 257
+    mov di, ORBIT_PROGRESS_BASE
+    mov cx, 152
+    rep stosw
+    mov di, ORBIT_PROGRESS_BASE + 11 * SCREEN_W
+    mov cx, 152
+    rep stosw
+    mov di, ORBIT_PROGRESS_BASE + SCREEN_W
+    mov cx, 10
+.sides:
+    mov byte [es:di], 15
+    mov byte [es:di+303], 15
+    add di, SCREEN_W
+    loop .sides
+    pop es
+    pop di
+    pop cx
+    pop bx
+    pop ax
+    ret
+
+; AX = completed 4 KB pages.
+orbit_progress_update:
+    push ax
+    push bx
+    push cx
+    push dx
+    push di
+    push bp
+    push es
+    mov bx, 300
+    mul bx
+    mov bx, ORBIT_DATA_PAGES
+    div bx
+    mov dx, ax
+    mov ax, 0xa000
+    mov es, ax
+    mov bx, 2
+    call select_bank
+    mov di, ORBIT_PROGRESS_BASE + 2 * SCREEN_W + 2
+    mov bp, 8
+    mov al, 14
+.row:
+    mov cx, dx
+    rep stosb
+    add di, SCREEN_W
+    sub di, dx
+    dec bp
+    jnz .row
+    pop es
+    pop bp
+    pop di
+    pop dx
+    pop cx
+    pop bx
+    pop ax
     ret
 
 setup_maps:
@@ -543,12 +846,19 @@ select_flag_maps:
     ret
 
 select_morph_maps:
+    mov byte [es:0x12], 2
+    mov eax, [cp_aperture]
+    add eax, MORPH_BALL_BASE
+    mov [es:0x14], eax
+    mov word [es:0x18], 35
+    mov word [es:0x1a], 1439
+    mov word [es:0x70], 0
     mov byte [es:0x12], 3
     mov eax, [cp_aperture]
     add eax, MORPH_MASK_BASE
     mov [es:0x14], eax
-    mov word [es:0x18], 31
-    mov word [es:0x1a], 127
+    mov word [es:0x18], 39
+    mov word [es:0x1a], 287
     mov word [es:0x74], 0
     ret
 
@@ -855,94 +1165,78 @@ draw_flag_ball:
 .done:
     ret
 
-; Each of 96 points moves toward its counterpart in the next figure.
-; Four 32x32 pattern rows supply circle diameters of 8, 16, 24 and 32.
+; DEM7 draws one fish using eight CPU-generated shaded sphere sizes.
 draw_morph:
-    movzx ax, byte [morph_tick]
-    cmp ax, 64
-    jb .hold
-    sub ax, 64
-    shl ax, 1
-    jmp .fraction_ready
-.hold:
-    xor ax, ax
-.fraction_ready:
-    mov [morph_fraction], ax
-    movzx ax, byte [morph_shape]
-    imul ax, MORPH_STRIDE
-    add ax, morph_shapes
-    mov si, ax
-    add ax, MORPH_STRIDE
-    cmp byte [morph_shape], 4
-    jne .next_ready
-    mov ax, morph_shapes
-.next_ready:
-    mov bp, ax
+    mov si, morph_shapes
     xor di, di
 .ball:
-    call wait_cp
-    jc .done
     mov eax, [si]
-    mov ebx, [bp]
-    and eax, 0xffffff
-    and ebx, 0xffffff
+    push eax
+    call wait_cp
+    jc .timeout
+    pop eax
     mov dx, ax
     and dx, 1023
-    mov cx, bx
-    and cx, 1023
-    sub cx, dx
-    movsx ecx, cx
-    imul ecx, dword [morph_fraction]
-    sar ecx, 8
-    add dx, cx
-    sub dx, 16
+    xor bp, bp
+    cmp dx, 220
+    jb .position
+    mov cx, dx
+    sub cx, 220
+    mov bx, cx
+    shr bx, 2
+    add bl, [fish_phase]
+    movzx bx, bl
+    push eax
+    movsx ax, byte [sine_table+bx]
+    mov bp, cx
+    shr bp, 4
+    imul ax, bp
+    sar ax, 7
+    mov bp, ax
+    cmp cx, 200
+    jbe .wave_done
+    sub cx, 200
+    shr cx, 4
+    movsx ax, byte [sine_table+bx+64]
+    imul ax, cx
+    sar ax, 7
+    add dx, ax
+.wave_done:
+    pop eax
+.position:
+    sub dx, 18
     mov [es:0x78], dx
     shr eax, 10
-    shr ebx, 10
     mov dx, ax
     and dx, 511
-    mov cx, bx
-    and cx, 511
-    sub cx, dx
-    movsx ecx, cx
-    imul ecx, dword [morph_fraction]
-    sar ecx, 8
-    add dx, cx
-    sub dx, 16
+    add dx, bp
+    sub dx, 18
     mov [es:0x7a], dx
     shr eax, 9
-    shr ebx, 9
-    mov cx, di
-    imul cx, 37
-    and cx, 252
-    inc cx
-    cmp cx, [morph_fraction]
-    ja .source_style
-    mov eax, ebx
-.source_style:
     mov bx, ax
-    and bx, 3
-    shl bx, 5
+    and bx, 7
+    imul bx, 36
     mov [es:0x76], bx
-    shr ax, 2
+    shr ax, 3
     and ax, 7
-    mov bx, ax
-    movzx eax, byte [morph_color_table+bx]
-    mov [es:0x58], eax
-    mov word [es:0x60], 31
-    mov word [es:0x62], 31
-    mov dword [es:0x7c], BLT_FLAT_MASKED
-    add si, 3
-    add bp, 3
+    imul ax, 8 * 36
+    add ax, bx
+    mov [es:0x72], ax
+    mov word [es:0x60], 35
+    mov word [es:0x62], 35
+    mov dword [es:0x7c], BLT_MASKED
+    add si, 4
     inc di
     cmp di, MORPH_COUNT
     jb .ball
     clc
 .done:
     ret
+.timeout:
+    pop eax
+    jmp .done
 
-; Seven flat circles at projected, depth-sorted ±X/±Y/±Z positions.
-; The pattern map uses a 10/16 Bayer coverage, which suggests transparency.
+; Seven shaded bitmap balls at projected, depth-sorted ±X/±Y/±Z positions.
 draw_orbit3d:
     mov ax, [orbit_phase]
     and ax, 15
@@ -963,26 +1257,32 @@ draw_orbit3d:
 .circle:
     call wait_cp
     jc .done
-    mov byte [es:0x12], 3
     movzx bx, byte [si+3]
     shr bx, 3
     movzx cx, byte [orbit_sizes+bx]
-    shl bx, 1
-    movzx eax, word [orbit_mask_offsets+bx]
-    add eax, ORBIT_MASK_BASE
+    shl bx, 2
+    mov byte [es:0x12], 2
+    mov eax, [orbit_bitmap_offsets+bx]
+    add eax, ORBIT_BITMAP_BASE
     add eax, [cp_aperture]
     mov [es:0x14], eax
     dec cx
     mov [es:0x18], cx
     mov [es:0x1a], cx
+    shr bx, 1
+    mov byte [es:0x12], 3
+    movzx eax, word [orbit_mask_offsets+bx]
+    add eax, ORBIT_MASK_BASE
+    add eax, [cp_aperture]
+    mov [es:0x14], eax
+    mov [es:0x18], cx
+    mov [es:0x1a], cx
     mov [es:0x60], cx
     mov [es:0x62], cx
+    mov word [es:0x70], 0
+    mov word [es:0x72], 0
     mov word [es:0x74], 0
     mov word [es:0x76], 0
-    movzx eax, byte [si+3]
-    and eax, 7
-    add eax, 96
-    mov [es:0x58], eax
     ; Match each satellite by ID in the next depth-sorted frame, then
     ; interpolate its screen position using the four fractional bits.
     push di
@@ -1025,7 +1325,7 @@ draw_orbit3d:
     add ax, di
     mov [es:0x7a], ax
     pop edi
-    mov dword [es:0x7c], BLT_FLAT_MASKED
+    mov dword [es:0x7c], BLT_MASKED
     add si, 4
     dec di
     jnz .circle
@@ -1131,10 +1431,20 @@ orbit_step dw 8                 ; S0004 = half a table step per frame
 orbit_fraction dw 0
 orbit_next_ptr dw 0
 orbit_speed db 4
-morph_shape db 0
-morph_tick db 0
-morph_fraction dd 0
-morph_color_table db 128,129,130,131,132,133,134,135
+orbit_loaded db 0
+orbit_file_handle dw 0
+orbit_bank dw 0
+orbit_bank_offset dw 0
+orbit_chunk_pages dw 0
+orbit_page_bytes dw 0
+orbit_chunk_bytes dw 0
+morph_loaded db 0
+fish_phase db 0
+morph_color_base db 128
+morph_radius dw 0
+morph_radius_sq dw 0
+morph_x dw 0
+morph_y dw 0
 flag_phase db 0
 vsync_wait_start dw 0
 flag_wave_y dw 0
@@ -1173,17 +1483,18 @@ ball_pixels: incbin "assets/xga_ball48.bin"
 ball_mask: incbin "assets/xga_ball48_mask.bin"
 small_pixels: incbin "assets/xga_ball24x4.bin"
 small_mask: incbin "assets/xga_ball24_mask.bin"
-orbit_masks: incbin "assets/xga_orbit_masks.bin"
 flag_pixels: incbin "assets/xga_flag_balls.bin"
 flag_mask: incbin "assets/xga_flag_mask.bin"
-morph_masks: incbin "assets/xga_morph_masks.bin"
 %include "xga_balls_sine.inc"
 %include "xga_orbit3d_frames.inc"
 %include "xga_flag_colors.inc"
 %include "xga_morph_shapes.inc"
-msg_start db 'XGA Balls: 1 orbit, 2 snake, 3 stress, 4 dense, 5 3D, 6 flag, 7 morph, +/- count/speed, V, G, T, Esc',13,10,'$'
+msg_start db 'XGA Balls: 1 orbit, 2 snake, 3 stress, 4 dense, 5 3D, 6 flag, 7 fish, +/- count/speed, V, G, T, Esc',13,10,'$'
 msg_no_xga db 'XGA-1/XGA-2 not found on MCA.',13,10,'$'
 msg_no_aperture db 'No XGA memory aperture in POS.',13,10,'$'
 msg_no_vram db 'XGA 1 MB VRAM banks are not accessible.',13,10,'$'
+msg_orbit_error db 'XBALLS.DAT missing or incomplete.',13,10,'$'
 msg_cp_timeout db 'XGA coprocessor timeout.',13,10,'$'
+orbit_file_name db 'XBALLS.DAT',0
 %include "xga_mode_640.inc"
+orbit_chunk: times ORBIT_CHUNK_BYTES db 0

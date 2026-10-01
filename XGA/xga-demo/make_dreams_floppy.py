@@ -10,11 +10,15 @@ from pathlib import Path
 import struct
 
 parser = ArgumentParser()
-parser.add_argument("--program", choices=("DREAMS", "DBLIT", "DCPU", "XBALLS", "XVECTOR", "XDEMO", "XDEMO2", "XGADEMO"),
-                    default="DREAMS")
+parser.add_argument("--program", choices=("XGAPAN", "DBLIT", "DCPU", "XBALLS", "XVECTOR", "XDEMO", "XDEMO2", "XGADEMO"),
+                    default="XGAPAN")
 parser.add_argument("--output", help="output filename (default: build timestamp)")
 parser.add_argument("--include-xgademo", action="store_true",
                     help="include XGADEMO.COM and its XGAMASK.DAT artwork")
+parser.add_argument("--include-cgademo5", action="store_true",
+                    help="include the standalone CGADEMO5.COM program")
+parser.add_argument("--include-des", action="store_true",
+                    help="include DES.COM and DESCRIPT.ION in the floppy root")
 parser.add_argument("--source", type=Path,
                     help="bootable DOS 6.22 source image (default: archived v1 disk)")
 args = parser.parse_args()
@@ -25,7 +29,7 @@ if args.output is None:
               else "xdemo_v2" if args.program == "XDEMO"
               else "xga_balls_v2" if args.program == "XBALLS"
               else "xga_vector_v2" if args.program == "XVECTOR"
-              else "dreams_xga_v2")
+              else "xgapan_v2")
     args.output = f"{prefix}_{build_time:%Y%m%d_%H%M%S}.img"
 fat_date = ((build_time.year - 1980) << 9) | (build_time.month << 5) | build_time.day
 fat_time = (build_time.hour << 11) | (build_time.minute << 5) | (build_time.second // 2)
@@ -127,32 +131,39 @@ def add(name, payload):
 add(b"CONFIG  SYS", b"FILES=20\r\nBUFFERS=10\r\n")
 add(b"AUTOEXECBAT", ("@echo off\r\n" + args.program + "\r\n").encode("ascii"))
 description = ("XGA Demos collection" if args.include_xgademo
-               else "Dreams XGA version: 2 (development)")
+               else "XGA panorama version: 2 (development)")
 add(b"BUILD   TXT", (
     f"{description}\r\n"
     f"Build: {build_time:%Y-%m-%d %H:%M:%S %z}\r\n"
     f"Autoexec program: {args.program}.COM\r\n"
 ).encode("ascii"))
 program_files = [
-    (b"DREAMS  COM", "DREAMS.COM"),
+    (b"XGAPAN  COM", "XGAPAN.COM"),
     (b"DBLIT   COM", "DBLIT.COM"),
     (b"DCPU    COM", "DCPU.COM"),
     (b"DREAMS  DAT", "DREAMS.DAT"),
 ]
 program_files.extend([
     (b"XBALLS  COM", "XBALLS.COM"),
+    (b"XBALLS  DAT", "XBALLS.DAT"),
     (b"XVECTOR COM", "XVECTOR.COM"),
     (b"XDEMO   COM", "XDEMO.COM"),
 ])
-if args.program == "XDEMO2":
+if args.program == "XDEMO2" or args.include_xgademo:
     program_files.append((b"XDEMO2  COM", "XDEMO2.COM"))
 if args.program == "XGADEMO" or args.include_xgademo:
     program_files.extend([
         (b"XGADEMO COM", "XGADEMO.COM"),
         (b"XGAMASK DAT", "XGAMASK.DAT"),
     ])
+if args.include_cgademo5:
+    program_files.append((b"CGADEMO5COM", "CGADEMO5.COM"))
 for name, path in program_files:
     add(name, (here / "bin" / "v2" / path).read_bytes())
+if args.include_des:
+    add(b"DES     COM", (here.parent.parent / "DES" / "DES.COM").read_bytes())
+    descriptions = (here / "DESCRIPT.ION").read_text(encoding="ascii")
+    add(b"DESCRIPTION", descriptions.replace("\n", "\r\n").encode("ascii"))
 
 assert all(disk[reserved * bps + i] == disk[(reserved + spf) * bps + i]
            for i in range(spf * bps))

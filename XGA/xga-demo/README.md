@@ -1,11 +1,14 @@
-# XGA Demos — Version 2
+# XGA Demos
 
 A bootable DOS graphics demo collection for an IBM PS/2 Model 55 SX with MCA
-XGA-1. The combined disk starts `XDEMO2` and also includes `XGADEMO`. The
+XGA-1. The combined disk includes `XDEMO2` and `XGADEMO`. The
 panorama programs display `assets/Dreams.bmp` at 640 × 480 in 256 colors and
 compare three ways to move a viewport. `XBALLS.COM` adds seven animation and
 BitBLT stress effects. `XVECTOR.COM` adds XGA line drawing, Area Fill tests,
 and masked mesh filling.
+
+**Ready-to-run floppy image:** [Download XGA Demos (1.44 MB)](bin/v2/XGA-Demos_2026-10-01.img).
+Mount it as drive A: in 86Box to run the included demos without building them.
 
 **By Dag Erik Hagesæter / Retro Erik using Codex in VS Code** ·
 [Retro Erik on YouTube](https://www.youtube.com/@RetroErik)
@@ -13,19 +16,19 @@ and masked mesh filling.
 ![Platform](https://img.shields.io/badge/Platform-MS--DOS-blue)
 ![CPU](https://img.shields.io/badge/CPU-80386-green)
 ![Language](https://img.shields.io/badge/Language-NASM%20assembly-orange)
-![License](https://img.shields.io/badge/License-not%20specified-lightgrey)
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-green)](https://creativecommons.org/licenses/by-nc/4.0/)
 
 ## Overview
 
-The project compares XGA display panning (`DREAMS`), XGA BitBLT copying
+The project compares XGA display panning (`XGAPAN`), XGA BitBLT copying
 (`DBLIT`), and CPU copying (`DCPU`) of the same 640 × 480 viewport. Their
 verified movement is a simple back-and-forth pan calculated each loop.
 `XBALLS` is a separate V2 program for animated balls, a 3D-style orbit, a
-Norwegian flag, and copy-count stress tests.
+Norwegian flag, a swimming fish, and copy-count stress tests.
 
 | Program | Version | Work per frame | Purpose |
 | --- | --- | --- | --- |
-| `DREAMS.COM` | V1, V2 | Changes the XGA display start address | Pans without copying the viewport |
+| `XGAPAN.COM` | V2 (`DREAMS.COM` in V1) | Changes the XGA display start address | Pans without copying the viewport |
 | `DBLIT.COM` | V1, V2 | XGA BitBLT copies 640 × 480 pixels within VRAM | Compares hardware copying speed |
 | `DCPU.COM` | V1, V2 | CPU moves banked VRAM through a RAM row buffer | Comparison without BitBLT |
 | `XBALLS.COM` | V2 | XGA fills and masked copies of 7–2048 objects | Animation effects and stress testing |
@@ -39,17 +42,17 @@ from 20:00:09 and 20:35:22 on September 26, 2026. The user tested
 `versions/v1/bin/dreams_xga_20260926_203522.img` in 86Box; it boots `DBLIT`.
 The preserved V1 release is not edited during V2 development.
 
-**Version 2** is maintained here. `xga_dreams.asm` has no functional
-changes from V1. New COM files and disk images are placed in `bin/v2/`. The
-first V2 panorama image, `dreams_xga_v2_20260928_142112.img`, was confirmed
-to boot DOS and run `DBLIT` in 86Box. Superseded V2 test images are kept in
-Git history; the combined collection is the current image in `bin/v2/`.
+**Version 2** is maintained here. The panorama programs now load compressed
+`DREAMS.DAT` data; V1 still uses the original uncompressed file. New COM files
+and disk images are placed in `bin/v2/`. The first V2 panorama disk was
+confirmed to boot DOS and run `DBLIT` in 86Box; that older image is no
+longer in the working tree. The combined collection is available in `bin/v2/`.
 
 ## Features
 
 - Three panorama methods use the same image and show FPS.
 - First-load progress and a VRAM marker allow later runs to reuse cached art.
-- `DBLIT` can wait for vertical sync.
+- `XGAPAN` and `DBLIT` can wait for vertical sync.
 - `XBALLS` provides seven effects, speed and density controls, a gradient, and
   FPS, CPU time, and wait time in an XGA hardware sprite.
 - `XVECTOR` rotates a wireframe cube, filled octahedron, filled torus, and
@@ -66,9 +69,9 @@ Reference Disk configuration cleared errors 162/163. XGA needs 1 MiB of VRAM
 and an enabled 1 MiB or 4 MiB memory aperture in POS.
 
 Mount [`bin/v2/XGA-Demos_2026-10-01.img`](bin/v2/XGA-Demos_2026-10-01.img)
-as drive A: in 86Box. `AUTOEXEC.BAT` starts `XDEMO2`; press `Esc` to return
-to DOS, then run `XGADEMO` or another included demo from the A: prompt.
-It uses the XGA coprocessor for the waving three-color `XGA` BOB title, an
+as drive A: in 86Box. Press `Esc` if a demo starts automatically, then run
+`XGAPAN`, `XBALLS`, `XDEMO2`, or another included demo from the A: prompt.
+`XDEMO2` uses the XGA coprocessor for the waving three-color `XGA` BOB title, an
 outward-accelerating star field, the tumbling filled octahedron, and the
 bottom `Retro Erik - 2026` scroller. `1` toggles stars, `2` the title,
 `3` the scroller, `V` vertical sync, and `Esc` returns to DOS. The octahedron
@@ -98,7 +101,7 @@ CGA capture, using CGA2SCART Pro with a VGA 15Khz mod](https://www.youtube.com/w
 To run the panorama programs from a DOS prompt:
 
 ```text
-A:\>DREAMS
+A:\>XGAPAN
 A:\>DBLIT
 A:\>DCPU
 A:\>XBALLS
@@ -107,8 +110,10 @@ A:\>XDEMO2
 A:\>XGADEMO
 ```
 
-In `DBLIT`, `S` toggles vertical sync waiting. Waiting starts off; an `S`
-after the FPS number means it is enabled. The first load of `DREAMS.DAT`
+In `XGAPAN` and `DBLIT`, `S` toggles vertical sync waiting. Waiting starts off;
+an `S` after the FPS number means it is enabled. `XGAPAN` waits before changing
+the display start address; `DBLIT` waits before copying the viewport.
+The first load of `DREAMS.DAT`
 shows progress. A marker in spare VRAM lets later runs skip the floppy read
 while the image remains cached. A reboot or video mode change may require a
 new load.
@@ -126,7 +131,7 @@ project. Copy `DREAMS.DAT` to the V2 directory before the first build:
 ```text
 New-Item -ItemType Directory -Force bin/v2 | Out-Null
 Copy-Item bin/DREAMS.DAT bin/v2/DREAMS.DAT
-nasm -f bin xga_dreams.asm -o bin/v2/DREAMS.COM -l bin/v2/DREAMS.lst
+nasm -f bin xga_dreams.asm -o bin/v2/XGAPAN.COM -l bin/v2/XGAPAN.lst
 nasm -f bin -DPAN_STYLE=0 xga_dreams.asm -o bin/v2/DBLIT.COM -l bin/v2/DBLIT.lst
 nasm -f bin -DPAN_STYLE=2 xga_dreams.asm -o bin/v2/DCPU.COM -l bin/v2/DCPU.lst
 python make_dreams_floppy.py --program DBLIT
@@ -136,8 +141,10 @@ The script makes a timestamped image in `bin/v2/` without modifying the
 source disk. By default it uses the archived V1 DOS 6.22 disk. Use
 `--source <path>` to select another bootable 1.44 MB DOS disk, and
 `--program` to select the `AUTOEXEC.BAT` program. The combined image uses
-`--include-xgademo` to add `XGADEMO.COM` and `XGAMASK.DAT` alongside
-`XDEMO2.COM`. `BUILD.TXT` records the collection, build time, and selected
+`--include-xgademo` to add `XDEMO2.COM`, `XGADEMO.COM`, and `XGAMASK.DAT`
+regardless of the selected startup program. `--include-cgademo5` adds the
+original CGA program; `--include-des` adds `DOS Utils/DES/DES.COM` and this
+directory's `DESCRIPT.ION` to the disk root. `BUILD.TXT` records the collection, build time, and selected
 program. FAT timestamps come from the build time.
 
 To reconvert the original image, run `python prepare_dreams.py` before NASM.
@@ -146,13 +153,13 @@ This requires Pillow and ImageMagick. The script uses
 `magick` from `PATH`. Re-conversion may change the image bytes and produce
 COM files different from V1.
 
-Build the separate balls demo and its bootable disk:
+Build the balls demo and a bootable disk containing all demos:
 
 ```text
 python make_balls_assets.py
-python make_morph_assets.py
+python build_dem7_fish.py
 nasm -f bin xga_balls.asm -o bin/v2/XBALLS.COM -l bin/v2/XBALLS.lst
-python make_dreams_floppy.py --program XBALLS
+python make_dreams_floppy.py --program XBALLS --include-xgademo --include-cgademo5 --include-des
 python make_vector_torus.py
 python make_vector_boing.py
 python make_vector_crystal.py
@@ -200,7 +207,7 @@ python make_xdemo_art.py
 nasm -f bin xdemo2.asm -o bin/v2/XDEMO2.COM -l bin/v2/XDEMO2.lst
 python make_cgademo_assets.py
 nasm -f bin xgademo.asm -o bin/v2/XGADEMO.COM -l bin/v2/XGADEMO.lst
-python make_dreams_floppy.py --program XDEMO2 --include-xgademo --output XGA-Demos_2026-10-01.img
+python make_dreams_floppy.py --program XDEMO2 --include-xgademo
 ```
 
 The CPU generates positions and each frame's octahedron mask; the title mask
@@ -209,9 +216,9 @@ the archived boot floppy untouched and checks
 all copied files byte for byte. The combined disk still needs a boot test in
 86Box; the individual demos have been captured there.
 
-`XBALLS.COM` can also be copied to a DOS disk and run on a PS/2 with MCA
-XGA-1 or XGA-2 and 1 MiB VRAM. The disk builder reads the FAT files back and
-checks that they match the built files byte for byte.
+Copy both `XBALLS.COM` and `XBALLS.DAT` to a DOS disk to run on a PS/2 with
+MCA XGA-1 or XGA-2 and 1 MiB VRAM. The disk builder reads the FAT files back
+and checks that they match the built files byte for byte.
 
 ## XGA Vector Controls
 
@@ -258,9 +265,9 @@ others. Press `M` to use the confirmed RAM-mask path for every quad.
 | `2` | Original sine snake | Thirteen pink 48 × 48 balls |
 | `3` | Copy stress test | `+`/`-` doubles or halves 16–2048 copies of a 48 × 48 ball |
 | `4` | Dense sine bands | `+`/`-` selects 32, 64, 128, or 256 distinct 24 × 24 balls; 128 is the default |
-| `5` | Flat discs in 3D positions | Central disc and six satellites on ±X, ±Y, and ±Z; `+`/`-` adjusts speed |
+| `5` | Shaded bitmap balls in 3D positions | Central ball and six satellites on ±X, ±Y, and ±Z; `+`/`-` adjusts speed |
 | `6` | Waving Norwegian flag | 792 colored 16 × 16 balls form a moving 33 × 24 grid |
-| `7` | Morphing figures | 96 balls form Tree → Giraffe → Bird → Fish → Dragon → Tree |
+| `7` | Swimming fish | 294 shaded balls in eight sizes and five colors; body and tail move in a wave |
 | `Space` | Next effect | Cycles through all seven effects |
 | `T` | Masking | Toggles the one-bit copy mask in modes 1–4 |
 | `G` | Gradient | Toggles a dark gradient; modes 5–7 otherwise use a dark teal background |
@@ -308,21 +315,34 @@ one-bit pattern map copies pixels where the mask is 1 and preserves the
 background where it is 0. The ball bitmap is 2,304 bytes and its mask is
 288 bytes. They are loaded into VRAM once, after two 307,200-byte screen
 pages. Modes 5 and 6 draw into the hidden page and present the completed
-frame with one VRAM-to-VRAM BitBLT. Art and masks occupy less than the first
-642 KiB of the card's 1 MiB VRAM. The 3D position table stays in the COM
+frame with one VRAM-to-VRAM BitBLT. The mode-5 art is generated into the
+196,608-byte `XBALLS.DAT` file with two 4-bit palette indices per byte on
+full bitmap pages. On the first entry to mode 5, a visible progress bar
+tracks the 86 pages as they expand into XGA banks 9–14; subsequent mode
+changes reuse the cached art until the program exits. The loader reads up
+to 16 KiB at a time (13 data reads plus an EOF check), without changing
+the DAT format or artwork. The other modes start
+without reading `XBALLS.DAT`;
+the flag assets start in bank 15, and mode 7 generates its bitmaps and masks
+there on first entry.
+The 3D position table stays in the COM
 file in system memory. The program shares XGA detection, 640 × 480 setup,
 and coprocessor timeout handling with `xga_dreams.asm`.
 
-In mode 5, six satellites are **flat discs** in projected 3D positions. A
-generated table has 512 depth-sorted positions. Fourteen mask diameters from
-80 to 184 pixels use 8-pixel steps; the previous seven sizes had jumps up
-to 24 pixels. The CPU interpolates screen coordinates with integer arithmetic
-between table positions. Each disc uses a one-bit Bayer mask covering about
-10 of every 16 pixels, so parts of the background and lower discs remain
-visible. This is stippling, **not** XOR or alpha blending. A hidden page
-removes the flash caused by clearing the visible page. A full-page present
-may still show tearing with `V` off, and the Bayer pattern may shimmer as
-discs move by a pixel.
+In mode 5, six satellites are **shaded bitmap balls** in projected 3D
+positions. A generated table has 512 depth-sorted positions. Sixteen
+diameters from 80 to 184 pixels retain the 8-pixel steps except for new
+148- and 172-pixel intermediate balls. The two intermediate masks and
+bitmaps use byte-aligned 152- and 176-pixel canvases. Z-size transitions
+remain discrete elsewhere. The CPU interpolates screen
+coordinates with integer arithmetic between table positions. All seven
+balls use the original pink 16-color shading from modes 1–3; a solid one-bit
+mask preserves the background outside each ball. A hidden page removes the
+flash caused by clearing the visible page. A full-page present may still
+show tearing with `V` off. The previous 14-size bitmap version rendered
+correctly in 86Box. The 16-size artwork looked good in 86Box before this
+read-batching experiment; its loading time and appearance after batching
+still need to be checked against the previous roughly 20-second load.
 
 In mode 6, the flag has a 22:16 ratio and a blue cross with a white border on
 red. Three color variants of the 16 × 16 bitmap share one circular mask. A
@@ -335,14 +355,17 @@ difference from the displayed sum is rounding and timing-window resolution.
 Emulated XGA work may execute during CPU command submission, so these
 numbers do not isolate the hardware blitter or predict physical-card speed.
 
-In mode 7, 96 colored circles make five figures in sequence: Tree, Giraffe,
-Bird, Fish, and Dragon. Each point interpolates toward a corresponding point
-in the next figure, including Dragon back to Tree. The shape holds for 64
-frames and changes over 128 frames. Four one-bit circle masks give diameters
-of 8, 16, 24, and 32 pixels; eight palette colors distinguish the parts.
-Like modes 5 and 6, it uses a hidden page and one full-page present per frame.
-Animation timing depends on FPS, and 86Box or physical-XGA performance has
-not yet been measured.
+In mode 7, one left-facing fish uses 294 balls with eight diameters from
+8 to 36 pixels and five color families. The head and eye stay nearly still;
+an increasing sine displacement moves the body and forked tail as it swims
+in place. The CPU generates eight masks and 40 shaded bitmap variants in
+bank 15 on first entry. No mode-7 ball bitmaps or masks are stored on the
+disk; the COM contains packed fish coordinates and five 10-shade palette
+ramps. Subsequent visits reuse the generated VRAM art. Like modes 5 and 6,
+mode 7 uses a hidden page and one full-page present per frame. The Python
+preview below is reference artwork; the animated XGA rendering uses nine
+visible shades per base color. Assembly and disk read-back passed, but the
+swimming motion has not yet been measured in 86Box or on physical XGA.
 
 The 86Box 6.0 build 9001 measurements below were reported by the user with
 `V` **off**. Every frame includes a 640 × 480 screen fill. Calculated copies
@@ -368,38 +391,21 @@ at 256/1024/2048 large-ball copies.
 
 ## Builds and Test Status
 
-These historical test images remain in Git history, not in `bin/v2/`.
+Earlier dated XBALLS test disks have been removed from the working tree.
+The combined disk linked in Quick Start is the available image. User
+screenshots confirm the shaded bitmap balls in mode 5 and the fish's colors
+in mode 7. The latest swimming animation was assembled and its boot disk
+passed FAT12 read-back; its motion, FPS, mode switching, and physical-XGA
+performance still need testing. To check it, run `XBALLS`, press `7`, observe
+the moving tail, then switch to mode 5 and back to 7 with `5` and `7`.
 
-| Disk image | Result |
-| --- | --- |
-| `xga_balls_v2_20260928_145845.img` | Corrected the early `T` mask bug; no extended stress test |
-| `xga_balls_v2_20260928_151114.img` | Added extended stress, FPS, and gradient |
-| `xga_balls_v2_20260928_203022.img` | Added modes 4 and 5; both were confirmed in 86Box |
-| `xga_balls_v2_20260928_204043.img` | Halved mode-5 speed; user still found it too fast |
-| `xga_balls_v2_20260928_205401.img` | Added speed keys, 512 positions, and a hidden page; user confirmed much less flicker but visible Z-size jumps |
-| `xga_balls_v2_20260928_210204.img` | Added 14 orbit sizes and the flag; a carry-flag error caused a false timeout when entering mode 5 |
-| `xga_balls_v2_20260928_210902.img` | Corrected the false timeout; user confirmed direct mode 5 and the waving flag in 86Box |
-| `xga_balls_v2_20260928_213447.img` | Added per-frame CPU/WAIT milliseconds and mode 7; assembled and disk files verified, awaiting an 86Box run |
-| `xga_balls_v2_20260928_214224.img` | Reset the pattern-map Y offset when switching away from mode 7; strengthened the VRAM probe and mode reinitialization. Build and disk read-back passed; user reports this image works in 86Box |
-
-The user also confirmed that `Space` changed effects in an earlier build and
-that `G` and `T` worked after the mask correction. The transition from mode
-4 to 5 with `Space` and operation on physical XGA remain unverified in the
-last tested XBALLS build. Static previews below show the intended
-source art, not photos of physical hardware.
-
-For the new image, press `7` and watch the complete Tree → Giraffe → Bird →
-Fish → Dragon → Tree sequence. Check modes 1–4 and 6 after returning from 7,
-then press `Esc` and start `XBALLS` again without rebooting. Compare `CPU`
-and `WAIT` with `V` enabled and disabled.
+The following software previews are reference art, not XGA captures.
 
 ![Preview of 128 balls in four dense sine bands](assets/xga_balls_dense_preview.png)
 
-![Preview of seven flat discs in 3D positions](assets/xga_balls_orbit3d_preview.png)
-
 ![Preview of the Norwegian flag made from 792 balls](assets/xga_balls_flag_preview.png)
 
-![Preview of the five 96-ball morph figures](assets/xga_morph_shapes_preview.png)
+![Python reference for the standalone mode-7 fish](assets/xga_standalone_fish_preview.png)
 
 ## How XVECTOR Works
 
@@ -522,7 +528,7 @@ restores the previous DOS video mode.
 | Check | Status |
 | --- | --- |
 | NASM assembly and COM-size check | Passed; 42,897-byte `XVECTOR.COM` |
-| Disk FAT read-back | Passed for the current `XGA-Demos_2026-10-01.img` |
+| Disk FAT read-back | Passed for an earlier V2 build; the renamed combined disk has not been rechecked |
 | Palette brightness | Retro Erik confirmed the corrected colors |
 | Area safety table generation | Passed for 512 rotation phases and all three meshes |
 | Static mode/register review | Passed for hidden-page setup, present BitBLT, bounded waits, and boundary XOR/mask settings |
@@ -547,10 +553,10 @@ All three programs show `FPS:000.0` using an XGA 64 × 64 hardware sprite.
 FPS counts completed program loops against BIOS ticks over about two
 seconds. The display caps at **999.9**. It does not count distinct images
 actually scanned out. An 86Box reading does not establish physical XGA-1
-speed. With `S` enabled, `DBLIT` waits for vertical retrace before each
-copy, although one visible buffer can still tear.
+speed. With `S` enabled, `XGAPAN` waits before changing the display start
+address and `DBLIT` waits before each copy; one visible buffer can still tear.
 
-`DREAMS` changes the XGA display start address instead of copying 307,200
+`XGAPAN` changes the XGA display start address instead of copying 307,200
 pixels each loop. To make 86Box redraw after the change, it rewrites one
 unchanged byte per 4 KiB page of the source image. `DBLIT` uses the XGA
 coprocessor for VRAM-to-VRAM copies. `DCPU` moves the same viewport through
@@ -569,10 +575,11 @@ performance on a 386SX-16 must be measured before choosing an approach.
 | `xga_dreams.asm` | Shared V2 source for the three panorama programs |
 | `xga_vector.asm`, `xga_torus_mesh.inc`, `xga_boing_mesh.inc`, `xga_crystal_mesh.inc` | XVECTOR rotating solids, polygon stress, and generated meshes |
 | `xga_balls.asm`, `xga_balls_runtime.inc`, `xga_balls_hud.inc` | Ball animation, XGA setup, and timing sprite |
-| `make_balls_assets.py`, `make_morph_assets.py`, `xga_balls_sine.inc`, `xga_dense_palette.inc`, `xga_orbit_palette.inc`, `xga_orbit3d_frames.inc`, `xga_flag_palette.inc`, `xga_flag_colors.inc`, `xga_morph_shapes.inc`, `xga_morph_palette.inc` | Generators and lookup tables |
-| `assets/xga_ball*.bin`, `assets/xga_orbit_masks.bin`, `assets/xga_flag*.bin`, `assets/xga_morph_masks.bin`, `preview_new_balls.py` | Bitmap art, masks, and static preview generator |
-| `bin/v2/` | V2 executables, listings, data, and the current bootable disk image |
+| `make_balls_assets.py`, `make_xga_fish.py`, `build_dem7_fish.py`, `xga_balls_sine.inc`, `xga_dense_palette.inc`, `xga_orbit_palette.inc`, `xga_orbit3d_frames.inc`, `xga_flag_palette.inc`, `xga_flag_colors.inc`, `xga_morph_shapes.inc`, `xga_morph_palette.inc` | Generators and lookup tables |
+| `assets/xga_ball*.bin`, `assets/xga_orbit_masks.bin`, `assets/xga_flag*.bin`, `preview_new_balls.py` | Bitmap art, masks, and static preview generator; the legacy `assets/xga_morph_masks.bin` is not used by mode 7 |
+| `bin/v2/` | V2 executables, listings, `XBALLS.DAT`, and the combined bootable image |
 | `make_dreams_floppy.py` | Bootable V2 disk builder |
+| `DESCRIPT.ION` | English file descriptions for the optional DES.COM floppy listing |
 | `make_vector_torus.py` | Rebuilds the torus geometry include file |
 | `make_vector_boing.py` | Rebuilds the Boing Ball geometry include file |
 | `make_vector_crystal.py` | Rebuilds the crystal geometry include file |
@@ -582,6 +589,19 @@ performance on a 386SX-16 must be measured before choosing an approach.
 `versions/v1/` can be rebuilt, but new experiments belong in V2 files.
 
 ## Screenshots
+
+XBALLS modes 1-6 running in 86Box. The mode-7 fish has a Python reference
+preview above, but no 86Box screenshot here yet.
+
+| Orbit (1) | Sine snake (2) |
+| --- | --- |
+| ![XBALLS orbit in 86Box](Screenshorts/Xballs%20Demo%201.png) | ![XBALLS sine snake in 86Box](Screenshorts/Xballs%20Demo%202%20-%20Sine%20snake.png) |
+| Copy stress (3) | Dense sine bands (4) |
+| ![XBALLS copy stress in 86Box](Screenshorts/Xballs%20Demo%203%20-16x16.png) | ![XBALLS dense sine bands in 86Box](Screenshorts/Xballs%20Demo%204.png) |
+| Shaded 3D orbit (5) | Norwegian flag (6) |
+| ![XBALLS shaded 3D orbit in 86Box](Screenshorts/Xballs%20Demo%205.png) | ![XBALLS Norwegian flag in 86Box](Screenshorts/Xballs%20Demo%206%20-%20Norwegian%20Flag.png) |
+
+[Watch XBALLS mode 6 in 86Box](Screenshorts/Xballs%20Demo%206.mp4).
 
 XDEMO2 running in 86Box with the XGA title, octahedron, starfield, and
 bottom scroller:
@@ -614,12 +634,18 @@ and backface culling; it is not an XGA capture.
 At the start of V2 development, the three panorama COM files and
 `DREAMS.DAT` matched V1 byte for byte. The disk builder verifies new FAT
 contents by reading them back. The user confirmed that the V2 panorama disk
-boots `DBLIT` in 86Box. `DREAMS` and `DCPU` have not been retested from that
+boots `DBLIT` in 86Box. The panning program and `DCPU` have not been retested from that
 V2 disk. An earlier `XBALLS` image passed build and disk read-back checks,
 and the user reports that it now works in 86Box. The exact regression key
 sequence was not separately recorded.
 
-No license has been specified for this demo. Contributions and test reports
+Original XGA Demos source code, documentation, and artwork by Dag Erik
+Hagesæter / Retro Erik are licensed under the [Creative Commons
+Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/legalcode).
+You may share and adapt this original material for non-commercial purposes
+with appropriate credit, a link to the license, and an indication of changes.
+Bundled DOS 6.22 files and third-party demo material are not covered by this
+license grant and retain their own terms. Contributions and test reports
 should state the machine, XGA model, emulator version if used, disk image,
 VSYNC setting, ball count, and observed FPS.
 

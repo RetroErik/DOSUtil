@@ -129,6 +129,14 @@ start:
     call update_fps
     call update_sprite_hud
 %else
+    cmp byte [vsync_enabled], 0
+    je .set_now
+    call wait_vsync
+    jnc .set_now
+    mov byte [vsync_enabled], 0
+    mov word [hud_last_fps], 0xffff
+    call update_sprite_hud
+.set_now:
     call set_view
     call update_fps
     call update_sprite_hud
@@ -141,7 +149,7 @@ start:
     int 0x16
     cmp al, 27
     je .wait_key
-%if PAN_STYLE = 0
+%if PAN_STYLE != 2
     cmp al, 's'
     je .toggle_sync
     cmp al, 'S'
@@ -427,32 +435,38 @@ open_image:
     stc
     ret
 
-; Read up to 32 KB at a time, then copy aligned 4 KB pages to banked VRAM.
-; This reduces DOS file reads from 150 to 19 without changing disk format.
+; Expand each fixed-Huffman DEFLATE page into the work buffer before VRAM copy.
 load_image:
     mov word [load_bank], 4
     mov word [load_offset], 0xb000
     mov word [loaded_pages], 0
     mov bp, SOURCE_PAGES
-.read_chunk:
-    mov ax, bp
-    cmp ax, 8
-    jbe .chunk_size_ready
-    mov ax, 8
-.chunk_size_ready:
-    mov [chunk_pages], ax
-    shl ax, 12
-    mov [chunk_bytes], ax
+.read_page:
     mov bx, [image_handle]
     mov ah, 0x3f
+    mov cx, 2
+    mov dx, chunk_bytes
+    int 0x21
+    jc .fail
+    cmp ax, 2
+    jne .fail
     mov cx, [chunk_bytes]
+    or cx, cx
+    jz .fail
+    cmp cx, 4096
+    ja .fail
+    mov bx, [image_handle]
+    mov ah, 0x3f
     mov dx, image_page
     int 0x21
     jc .fail
     cmp ax, [chunk_bytes]
     jne .fail
-    mov si, image_page
-.page:
+    push ds
+    pop es
+    call inflate_page
+    jc .fail
+    mov si, image_page + 4096
     mov ax, 0xa000
     mov es, ax
     mov bx, [load_bank]
@@ -468,10 +482,7 @@ load_image:
     inc word [loaded_pages]
     call progress_update
     dec bp
-    dec word [chunk_pages]
-    jnz .page
-    or bp, bp
-    jnz .read_chunk
+    jnz .read_page
     mov bx, [image_handle]
     mov ah, 0x3e
     int 0x21
@@ -483,6 +494,186 @@ load_image:
     int 0x21
     stc
     ret
+
+inflate_page:
+    cld
+    mov si, image_page
+    mov ax, si
+    add ax, [chunk_bytes]
+    mov [input_end], ax
+    mov di, image_page + 4096
+    mov byte [bits_left], 0
+    mov cx, 3
+    call read_bits
+    jc .fail
+    cmp bx, 3                       ; one final fixed-Huffman block
+    jne .fail
+.symbol:
+    call read_code
+    jc .fail
+    cmp ax, 256
+    je .done
+    ja .match
+    cmp di, image_page + 8192
+    jae .fail
+    stosb
+    jmp .symbol
+.match:
+    sub ax, 257
+    cmp ax, 28
+    ja .fail
+    mov bx, ax
+    shl bx, 1
+    mov ax, [length_base + bx]
+    mov [match_count], ax
+    shr bx, 1
+    xor cx, cx
+    mov cl, [length_extra + bx]
+    jcxz .length_ready
+    call read_bits
+    jc .fail
+    add [match_count], bx
+.length_ready:
+    mov cx, 5
+    xor bx, bx
+.distance_code:
+    call read_bit
+    jc .fail
+    shl bx, 1
+    or bl, al
+    loop .distance_code
+    cmp bx, 29
+    ja .fail
+    mov cl, [distance_extra + bx]
+    shl bx, 1
+    mov ax, [distance_base + bx]
+    mov [match_distance], ax
+    xor ch, ch
+    jcxz .distance_ready
+    call read_bits
+    jc .fail
+    add [match_distance], bx
+.distance_ready:
+    mov ax, di
+    sub ax, image_page + 4096
+    cmp [match_distance], ax
+    ja .fail
+    mov cx, [match_count]
+    mov ax, di
+    add ax, cx
+    cmp ax, image_page + 8192
+    ja .fail
+    push si
+    mov si, di
+    sub si, [match_distance]
+    rep movsb
+    pop si
+    jmp .symbol
+.done:
+    cmp di, image_page + 8192
+    jne .fail
+    cmp si, [input_end]
+    jne .fail
+    clc
+    ret
+.fail:
+    stc
+    ret
+
+read_bit:
+    cmp byte [bits_left], 0
+    jne .available
+    cmp si, [input_end]
+    jae .fail
+    lodsb
+    mov [bit_value], al
+    mov byte [bits_left], 8
+.available:
+    shr byte [bit_value], 1
+    dec byte [bits_left]
+    mov al, 0
+    adc al, 0
+    clc
+    ret
+.fail:
+    stc
+    ret
+
+; DEFLATE extra fields are least-significant-bit first.
+read_bits:
+    xor bx, bx
+    mov dx, 1
+.next:
+    call read_bit
+    jc .fail
+    or al, al
+    jz .zero
+    or bx, dx
+.zero:
+    shl dx, 1
+    loop .next
+    clc
+    ret
+.fail:
+    stc
+    ret
+
+; Huffman codes are transmitted most-significant-bit first.
+read_code:
+    xor bx, bx
+    mov cx, 7
+.next:
+    call read_bit
+    jc .fail
+    shl bx, 1
+    or bl, al
+    loop .next
+    cmp bx, 23
+    ja .eight
+    lea ax, [bx + 256]
+    clc
+    ret
+.eight:
+    call read_bit
+    jc .fail
+    shl bx, 1
+    or bl, al
+    cmp bx, 0xbf
+    ja .high
+    sub bx, 0x30
+    mov ax, bx
+    clc
+    ret
+.high:
+    cmp bx, 0xc7
+    ja .nine
+    lea ax, [bx + 280 - 0xc0]
+    clc
+    ret
+.nine:
+    call read_bit
+    jc .fail
+    shl bx, 1
+    or bl, al
+    sub bx, 0x190
+    cmp bx, 111
+    ja .fail
+    lea ax, [bx + 144]
+    clc
+    ret
+.fail:
+    stc
+    ret
+
+length_base dw 3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31
+            dw 35,43,51,59,67,83,99,115,131,163,195,227,258
+length_extra db 0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2
+             db 3,3,3,3,4,4,4,4,5,5,5,5,0
+distance_base dw 1,2,3,4,5,7,9,13,17,25,33,49,65,97,129
+              dw 193,257,385,513,769,1025,1537,2049,3073,4097
+              dw 6145,8193,12289,16385,24577
+distance_extra db 0,0,0,0,1,1,2,2,3,3,4,4,5,5,6
+               db 6,7,7,8,8,9,9,10,10,11,11,12,12,13,13
 
 ; Unused VRAM starts at 0xe1000. The marker is written only after a
 ; complete load, and identifies the exact quantized source image.
@@ -916,8 +1107,8 @@ refresh_source_pages:
     ret
 %endif
 
-%if PAN_STYLE = 0
-; Start each BitBLT at a new vertical retrace when S mode is enabled.
+%if PAN_STYLE != 2
+; Synchronize the BitBLT or display-start change to a new vertical retrace.
 ; Input Status 1 bit 3 is also driven by 86Box's XGA scanout. Bounded
 ; polling keeps the demo responsive if a machine does not expose the bit.
 wait_vsync:
@@ -1123,11 +1314,11 @@ render_hud:
     mov [hud_text+5], dl          ; tens
     add al, 4
     mov [hud_text+4], al          ; hundreds
-%if PAN_STYLE = 0
+%if PAN_STYLE != 2
     mov byte [hud_text+9], 15     ; blank when running without VSYNC wait
     cmp byte [vsync_enabled], 0
     je .mode_ready
-    mov byte [hud_text+9], 2      ; S marks synchronized BitBLT
+    mov byte [hud_text+9], 2      ; S marks synchronized panning
 .mode_ready:
 %endif
     mov word [hud_char_base], hud_canvas + 65
@@ -1157,7 +1348,7 @@ render_hud:
     jnz .row
     add word [hud_char_base], 6
     inc bx
-%if PAN_STYLE = 0
+%if PAN_STYLE != 2
     cmp bx, 10
 %else
     cmp bx, 9
@@ -1347,7 +1538,7 @@ pan_x dw 0
 pan_y dw 0
 step_x dw 1
 step_y dw 1
-%if PAN_STYLE = 0
+%if PAN_STYLE != 2
 vsync_enabled db 0
 %endif
 hud_last_fps dw 0xffff
@@ -1362,7 +1553,7 @@ hud_work_addr dd 0
 hud_pitch dw SOURCE_W
 hud_char_base dw 0
 hud_text db 0, 1, 2, 3, 4, 4, 4, 14, 4 ; FPS:000.0
-%if PAN_STYLE = 0
+%if PAN_STYLE != 2
     db 15                             ; optional S at the right
 %endif
 ; Five-bit rows for F, P, S, colon, digits 0..9, and dot.
@@ -1382,7 +1573,7 @@ hud_glyphs:
     db 0x0e,0x11,0x11,0x0e,0x11,0x11,0x0e
     db 0x0e,0x11,0x11,0x0f,0x01,0x01,0x0e
     db 0x00,0x00,0x00,0x00,0x00,0x04,0x04
-%if PAN_STYLE = 0
+%if PAN_STYLE != 2
     times 7 db 0                      ; blank glyph 15
 %endif
 hud_saved times 64 * 10 db 0
@@ -1393,8 +1584,12 @@ image_handle dw 0
 load_bank dw 4
 load_offset dw 0xb000
 loaded_pages dw 0
-chunk_pages dw 0
 chunk_bytes dw 0
+input_end dw 0
+match_count dw 0
+match_distance dw 0
+bits_left db 0
+bit_value db 0
 image_palette incbin "bin/DREAMS.DAT", 0, 768
 align 2
 image_page times 32768 db 0
@@ -1403,7 +1598,7 @@ image_page times 32768 db 0
 cpu_src_addr dd 0
 cpu_dst_addr dd 0
 %endif
-msg_start db 'Dreams XGA Flight', 13, 10, '$'
+msg_start db 'XGA Panorama', 13, 10, '$'
 msg_no_xga db 'XGA-1/XGA-2 not found on MCA.', 13, 10, '$'
 msg_no_aperture db 'No XGA 1 MB or 4 MB aperture in POS.', 13, 10, '$'
 msg_no_vram db 'Panorama needs 1 MB XGA VRAM.', 13, 10, '$'

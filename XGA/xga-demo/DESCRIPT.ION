@@ -1,0 +1,16 @@
+XGAPAN.COM XGA panorama using display-start panning.
+DBLIT.COM XGA panorama using a full-screen BitBLT.
+DCPU.COM XGA panorama using a CPU framebuffer copy.
+DREAMS.DAT Compressed panorama artwork for XGAPAN, DBLIT and DCPU.
+XBALLS.COM Seven XGA ball effects, including morphing figures.
+XBALLS.DAT Shaded 3D ball art for XBALLS mode 5.
+XVECTOR.COM XGA vector, mesh and Boing Ball demonstrations.
+XDEMO.COM XGA title, rotating solid and scroller scene.
+XDEMO2.COM XGA title scene with stars and scroller.
+XGADEMO.COM XGA port of the original CGA demo.
+XGAMASK.DAT XGADEMO masked artwork.
+CGADEMO5.COM Original CGA demo for comparison.
+DES.COM Directory listing with file descriptions; try DES /P.
+BUILD.TXT Build timestamp and boot program for this test disk.
+AUTOEXEC.BAT Starts XBALLS automatically on this test disk.
+CONFIG.SYS DOS file handles and buffers for this test disk.

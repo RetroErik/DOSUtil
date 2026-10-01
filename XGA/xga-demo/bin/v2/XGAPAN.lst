@@ -1,0 +1,1732 @@
+     1                                  ; Dreams XGA v2 development baseline - IBM PS/2 MCA XGA-1.
+     2                                  ; Functionally identical to the verified v1 binaries until v2 changes begin.
+     3                                  ; Build: python prepare_dreams.py, then NASM with PAN_STYLE 1/0/2.
+     4                                  ; TEST_MODE=1/2 retain the original gradient and small BitBLT diagnostics.
+     5                                  ; Register/mode sources: XGAKIT.ASM, MINI/XGA.INC, NT xgaregs.h/xga.h.
+     6                                  
+     7                                  cpu 386
+     8                                  bits 16
+     9                                  org 0x100
+    10                                  
+    11                                  %ifndef TEST_MODE
+    12                                  %define TEST_MODE 3
+    13                                  %endif
+    14                                  %ifndef PAN_STYLE
+    15                                  %define PAN_STYLE 1                 ; 1 = scanout, 0 = BitBLT, 2 = CPU copy
+    16                                  %endif
+    17                                  
+    18                                  SCREEN_W equ 640
+    19                                  SCREEN_H equ 480
+    20                                  SOURCE_W equ 960
+    21                                  SOURCE_H equ 640
+    22                                  SOURCE_BASE equ SCREEN_W * SCREEN_H       ; 0x4b000
+    23                                  SOURCE_PAGES equ SOURCE_W * SOURCE_H / 4096
+    24                                  PAN_MAX_X equ SOURCE_W - SCREEN_W
+    25                                  PAN_MAX_Y equ SOURCE_H - SCREEN_H
+    26                                  BLT_OP equ 0xA8218000                    ; source map B -> dest A, SRC_COPY
+    27                                  %if TEST_MODE = 3
+    28                                  %include "dreams_asset.inc"
+     1                              <1> ; Generated from Dreams.bmp by prepare_dreams.py
+     2                              <1> IMAGE_CRC equ 0x7bcec598
+     3                              <1> PROGRESS_COLOR equ 74
+     4                              <1> IMAGE_FIRST equ 0
+     5                              <1> IMAGE_MIDDLE equ 14
+     6                              <1> IMAGE_LAST equ 0
+    29                                  PROGRESS_BASE equ 236 * SCREEN_W + 168 - 2 * 65536
+    30                                  %else
+    31                                  PROGRESS_COLOR equ 255
+    32                                  %endif
+    33                                  
+    34                                  start:
+    35 00000000 0E                          push cs
+    36 00000001 1F                          pop ds
+    37 00000002 B40F                        mov ah, 0x0f
+    38 00000004 CD10                        int 0x10
+    39 00000006 A2[160C]                    mov [old_mode], al
+    40 00000009 BA[AB95]                    mov dx, log_boot_name
+    41 0000000C E85001                      call touch_file
+    42 0000000F BA[EC94]                    mov dx, msg_start
+    43 00000012 E84501                      call puts
+    44 00000015 E85601                      call detect_xga
+    45 00000018 0F822D01                    jc .no_xga
+    46 0000001C BA[B795]                    mov dx, log_detect_name
+    47 0000001F E83D01                      call touch_file
+    48 00000022 66833E[230C]00              cmp dword [aperture], 0
+    49 00000028 0F841201                    je .no_aperture
+    50 0000002C E83D02                      call set_xga_mode
+    51 0000002F C606[170C]01                mov byte [mode_active], 1
+    52 00000034 BA[C295]                    mov dx, log_mode_name
+    53 00000037 E82501                      call touch_file
+    54                                  %if TEST_MODE != 1 && TEST_MODE != 3
+    55                                      call probe_vram
+    56                                      jc .no_vram
+    57                                  %endif
+    58 0000003A E84F06                      call set_palette
+    59                                  %if TEST_MODE = 1
+    60                                      call fill_screen
+    61                                      jmp .wait_key
+    62                                  %else
+    63                                  %if TEST_MODE = 3
+    64 0000003D E85F05                      call check_image_cache
+    65 00000040 731B                        jnc .image_ready
+    66 00000042 E85102                      call probe_vram
+    67 00000045 0F82DF00                    jc .no_vram
+    68 00000049 E8BE05                      call progress_init
+    69 0000004C E88202                      call open_image
+    70 0000004F 0F82E300                    jc .image_error
+    71 00000053 E8A202                      call load_image
+    72 00000056 0F82DC00                    jc .image_error
+    73 0000005A E88D05                      call mark_image_cache
+    74                                  .image_ready:
+    75                                  %else
+    76                                      call fill_source
+    77                                  %endif
+    78 0000005D E81B07                      call setup_maps
+    79                                  %if TEST_MODE = 2
+    80                                      mov word [es:0x60], 127
+    81                                      mov word [es:0x62], 127
+    82                                      mov word [es:0x70], 80
+    83                                      mov word [es:0x72], 80
+    84                                      mov word [es:0x78], 256
+    85                                      mov word [es:0x7a], 176
+    86                                      mov dword [es:0x7c], BLT_OP
+    87                                      call wait_cp
+    88                                      jc .cp_timeout
+    89                                      jmp .wait_key
+    90                                  %else
+    91 00000060 26C70660007F02              mov word [es:0x60], SCREEN_W-1
+    92 00000067 26C7066200DF01              mov word [es:0x62], SCREEN_H-1
+    93                                  %if PAN_STYLE = 2
+    94                                      call cpu_blit
+    95                                  %else
+    96 0000006E E8CF0A                      call full_blit
+    97 00000071 0F82A500                    jc .cp_timeout
+    98 00000075 E8F70A                      call log_first_blit
+    99                                  %endif
+   100                                  %if PAN_STYLE = 1
+   101 00000078 E87A07                      call configure_scanout
+   102                                  %endif
+   103 0000007B E89007                      call setup_sprite_hud
+   104                                  .frame:
+   105                                  %if PAN_STYLE = 0
+   106                                      call wait_cp
+   107                                      jc .cp_timeout
+   108                                      cmp byte [vsync_enabled], 0
+   109                                      je .copy_now
+   110                                      call wait_vsync
+   111                                      jnc .copy_now
+   112                                      mov byte [vsync_enabled], 0    ; status bit did not toggle
+   113                                      mov word [hud_last_fps], 0xffff
+   114                                      call update_sprite_hud
+   115                                  .copy_now:
+   116                                      mov ax, [pan_x]
+   117                                      mov [es:0x70], ax
+   118                                      mov ax, [pan_y]
+   119                                      mov [es:0x72], ax
+   120                                      mov word [es:0x78], 0
+   121                                      mov word [es:0x7a], 0
+   122                                      mov dword [es:0x7c], BLT_OP
+   123                                      call wait_cp
+   124                                      jc .cp_timeout
+   125                                      call update_fps
+   126                                      call update_sprite_hud
+   127                                  %elif PAN_STYLE = 2
+   128                                      call cpu_blit
+   129                                      call update_fps
+   130                                      call update_sprite_hud
+   131                                  %else
+   132 0000007E 803E[370C]00                cmp byte [vsync_enabled], 0
+   133 00000083 7413                        je .set_now
+   134 00000085 E8B008                      call wait_vsync
+   135 00000088 730E                        jnc .set_now
+   136 0000008A C606[370C]00                mov byte [vsync_enabled], 0
+   137 0000008F C706[380C]FFFF              mov word [hud_last_fps], 0xffff
+   138 00000095 E8DA07                      call update_sprite_hud
+   139                                  .set_now:
+   140 00000098 E82C08                      call set_view
+   141 0000009B E8BE08                      call update_fps
+   142 0000009E E8D107                      call update_sprite_hud
+   143 000000A1 E86508                      call refresh_source_pages
+   144                                  %endif
+   145 000000A4 B401                        mov ah, 1
+   146 000000A6 CD16                        int 0x16
+   147 000000A8 742F                        jz .animate
+   148 000000AA 30E4                        xor ah, ah
+   149 000000AC CD16                        int 0x16
+   150 000000AE 3C1B                        cmp al, 27
+   151 000000B0 7460                        je .wait_key
+   152                                  %if PAN_STYLE != 2
+   153 000000B2 3C73                        cmp al, 's'
+   154 000000B4 7404                        je .toggle_sync
+   155 000000B6 3C53                        cmp al, 'S'
+   156 000000B8 751F                        jne .animate
+   157                                  .toggle_sync:
+   158 000000BA 8036[370C]01                xor byte [vsync_enabled], 1
+   159 000000BF C606[3A0C]00                mov byte [fps_started], 0
+   160 000000C4 C706[430C]0000              mov word [hud_frames], 0
+   161 000000CA C706[450C]0000              mov word [hud_fps10], 0
+   162 000000D0 C706[380C]FFFF              mov word [hud_last_fps], 0xffff
+   163 000000D6 E89907                      call update_sprite_hud
+   164                                  %endif
+   165                                  .animate:
+   166 000000D9 A1[2F0C]                    mov ax, [pan_x]
+   167 000000DC 0306[330C]                  add ax, [step_x]
+   168 000000E0 3D4001                      cmp ax, PAN_MAX_X
+   169 000000E3 760C                        jbe .x_ok
+   170 000000E5 F71E[330C]                  neg word [step_x]
+   171 000000E9 0306[330C]                  add ax, [step_x]
+   172 000000ED 0306[330C]                  add ax, [step_x]
+   173                                  .x_ok:
+   174 000000F1 A3[2F0C]                    mov [pan_x], ax
+   175 000000F4 A1[310C]                    mov ax, [pan_y]
+   176 000000F7 0306[350C]                  add ax, [step_y]
+   177 000000FB 3DA000                      cmp ax, PAN_MAX_Y
+   178 000000FE 760C                        jbe .y_ok
+   179 00000100 F71E[350C]                  neg word [step_y]
+   180 00000104 0306[350C]                  add ax, [step_y]
+   181 00000108 0306[350C]                  add ax, [step_y]
+   182                                  .y_ok:
+   183 0000010C A3[310C]                    mov [pan_y], ax
+   184 0000010F E96CFF                      jmp .frame
+   185                                  %endif
+   186                                  %endif
+   187                                  .wait_key:
+   188                                  %if TEST_MODE != 3
+   189                                      xor ah, ah
+   190                                      int 0x16
+   191                                      cmp al, 27
+   192                                      jne .wait_key
+   193                                  %endif
+   194 00000112 E8AA0A                      call restore_mode
+   195 00000115 B8004C                      mov ax, 0x4c00
+   196 00000118 CD21                        int 0x21
+   197                                  .cp_timeout:
+   198 0000011A E8A20A                      call restore_mode
+   199 0000011D BA[EE95]                    mov dx, log_cp_error
+   200 00000120 E83C00                      call touch_file
+   201 00000123 BA[8695]                    mov dx, msg_cp_timeout
+   202 00000126 EB2A                        jmp .error
+   203                                  .no_vram:
+   204 00000128 E8940A                      call restore_mode
+   205 0000012B BA[E395]                    mov dx, log_vram_error
+   206 0000012E E82E00                      call touch_file
+   207 00000131 BA[4295]                    mov dx, msg_no_vram
+   208 00000134 EB1C                        jmp .error
+   209                                  .image_error:
+   210 00000136 E8860A                      call restore_mode
+   211 00000139 BA[6295]                    mov dx, msg_image_error
+   212 0000013C EB14                        jmp .error
+   213                                  .no_aperture:
+   214 0000013E BA[D895]                    mov dx, log_ap_error
+   215 00000141 E81B00                      call touch_file
+   216 00000144 BA[1B95]                    mov dx, msg_no_aperture
+   217 00000147 EB09                        jmp .error
+   218                                  .no_xga:
+   219 00000149 BA[CE95]                    mov dx, log_xga_error
+   220 0000014C E81000                      call touch_file
+   221 0000014F BA[FB94]                    mov dx, msg_no_xga
+   222                                  .error:
+   223 00000152 E80500                      call puts
+   224 00000155 B8014C                      mov ax, 0x4c01
+   225 00000158 CD21                        int 0x21
+   226                                  
+   227                                  puts:
+   228 0000015A B409                        mov ah, 9
+   229 0000015C CD21                        int 0x21
+   230 0000015E C3                          ret
+   231                                  
+   232                                  touch_file:
+   233 0000015F B43C                        mov ah, 0x3c
+   234 00000161 31C9                        xor cx, cx
+   235 00000163 CD21                        int 0x21
+   236 00000165 7206                        jc .done
+   237 00000167 89C3                        mov bx, ax
+   238 00000169 B43E                        mov ah, 0x3e
+   239 0000016B CD21                        int 0x21
+   240                                  .done:
+   241 0000016D C3                          ret
+   242                                  
+   243                                  ; BIOS MCA POS enumeration; slot 0 is motherboard, 1..8 are expansion slots.
+   244                                  detect_xga:
+   245 0000016E B800C4                      mov ax, 0xc400
+   246 00000171 CD15                        int 0x15
+   247 00000173 7263                        jc .fail
+   248 00000175 8916[180C]                  mov [pos_base], dx
+   249 00000179 31C9                        xor cx, cx
+   250                                  .slot:
+   251 0000017B 51                          push cx
+   252 0000017C FA                          cli
+   253 0000017D 09C9                        or cx, cx
+   254 0000017F 7506                        jnz .select_slot
+   255 00000181 B0DF                        mov al, 0xdf
+   256 00000183 E694                        out 0x94, al
+   257 00000185 EB09                        jmp .read_pos
+   258                                  .select_slot:
+   259 00000187 89CB                        mov bx, cx
+   260 00000189 B801C4                      mov ax, 0xc401
+   261 0000018C CD15                        int 0x15
+   262 0000018E 721D                        jc .deselect
+   263                                  .read_pos:
+   264 00000190 8B16[180C]                  mov dx, [pos_base]
+   265 00000194 ED                          in ax, dx
+   266 00000195 A3[1A0C]                    mov [card_id], ax
+   267 00000198 83C202                      add dx, 2                      ; POS byte 1
+   268 0000019B EC                          in al, dx
+   269 0000019C A2[1C0C]                    mov [pos1], al
+   270 0000019F 83C202                      add dx, 2                      ; POS byte 3 is at base + 4
+   271 000001A2 EC                          in al, dx
+   272 000001A3 A2[1D0C]                    mov [pos3], al
+   273 000001A6 42                          inc dx                         ; POS byte 4 is at base + 5
+   274 000001A7 EC                          in al, dx
+   275 000001A8 240F                        and al, 0x0f
+   276 000001AA A2[1E0C]                    mov [pos4], al
+   277                                  .deselect:
+   278 000001AD 59                          pop cx
+   279 000001AE 09C9                        or cx, cx
+   280 000001B0 7506                        jnz .normal_slot
+   281 000001B2 B0FF                        mov al, 0xff
+   282 000001B4 E694                        out 0x94, al
+   283 000001B6 EB09                        jmp .compare
+   284                                  .normal_slot:
+   285 000001B8 51                          push cx
+   286 000001B9 89CB                        mov bx, cx
+   287 000001BB B802C4                      mov ax, 0xc402
+   288 000001BE CD15                        int 0x15
+   289 000001C0 59                          pop cx
+   290                                  .compare:
+   291 000001C1 FB                          sti
+   292 000001C2 813E[1A0C]DB8F              cmp word [card_id], 0x8fdb
+   293 000001C8 7410                        je .found
+   294 000001CA 813E[1A0C]DA8F              cmp word [card_id], 0x8fda
+   295 000001D0 7408                        je .found
+   296 000001D2 41                          inc cx
+   297 000001D3 83F909                      cmp cx, 9
+   298 000001D6 76A3                        jbe .slot
+   299                                  .fail:
+   300 000001D8 F9                          stc
+   301 000001D9 C3                          ret
+   302                                  .found:
+   303                                      ; io = 0x2100 + ((POS1 & 0x0e) << 3)
+   304 000001DA 31C0                        xor ax, ax
+   305 000001DC A0[1C0C]                    mov al, [pos1]
+   306 000001DF 240E                        and al, 0x0e
+   307 000001E1 C1E003                      shl ax, 3
+   308 000001E4 050021                      add ax, 0x2100
+   309 000001E7 A3[1F0C]                    mov [io_base], ax
+   310                                      ; ROM = 0xc0000 + ((POS1 >> 4) * 0x2000).
+   311                                      ; CP MMIO = ROM + 0x1c00 + (((POS1 & 0x0e)>>1) * 0x80).
+   312 000001EA 6631C0                      xor eax, eax
+   313 000001ED A0[1C0C]                    mov al, [pos1]
+   314 000001F0 C0E804                      shr al, 4
+   315 000001F3 66C1E00D                    shl eax, 13
+   316 000001F7 6605001C0C00                add eax, 0xc1c00
+   317 000001FD 6631DB                      xor ebx, ebx
+   318 00000200 8A1E[1C0C]                  mov bl, [pos1]
+   319 00000204 80E30E                      and bl, 0x0e
+   320 00000207 66C1E306                    shl ebx, 6
+   321 0000020B 6601D8                      add eax, ebx
+   322 0000020E 66C1E804                    shr eax, 4
+   323 00000212 A3[210C]                    mov [cp_seg], ax
+   324                                      ; 1 MB aperture physical address from POS4. Fall back to the 4 MB
+   325                                      ; aperture from POS3 when the 1 MB aperture is disabled.
+   326 00000215 6631C0                      xor eax, eax
+   327 00000218 A0[1E0C]                    mov al, [pos4]
+   328 0000021B 66C1E014                    shl eax, 20
+   329 0000021F 6609C0                      or eax, eax
+   330 00000222 7521                        jnz .ap_ready
+   331 00000224 F606[1D0C]01                test byte [pos3], 1
+   332 00000229 741A                        jz .ap_ready
+   333 0000022B A0[1D0C]                    mov al, [pos3]
+   334 0000022E 24FE                        and al, 0xfe
+   335 00000230 66C1E018                    shl eax, 24
+   336 00000234 6631DB                      xor ebx, ebx
+   337 00000237 8A1E[1C0C]                  mov bl, [pos1]
+   338 0000023B 80E30E                      and bl, 0x0e
+   339 0000023E 66C1E315                    shl ebx, 21
+   340 00000242 6601D8                      add eax, ebx
+   341                                  .ap_ready:
+   342 00000245 66A3[230C]                  mov [aperture], eax
+   343                                      ; 86Box's XGA coprocessor resolves VRAM pixel maps against the 4 MB
+   344                                      ; aperture base, even when the CPU is using the banked 64 KB window.
+   345                                      ; This is the address decoded from POS3 plus the XGA instance number.
+   346 00000249 6631C0                      xor eax, eax
+   347 0000024C A0[1D0C]                    mov al, [pos3]
+   348 0000024F 24FE                        and al, 0xfe
+   349 00000251 66C1E018                    shl eax, 24
+   350 00000255 6631DB                      xor ebx, ebx
+   351 00000258 8A1E[1C0C]                  mov bl, [pos1]
+   352 0000025C 80E30E                      and bl, 0x0e
+   353 0000025F 66C1E315                    shl ebx, 21
+   354 00000263 6601D8                      add eax, ebx
+   355 00000266 66A3[270C]                  mov [cp_aperture], eax
+   356 0000026A F8                          clc
+   357 0000026B C3                          ret
+   358                                  
+   359                                  set_xga_mode:
+   360 0000026C BAC303                      mov dx, 0x3c3
+   361 0000026F B001                        mov al, 1
+   362 00000271 EE                          out dx, al
+   363 00000272 BE[2996]                    mov si, mode_table
+   364                                  .next:
+   365 00000275 AC                          lodsb
+   366 00000276 3CFF                        cmp al, 0xff
+   367 00000278 741B                        je .done
+   368 0000027A 88C3                        mov bl, al
+   369 0000027C 30E4                        xor ah, ah
+   370 0000027E 8B16[1F0C]                  mov dx, [io_base]
+   371 00000282 01C2                        add dx, ax
+   372 00000284 AC                          lodsb
+   373 00000285 8A24                        mov ah, [si]
+   374 00000287 46                          inc si
+   375 00000288 80FB0A                      cmp bl, 0x0a
+   376 0000028B 7405                        je .indexed
+   377 0000028D 88E0                        mov al, ah
+   378 0000028F EE                          out dx, al
+   379 00000290 EBE3                        jmp .next
+   380                                  .indexed:
+   381 00000292 EF                          out dx, ax
+   382 00000293 EBE0                        jmp .next
+   383                                  .done:
+   384 00000295 C3                          ret
+   385                                  
+   386                                  ; Probe two banks separated by 512 KB; a 512 KB card may mirror page 12.
+   387                                  probe_vram:
+   388 00000296 8B16[1F0C]                  mov dx, [io_base]
+   389 0000029A 83C208                      add dx, 8
+   390 0000029D B800A0                      mov ax, 0xa000
+   391 000002A0 8EC0                        mov es, ax
+   392 000002A2 B004                        mov al, 4
+   393 000002A4 EE                          out dx, al
+   394 000002A5 26C606000055                mov byte [es:0], 0x55
+   395 000002AB B00C                        mov al, 12
+   396 000002AD EE                          out dx, al
+   397 000002AE 26C6060000A5                mov byte [es:0], 0xa5
+   398 000002B4 26803E0000A5                cmp byte [es:0], 0xa5
+   399 000002BA 7510                        jne .fail
+   400 000002BC B004                        mov al, 4
+   401 000002BE EE                          out dx, al
+   402 000002BF 26803E000055                cmp byte [es:0], 0x55
+   403 000002C5 7505                        jne .fail
+   404 000002C7 30C0                        xor al, al
+   405 000002C9 EE                          out dx, al
+   406 000002CA F8                          clc
+   407 000002CB C3                          ret
+   408                                  .fail:
+   409 000002CC 30C0                        xor al, al
+   410 000002CE EE                          out dx, al
+   411 000002CF F9                          stc
+   412 000002D0 C3                          ret
+   413                                  
+   414                                  ; XGA palette port: index at I/O+0x0a, RGB stream at I/O+0x0b.
+   415                                  %if TEST_MODE = 3
+   416                                  open_image:
+   417 000002D1 B8003D                      mov ax, 0x3d00
+   418 000002D4 BA[CE11]                    mov dx, image_name
+   419 000002D7 CD21                        int 0x21
+   420 000002D9 721B                        jc .fail
+   421 000002DB A3[D911]                    mov [image_handle], ax
+   422 000002DE 89C3                        mov bx, ax
+   423 000002E0 B80042                      mov ax, 0x4200                 ; palette is embedded in the COM
+   424 000002E3 31C9                        xor cx, cx
+   425 000002E5 BA0003                      mov dx, 768
+   426 000002E8 CD21                        int 0x21
+   427 000002EA 7202                        jc .close_fail
+   428 000002EC F8                          clc
+   429 000002ED C3                          ret
+   430                                  .close_fail:
+   431 000002EE 8B1E[D911]                  mov bx, [image_handle]
+   432 000002F2 B43E                        mov ah, 0x3e
+   433 000002F4 CD21                        int 0x21
+   434                                  .fail:
+   435 000002F6 F9                          stc
+   436 000002F7 C3                          ret
+   437                                  
+   438                                  ; Expand each fixed-Huffman DEFLATE page into the work buffer before VRAM copy.
+   439                                  load_image:
+   440 000002F8 C706[DB11]0400              mov word [load_bank], 4
+   441 000002FE C706[DD11]00B0              mov word [load_offset], 0xb000
+   442 00000304 C706[DF11]0000              mov word [loaded_pages], 0
+   443 0000030A BD9600                      mov bp, SOURCE_PAGES
+   444                                  .read_page:
+   445 0000030D 8B1E[D911]                  mov bx, [image_handle]
+   446 00000311 B43F                        mov ah, 0x3f
+   447 00000313 B90200                      mov cx, 2
+   448 00000316 BA[E111]                    mov dx, chunk_bytes
+   449 00000319 CD21                        int 0x21
+   450 0000031B 7266                        jc .fail
+   451 0000031D 83F802                      cmp ax, 2
+   452 00000320 7561                        jne .fail
+   453 00000322 8B0E[E111]                  mov cx, [chunk_bytes]
+   454 00000326 09C9                        or cx, cx
+   455 00000328 7459                        jz .fail
+   456 0000032A 81F90010                    cmp cx, 4096
+   457 0000032E 7753                        ja .fail
+   458 00000330 8B1E[D911]                  mov bx, [image_handle]
+   459 00000334 B43F                        mov ah, 0x3f
+   460 00000336 BA[EC14]                    mov dx, image_page
+   461 00000339 CD21                        int 0x21
+   462 0000033B 7246                        jc .fail
+   463 0000033D 3B06[E111]                  cmp ax, [chunk_bytes]
+   464 00000341 7540                        jne .fail
+   465 00000343 1E                          push ds
+   466 00000344 07                          pop es
+   467 00000345 E84500                      call inflate_page
+   468 00000348 7239                        jc .fail
+   469 0000034A BE[EC24]                    mov si, image_page + 4096
+   470 0000034D B800A0                      mov ax, 0xa000
+   471 00000350 8EC0                        mov es, ax
+   472 00000352 8B1E[DB11]                  mov bx, [load_bank]
+   473 00000356 E81304                      call select_bank
+   474 00000359 8B3E[DD11]                  mov di, [load_offset]
+   475 0000035D B90008                      mov cx, 2048
+   476 00000360 FC                          cld
+   477 00000361 F3A5                        rep movsw
+   478 00000363 8106[DD11]0010              add word [load_offset], 4096
+   479 00000369 7504                        jnz .next
+   480 0000036B FF06[DB11]                  inc word [load_bank]
+   481                                  .next:
+   482 0000036F FF06[DF11]                  inc word [loaded_pages]
+   483 00000373 E8E602                      call progress_update
+   484 00000376 4D                          dec bp
+   485 00000377 7594                        jnz .read_page
+   486 00000379 8B1E[D911]                  mov bx, [image_handle]
+   487 0000037D B43E                        mov ah, 0x3e
+   488 0000037F CD21                        int 0x21
+   489 00000381 F8                          clc
+   490 00000382 C3                          ret
+   491                                  .fail:
+   492 00000383 8B1E[D911]                  mov bx, [image_handle]
+   493 00000387 B43E                        mov ah, 0x3e
+   494 00000389 CD21                        int 0x21
+   495 0000038B F9                          stc
+   496 0000038C C3                          ret
+   497                                  
+   498                                  inflate_page:
+   499 0000038D FC                          cld
+   500 0000038E BE[EC14]                    mov si, image_page
+   501 00000391 89F0                        mov ax, si
+   502 00000393 0306[E111]                  add ax, [chunk_bytes]
+   503 00000397 A3[E311]                    mov [input_end], ax
+   504 0000039A BF[EC24]                    mov di, image_page + 4096
+   505 0000039D C606[E911]00                mov byte [bits_left], 0
+   506 000003A2 B90300                      mov cx, 3
+   507 000003A5 E8D800                      call read_bits
+   508 000003A8 0F82AC00                    jc .fail
+   509 000003AC 83FB03                      cmp bx, 3                       ; one final fixed-Huffman block
+   510 000003AF 0F85A500                    jne .fail
+   511                                  .symbol:
+   512 000003B3 E8E200                      call read_code
+   513 000003B6 0F829E00                    jc .fail
+   514 000003BA 3D0001                      cmp ax, 256
+   515 000003BD 0F848900                    je .done
+   516 000003C1 770B                        ja .match
+   517 000003C3 81FF[EC34]                  cmp di, image_page + 8192
+   518 000003C7 0F838D00                    jae .fail
+   519 000003CB AA                          stosb
+   520 000003CC EBE5                        jmp .symbol
+   521                                  .match:
+   522 000003CE 2D0101                      sub ax, 257
+   523 000003D1 83F81C                      cmp ax, 28
+   524 000003D4 0F878000                    ja .fail
+   525 000003D8 89C3                        mov bx, ax
+   526 000003DA D1E3                        shl bx, 1
+   527 000003DC 8B87[EE04]                  mov ax, [length_base + bx]
+   528 000003E0 A3[E511]                    mov [match_count], ax
+   529 000003E3 D1EB                        shr bx, 1
+   530 000003E5 31C9                        xor cx, cx
+   531 000003E7 8A8F[2805]                  mov cl, [length_extra + bx]
+   532 000003EB E309                        jcxz .length_ready
+   533 000003ED E89000                      call read_bits
+   534 000003F0 7266                        jc .fail
+   535 000003F2 011E[E511]                  add [match_count], bx
+   536                                  .length_ready:
+   537 000003F6 B90500                      mov cx, 5
+   538 000003F9 31DB                        xor bx, bx
+   539                                  .distance_code:
+   540 000003FB E85C00                      call read_bit
+   541 000003FE 7258                        jc .fail
+   542 00000400 D1E3                        shl bx, 1
+   543 00000402 08C3                        or bl, al
+   544 00000404 E2F5                        loop .distance_code
+   545 00000406 83FB1D                      cmp bx, 29
+   546 00000409 774D                        ja .fail
+   547 0000040B 8A8F[8105]                  mov cl, [distance_extra + bx]
+   548 0000040F D1E3                        shl bx, 1
+   549 00000411 8B87[4505]                  mov ax, [distance_base + bx]
+   550 00000415 A3[E711]                    mov [match_distance], ax
+   551 00000418 30ED                        xor ch, ch
+   552 0000041A E309                        jcxz .distance_ready
+   553 0000041C E86100                      call read_bits
+   554 0000041F 7237                        jc .fail
+   555 00000421 011E[E711]                  add [match_distance], bx
+   556                                  .distance_ready:
+   557 00000425 89F8                        mov ax, di
+   558 00000427 2D[EC24]                    sub ax, image_page + 4096
+   559 0000042A 3906[E711]                  cmp [match_distance], ax
+   560 0000042E 7728                        ja .fail
+   561 00000430 8B0E[E511]                  mov cx, [match_count]
+   562 00000434 89F8                        mov ax, di
+   563 00000436 01C8                        add ax, cx
+   564 00000438 3D[EC34]                    cmp ax, image_page + 8192
+   565 0000043B 771B                        ja .fail
+   566 0000043D 56                          push si
+   567 0000043E 89FE                        mov si, di
+   568 00000440 2B36[E711]                  sub si, [match_distance]
+   569 00000444 F3A4                        rep movsb
+   570 00000446 5E                          pop si
+   571 00000447 E969FF                      jmp .symbol
+   572                                  .done:
+   573 0000044A 81FF[EC34]                  cmp di, image_page + 8192
+   574 0000044E 7508                        jne .fail
+   575 00000450 3B36[E311]                  cmp si, [input_end]
+   576 00000454 7502                        jne .fail
+   577 00000456 F8                          clc
+   578 00000457 C3                          ret
+   579                                  .fail:
+   580 00000458 F9                          stc
+   581 00000459 C3                          ret
+   582                                  
+   583                                  read_bit:
+   584 0000045A 803E[E911]00                cmp byte [bits_left], 0
+   585 0000045F 750F                        jne .available
+   586 00000461 3B36[E311]                  cmp si, [input_end]
+   587 00000465 7317                        jae .fail
+   588 00000467 AC                          lodsb
+   589 00000468 A2[EA11]                    mov [bit_value], al
+   590 0000046B C606[E911]08                mov byte [bits_left], 8
+   591                                  .available:
+   592 00000470 D02E[EA11]                  shr byte [bit_value], 1
+   593 00000474 FE0E[E911]                  dec byte [bits_left]
+   594 00000478 B000                        mov al, 0
+   595 0000047A 1400                        adc al, 0
+   596 0000047C F8                          clc
+   597 0000047D C3                          ret
+   598                                  .fail:
+   599 0000047E F9                          stc
+   600 0000047F C3                          ret
+   601                                  
+   602                                  ; DEFLATE extra fields are least-significant-bit first.
+   603                                  read_bits:
+   604 00000480 31DB                        xor bx, bx
+   605 00000482 BA0100                      mov dx, 1
+   606                                  .next:
+   607 00000485 E8D2FF                      call read_bit
+   608 00000488 720C                        jc .fail
+   609 0000048A 08C0                        or al, al
+   610 0000048C 7402                        jz .zero
+   611 0000048E 09D3                        or bx, dx
+   612                                  .zero:
+   613 00000490 D1E2                        shl dx, 1
+   614 00000492 E2F1                        loop .next
+   615 00000494 F8                          clc
+   616 00000495 C3                          ret
+   617                                  .fail:
+   618 00000496 F9                          stc
+   619 00000497 C3                          ret
+   620                                  
+   621                                  ; Huffman codes are transmitted most-significant-bit first.
+   622                                  read_code:
+   623 00000498 31DB                        xor bx, bx
+   624 0000049A B90700                      mov cx, 7
+   625                                  .next:
+   626 0000049D E8BAFF                      call read_bit
+   627 000004A0 724A                        jc .fail
+   628 000004A2 D1E3                        shl bx, 1
+   629 000004A4 08C3                        or bl, al
+   630 000004A6 E2F5                        loop .next
+   631 000004A8 83FB17                      cmp bx, 23
+   632 000004AB 7706                        ja .eight
+   633 000004AD 8D870001                    lea ax, [bx + 256]
+   634 000004B1 F8                          clc
+   635 000004B2 C3                          ret
+   636                                  .eight:
+   637 000004B3 E8A4FF                      call read_bit
+   638 000004B6 7234                        jc .fail
+   639 000004B8 D1E3                        shl bx, 1
+   640 000004BA 08C3                        or bl, al
+   641 000004BC 81FBBF00                    cmp bx, 0xbf
+   642 000004C0 7707                        ja .high
+   643 000004C2 83EB30                      sub bx, 0x30
+   644 000004C5 89D8                        mov ax, bx
+   645 000004C7 F8                          clc
+   646 000004C8 C3                          ret
+   647                                  .high:
+   648 000004C9 81FBC700                    cmp bx, 0xc7
+   649 000004CD 7705                        ja .nine
+   650 000004CF 8D4758                      lea ax, [bx + 280 - 0xc0]
+   651 000004D2 F8                          clc
+   652 000004D3 C3                          ret
+   653                                  .nine:
+   654 000004D4 E883FF                      call read_bit
+   655 000004D7 7213                        jc .fail
+   656 000004D9 D1E3                        shl bx, 1
+   657 000004DB 08C3                        or bl, al
+   658 000004DD 81EB9001                    sub bx, 0x190
+   659 000004E1 83FB6F                      cmp bx, 111
+   660 000004E4 7706                        ja .fail
+   661 000004E6 8D879000                    lea ax, [bx + 144]
+   662 000004EA F8                          clc
+   663 000004EB C3                          ret
+   664                                  .fail:
+   665 000004EC F9                          stc
+   666 000004ED C3                          ret
+   667                                  
+   668 000004EE 030004000500060007-     length_base dw 3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31
+   668 000004F7 00080009000A000B00-
+   668 00000500 0D000F001100130017-
+   668 00000509 001B001F00         
+   669 0000050E 23002B0033003B0043-                 dw 35,43,51,59,67,83,99,115,131,163,195,227,258
+   669 00000517 005300630073008300-
+   669 00000520 A300C300E3000201   
+   670 00000528 000000000000000001-     length_extra db 0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2
+   670 00000531 01010102020202     
+   671 00000538 030303030404040405-                  db 3,3,3,3,4,4,4,4,5,5,5,5,0
+   671 00000541 05050500           
+   672 00000545 010002000300040005-     distance_base dw 1,2,3,4,5,7,9,13,17,25,33,49,65,97,129
+   672 0000054E 00070009000D001100-
+   672 00000557 190021003100410061-
+   672 00000560 008100             
+   673 00000563 C10001018101010201-                   dw 193,257,385,513,769,1025,1537,2049,3073,4097
+   673 0000056C 03010401060108010C-
+   673 00000575 0110               
+   674 00000577 011801200130014001-                   dw 6145,8193,12289,16385,24577
+   674 00000580 60                 
+   675 00000581 000000000101020203-     distance_extra db 0,0,0,0,1,1,2,2,3,3,4,4,5,5,6
+   675 0000058A 030404050506       
+   676 00000590 060707080809090A0A-                    db 6,7,7,8,8,9,9,10,10,11,11,12,12,13,13
+   676 00000599 0B0B0C0C0D0D       
+   677                                  
+   678                                  ; Unused VRAM starts at 0xe1000. The marker is written only after a
+   679                                  ; complete load, and identifies the exact quantized source image.
+   680                                  check_image_cache:
+   681 0000059F B800A0                      mov ax, 0xa000
+   682 000005A2 8EC0                        mov es, ax
+   683 000005A4 BB0E00                      mov bx, 14
+   684 000005A7 E8C201                      call select_bank
+   685 000005AA 2666813E0020445847-         cmp dword [es:0x2000], 0x42475844  ; "DXGB", loader/sprite revision
+   685 000005B3 42                 
+   686 000005B4 7532                        jne .miss
+   687 000005B6 2666813E042098C5CE-         cmp dword [es:0x2004], IMAGE_CRC
+   687 000005BF 7B                 
+   688 000005C0 7526                        jne .miss
+   689 000005C2 26803EFF0F00                cmp byte [es:0x0fff], IMAGE_LAST
+   690 000005C8 751E                        jne .miss
+   691 000005CA BB0900                      mov bx, 9
+   692 000005CD E89C01                      call select_bank
+   693 000005D0 26803E00600E                cmp byte [es:0x6000], IMAGE_MIDDLE
+   694 000005D6 7510                        jne .miss
+   695 000005D8 BB0400                      mov bx, 4
+   696 000005DB E88E01                      call select_bank
+   697 000005DE 26803E00B000                cmp byte [es:0xb000], IMAGE_FIRST
+   698 000005E4 7502                        jne .miss
+   699 000005E6 F8                          clc
+   700 000005E7 C3                          ret
+   701                                  .miss:
+   702 000005E8 F9                          stc
+   703 000005E9 C3                          ret
+   704                                  
+   705                                  mark_image_cache:
+   706 000005EA B800A0                      mov ax, 0xa000
+   707 000005ED 8EC0                        mov es, ax
+   708 000005EF BB0E00                      mov bx, 14
+   709 000005F2 E87701                      call select_bank
+   710 000005F5 2666C7060020445847-         mov dword [es:0x2000], 0x42475844
+   710 000005FE 42                 
+   711 000005FF 2666C706042098C5CE-         mov dword [es:0x2004], IMAGE_CRC
+   711 00000608 7B                 
+   712 00000609 C3                          ret
+   713                                  
+   714                                  ; Draw a PC1-BMP-inspired loading indicator in the XGA framebuffer.
+   715                                  ; The advancing strip represents 150 transferred 4 KB source pages.
+   716                                  progress_init:
+   717 0000060A B800A0                      mov ax, 0xa000
+   718 0000060D 8EC0                        mov es, ax
+   719 0000060F FC                          cld
+   720 00000610 31DB                        xor bx, bx
+   721 00000612 BD0400                      mov bp, 4
+   722 00000615 31C0                        xor ax, ax
+   723                                  .bank:
+   724 00000617 E85201                      call select_bank
+   725 0000061A 31FF                        xor di, di
+   726 0000061C B90080                      mov cx, 32768
+   727 0000061F F3AB                        rep stosw
+   728 00000621 43                          inc bx
+   729 00000622 4D                          dec bp
+   730 00000623 75F2                        jnz .bank
+   731 00000625 E84401                      call select_bank               ; bank 4, only display bytes
+   732 00000628 31FF                        xor di, di
+   733 0000062A B90058                      mov cx, (SCREEN_W * SCREEN_H - 4 * 65536) / 2
+   734 0000062D F3AB                        rep stosw
+   735 0000062F BB0200                      mov bx, 2
+   736 00000632 E83701                      call select_bank
+   737 00000635 B04A                        mov al, PROGRESS_COLOR
+   738 00000637 BFA84E                      mov di, PROGRESS_BASE
+   739 0000063A B93001                      mov cx, 304
+   740 0000063D F3AA                        rep stosb
+   741 0000063F BF286A                      mov di, PROGRESS_BASE + 11 * SCREEN_W
+   742 00000642 B93001                      mov cx, 304
+   743 00000645 F3AA                        rep stosb
+   744 00000647 BF2851                      mov di, PROGRESS_BASE + SCREEN_W
+   745 0000064A B90A00                      mov cx, 10
+   746                                  .sides:
+   747 0000064D 268805                      mov [es:di], al
+   748 00000650 2688852F01                  mov [es:di+303], al
+   749 00000655 81C78002                    add di, SCREEN_W
+   750 00000659 E2F2                        loop .sides
+   751 0000065B C3                          ret
+   752                                  
+   753                                  progress_update:
+   754 0000065C 50                          push ax
+   755 0000065D 53                          push bx
+   756 0000065E 51                          push cx
+   757 0000065F 57                          push di
+   758 00000660 06                          push es
+   759 00000661 B800A0                      mov ax, 0xa000
+   760 00000664 8EC0                        mov es, ax
+   761 00000666 BB0200                      mov bx, 2
+   762 00000669 E80001                      call select_bank
+   763 0000066C A1[DF11]                    mov ax, [loaded_pages]
+   764 0000066F 48                          dec ax
+   765 00000670 D1E0                        shl ax, 1
+   766 00000672 05AA53                      add ax, PROGRESS_BASE + 2 * SCREEN_W + 2
+   767 00000675 89C7                        mov di, ax
+   768 00000677 B84A4A                      mov ax, PROGRESS_COLOR * 257
+   769 0000067A B90800                      mov cx, 8
+   770                                  .row:
+   771 0000067D 268905                      mov [es:di], ax
+   772 00000680 81C78002                    add di, SCREEN_W
+   773 00000684 E2F7                        loop .row
+   774 00000686 07                          pop es
+   775 00000687 5F                          pop di
+   776 00000688 59                          pop cx
+   777 00000689 5B                          pop bx
+   778 0000068A 58                          pop ax
+   779 0000068B C3                          ret
+   780                                  %endif
+   781                                  
+   782                                  set_palette:
+   783 0000068C 8B16[1F0C]                  mov dx, [io_base]
+   784 00000690 83C20A                      add dx, 0x0a
+   785 00000693 B86400                      mov ax, 0x0064
+   786 00000696 EF                          out dx, ax
+   787 00000697 B86600                      mov ax, 0x0066
+   788 0000069A EF                          out dx, ax
+   789 0000069B B86000                      mov ax, 0x0060
+   790 0000069E EF                          out dx, ax
+   791 0000069F B86100                      mov ax, 0x0061
+   792 000006A2 EF                          out dx, ax
+   793 000006A3 B065                        mov al, 0x65
+   794 000006A5 EE                          out dx, al
+   795 000006A6 42                          inc dx
+   796                                  %if TEST_MODE = 3
+   797 000006A7 BE[EB11]                    mov si, image_palette
+   798 000006AA B90003                      mov cx, 768
+   799                                  .color:
+   800 000006AD AC                          lodsb
+   801 000006AE EE                          out dx, al
+   802 000006AF E2FC                        loop .color
+   803                                  %else
+   804                                      xor bx, bx
+   805                                  .color:
+   806                                      ; RRRGGGBB -> three 8-bit DAC components.
+   807                                      mov ax, bx
+   808                                      and al, 0xe0
+   809                                      out dx, al
+   810                                      mov ax, bx
+   811                                      and al, 0x1c
+   812                                      shl al, 3
+   813                                      out dx, al
+   814                                      mov ax, bx
+   815                                      and al, 3
+   816                                      shl al, 6
+   817                                      out dx, al
+   818                                      inc bx
+   819                                      cmp bx, 256
+   820                                      jb .color
+   821                                  %endif
+   822 000006B1 4A                          dec dx
+   823 000006B2 B864FF                      mov ax, 0xff64
+   824 000006B5 EF                          out dx, ax
+   825 000006B6 C3                          ret
+   826                                  
+   827                                  ; On stage 1, fill visible screen by CPU solely to verify mode and banking.
+   828                                  fill_screen:
+   829 000006B7 B800A0                      mov ax, 0xa000
+   830 000006BA 8EC0                        mov es, ax
+   831 000006BC 31FF                        xor di, di
+   832 000006BE 31DB                        xor bx, bx
+   833 000006C0 C706[2B0C]0000              mov word [row], 0
+   834                                  .row:
+   835 000006C6 B98002                      mov cx, SCREEN_W
+   836 000006C9 A0[2B0C]                    mov al, [row]
+   837                                  .pixel:
+   838 000006CC 268805                      mov [es:di], al
+   839 000006CF 47                          inc di
+   840 000006D0 7504                        jnz .no_wrap
+   841 000006D2 43                          inc bx
+   842 000006D3 E89600                      call select_bank
+   843                                  .no_wrap:
+   844 000006D6 E2F4                        loop .pixel
+   845 000006D8 FF06[2B0C]                  inc word [row]
+   846 000006DC 813E[2B0C]E001              cmp word [row], SCREEN_H
+   847 000006E2 72E2                        jb .row
+   848 000006E4 C3                          ret
+   849                                  
+   850                                  ; Source is 800*800 bytes at offset 307200 in 1 MB of VRAM.
+   851                                  ; CPU loads the image once through the 64 KB banked A000 window.
+   852                                  fill_source:
+   853 000006E5 B800A0                      mov ax, 0xa000
+   854 000006E8 8EC0                        mov es, ax
+   855 000006EA BB0400                      mov bx, 4
+   856 000006ED E87C00                      call select_bank
+   857 000006F0 BF00B0                      mov di, 0xb000
+   858 000006F3 C706[2B0C]0000              mov word [row], 0
+   859                                  .row:
+   860 000006F9 C706[2D0C]0000              mov word [col], 0
+   861                                  .pixel:
+   862 000006FF A1[2B0C]                    mov ax, [row]
+   863 00000702 3DF000                      cmp ax, 240
+   864 00000705 7309                        jae .ground
+   865 00000707 C1E804                      shr ax, 4
+   866 0000070A 241C                        and al, 0x1c
+   867 0000070C 0C03                        or al, 3
+   868 0000070E EB27                        jmp .grid
+   869                                  .ground:
+   870 00000710 A1[2D0C]                    mov ax, [col]
+   871 00000713 83E07F                      and ax, 127
+   872 00000716 D1E8                        shr ax, 1
+   873 00000718 05F000                      add ax, 240
+   874 0000071B 3906[2B0C]                  cmp [row], ax
+   875 0000071F 720C                        jb .mountain
+   876 00000721 A1[2B0C]                    mov ax, [row]
+   877 00000724 C1E805                      shr ax, 5
+   878 00000727 241C                        and al, 0x1c
+   879 00000729 0C84                        or al, 0x84
+   880 0000072B EB0A                        jmp .grid
+   881                                  .mountain:
+   882 0000072D A1[2D0C]                    mov ax, [col]
+   883 00000730 C1E804                      shr ax, 4
+   884 00000733 241C                        and al, 0x1c
+   885 00000735 0CA0                        or al, 0xa0
+   886                                  .grid:
+   887 00000737 F706[2D0C]3F00              test word [col], 63
+   888 0000073D 7408                        jz .line
+   889 0000073F F706[2B0C]3F00              test word [row], 63
+   890 00000745 7502                        jnz .store
+   891                                  .line:
+   892 00000747 B0FF                        mov al, 0xff
+   893                                  .store:
+   894 00000749 268805                      mov [es:di], al
+   895 0000074C 47                          inc di
+   896 0000074D 7504                        jnz .bank_ok
+   897 0000074F 43                          inc bx
+   898 00000750 E81900                      call select_bank
+   899                                  .bank_ok:
+   900 00000753 FF06[2D0C]                  inc word [col]
+   901 00000757 813E[2D0C]C003              cmp word [col], SOURCE_W
+   902 0000075D 72A0                        jb .pixel
+   903 0000075F FF06[2B0C]                  inc word [row]
+   904 00000763 813E[2B0C]8002              cmp word [row], SOURCE_H
+   905 00000769 728E                        jb .row
+   906 0000076B C3                          ret
+   907                                  
+   908                                  select_bank:
+   909 0000076C 50                          push ax
+   910 0000076D 52                          push dx
+   911 0000076E 8B16[1F0C]                  mov dx, [io_base]
+   912 00000772 83C208                      add dx, 8
+   913 00000775 89D8                        mov ax, bx
+   914 00000777 EE                          out dx, al
+   915 00000778 5A                          pop dx
+   916 00000779 58                          pop ax
+   917 0000077A C3                          ret
+   918                                  
+   919                                  setup_maps:
+   920 0000077B A1[210C]                    mov ax, [cp_seg]
+   921 0000077E 8EC0                        mov es, ax
+   922 00000780 26C606110000                mov byte [es:0x11], 0
+   923 00000786 26C606120001                mov byte [es:0x12], 1            ; destination map A
+   924 0000078C 66A1[270C]                  mov eax, [cp_aperture]
+   925 00000790 2666A31400                  mov [es:0x14], eax
+   926 00000795 26C70618007F02              mov word [es:0x18], SCREEN_W-1
+   927 0000079C 26C7061A00DF01              mov word [es:0x1a], SCREEN_H-1
+   928 000007A3 26C6061C0003                mov byte [es:0x1c], 3
+   929 000007A9 26C606120002                mov byte [es:0x12], 2            ; off-screen source map B
+   930 000007AF 660500B00400                add eax, SOURCE_BASE
+   931 000007B5 2666A31400                  mov [es:0x14], eax
+   932 000007BA 26C7061800BF03              mov word [es:0x18], SOURCE_W-1
+   933 000007C1 26C7061A007F02              mov word [es:0x1a], SOURCE_H-1
+   934 000007C8 26C6061C0003                mov byte [es:0x1c], 3
+   935 000007CE 26C6064A0004                mov byte [es:0x4a], 4            ; color compare disabled
+   936 000007D4 2666C7065000FF0000-         mov dword [es:0x50], 0xff
+   936 000007DD 00                 
+   937 000007DE 2666C7065400FF0000-         mov dword [es:0x54], 0xff
+   937 000007E7 00                 
+   938 000007E8 26C606480003                mov byte [es:0x48], 3            ; XGA_S
+   939 000007EE 26C606490003                mov byte [es:0x49], 3
+   940 000007F4 C3                          ret
+   941                                  
+   942                                  %if PAN_STYLE = 1
+   943                                  ; Scan the 960-pixel-wide source image directly. XGA display start is in
+   944                                  ; dwords, and display pitch is expressed in units of eight pixels.
+   945                                  configure_scanout:
+   946 000007F5 C706[330C]0400              mov word [step_x], 4
+   947 000007FB 8B16[1F0C]                  mov dx, [io_base]
+   948 000007FF 83C20A                      add dx, 0x0a
+   949 00000802 B84378                      mov ax, 0x7843                  ; 960 / 8 pixels per scan line
+   950 00000805 EF                          out dx, ax
+   951 00000806 B84400                      mov ax, 0x0044
+   952 00000809 EF                          out dx, ax
+   953 0000080A E8BA00                      call set_view
+   954 0000080D C3                          ret
+   955                                  
+   956                                  %endif
+   957                                  
+   958                                  ; XGA's 64x64 hardware sprite is independent of the scanned framebuffer.
+   959                                  ; These register values and sprite-data writes reproduce DREAMS.COM from
+   960                                  ; dreams_xga_20260926_193007.img, the version the user verified in 86Box.
+   961                                  setup_sprite_hud:
+   962 0000080E 6660                        pushad
+   963 00000810 8B16[1F0C]                  mov dx, [io_base]
+   964 00000814 83C20A                      add dx, 0x0a
+   965 00000817 B83008                      mov ax, 0x0830                  ; sprite X = 8
+   966 0000081A EF                          out dx, ax
+   967 0000081B B83100                      mov ax, 0x0031
+   968 0000081E EF                          out dx, ax
+   969 0000081F B83200                      mov ax, 0x0032                  ; X hotspot = 0
+   970 00000822 EF                          out dx, ax
+   971 00000823 B83308                      mov ax, 0x0833                  ; sprite Y = 8
+   972 00000826 EF                          out dx, ax
+   973 00000827 B83400                      mov ax, 0x0034
+   974 0000082A EF                          out dx, ax
+   975 0000082B B83500                      mov ax, 0x0035                  ; Y hotspot = 0
+   976 0000082E EF                          out dx, ax
+   977 0000082F B83800                      mov ax, 0x0038                  ; sprite color 0 = black
+   978 00000832 EF                          out dx, ax
+   979 00000833 B83900                      mov ax, 0x0039
+   980 00000836 EF                          out dx, ax
+   981 00000837 B83A00                      mov ax, 0x003a
+   982 0000083A EF                          out dx, ax
+   983 0000083B B83BFF                      mov ax, 0xff3b                  ; sprite color 1 = white
+   984 0000083E EF                          out dx, ax
+   985 0000083F B83CFF                      mov ax, 0xff3c
+   986 00000842 EF                          out dx, ax
+   987 00000843 B83DFF                      mov ax, 0xff3d
+   988 00000846 EF                          out dx, ax
+   989 00000847 B86000                      mov ax, 0x0060                  ; sprite data position = 0
+   990 0000084A EF                          out dx, ax
+   991 0000084B B86100                      mov ax, 0x0061
+   992 0000084E EF                          out dx, ax
+   993 0000084F B06A                        mov al, 0x6a                  ; sprite data stream register
+   994 00000851 EE                          out dx, al
+   995 00000852 42                          inc dx
+   996 00000853 B0AA                        mov al, 0xaa                  ; four transparent 2-bit pixels
+   997 00000855 B90004                      mov cx, 1024
+   998                                  .clear:
+   999 00000858 EE                          out dx, al
+  1000 00000859 E2FD                        loop .clear
+  1001 0000085B C706[380C]FFFF              mov word [hud_last_fps], 0xffff
+  1002 00000861 E80E00                      call update_sprite_hud
+  1003 00000864 8B16[1F0C]                  mov dx, [io_base]
+  1004 00000868 83C20A                      add dx, 0x0a
+  1005 0000086B B83601                      mov ax, 0x0136                  ; enable hardware sprite
+  1006 0000086E EF                          out dx, ax
+  1007 0000086F 6661                        popad
+  1008 00000871 C3                          ret
+  1009                                  
+  1010                                  update_sprite_hud:
+  1011 00000872 6660                        pushad
+  1012 00000874 A1[450C]                    mov ax, [hud_fps10]
+  1013 00000877 3B06[380C]                  cmp ax, [hud_last_fps]
+  1014 0000087B 7447                        je .done
+  1015 0000087D A3[380C]                    mov [hud_last_fps], ax
+  1016 00000880 E82C02                      call render_hud
+  1017 00000883 8B16[1F0C]                  mov dx, [io_base]
+  1018 00000887 83C20A                      add dx, 0x0a
+  1019 0000088A B86000                      mov ax, 0x0060
+  1020 0000088D EF                          out dx, ax
+  1021 0000088E B86100                      mov ax, 0x0061
+  1022 00000891 EF                          out dx, ax
+  1023 00000892 B06A                        mov al, 0x6a
+  1024 00000894 EE                          out dx, al
+  1025 00000895 42                          inc dx
+  1026 00000896 BE[4E0F]                    mov si, hud_canvas
+  1027 00000899 BDA000                      mov bp, 64 * 10 / 4
+  1028                                  .group:
+  1029 0000089C B0AA                        mov al, 0xaa
+  1030 0000089E 803C00                      cmp byte [si], 0
+  1031 000008A1 7402                        je .pixel1
+  1032 000008A3 3403                        xor al, 0x03
+  1033                                  .pixel1:
+  1034 000008A5 807C0100                    cmp byte [si+1], 0
+  1035 000008A9 7402                        je .pixel2
+  1036 000008AB 340C                        xor al, 0x0c
+  1037                                  .pixel2:
+  1038 000008AD 807C0200                    cmp byte [si+2], 0
+  1039 000008B1 7402                        je .pixel3
+  1040 000008B3 3430                        xor al, 0x30
+  1041                                  .pixel3:
+  1042 000008B5 807C0300                    cmp byte [si+3], 0
+  1043 000008B9 7402                        je .write
+  1044 000008BB 34C0                        xor al, 0xc0
+  1045                                  .write:
+  1046 000008BD EE                          out dx, al
+  1047 000008BE 83C604                      add si, 4
+  1048 000008C1 4D                          dec bp
+  1049 000008C2 75D8                        jnz .group
+  1050                                  .done:
+  1051 000008C4 6661                        popad
+  1052 000008C6 C3                          ret
+  1053                                  
+  1054                                  %if PAN_STYLE = 1
+  1055                                  set_view:
+  1056 000008C7 660FB706[310C]              movzx eax, word [pan_y]
+  1057 000008CD 6669C0C0030000              imul eax, eax, SOURCE_W
+  1058 000008D4 660FB71E[2F0C]              movzx ebx, word [pan_x]
+  1059 000008DA 6601D8                      add eax, ebx
+  1060 000008DD 660500B00400                add eax, SOURCE_BASE
+  1061 000008E3 66C1E802                    shr eax, 2
+  1062 000008E7 6689C3                      mov ebx, eax
+  1063 000008EA 8B16[1F0C]                  mov dx, [io_base]
+  1064 000008EE 83C20A                      add dx, 0x0a
+  1065 000008F1 88DC                        mov ah, bl
+  1066 000008F3 B040                        mov al, 0x40
+  1067 000008F5 EF                          out dx, ax
+  1068 000008F6 66C1EB08                    shr ebx, 8
+  1069 000008FA 88DC                        mov ah, bl
+  1070 000008FC B041                        mov al, 0x41
+  1071 000008FE EF                          out dx, ax
+  1072 000008FF 66C1EB08                    shr ebx, 8
+  1073 00000903 88DC                        mov ah, bl
+  1074 00000905 B042                        mov al, 0x42                  ; latches start address in 86Box
+  1075 00000907 EF                          out dx, ax
+  1076 00000908 C3                          ret
+  1077                                  
+  1078                                  ; 86Box skips unmodified VRAM pages during scanout. Rewriting one unchanged
+  1079                                  ; byte per 4 KB page marks the source image for redraw after a start change.
+  1080                                  refresh_source_pages:
+  1081 00000909 50                          push ax
+  1082 0000090A 53                          push bx
+  1083 0000090B 56                          push si
+  1084 0000090C 55                          push bp
+  1085 0000090D 06                          push es
+  1086 0000090E B800A0                      mov ax, 0xa000
+  1087 00000911 8EC0                        mov es, ax
+  1088 00000913 BB0400                      mov bx, 4
+  1089 00000916 E853FE                      call select_bank
+  1090 00000919 BE00B0                      mov si, 0xb000
+  1091 0000091C BD9600                      mov bp, SOURCE_PAGES          ; pages 0x4b000 through 0xe0000
+  1092                                  .page:
+  1093 0000091F 268A04                      mov al, [es:si]
+  1094 00000922 268804                      mov [es:si], al
+  1095 00000925 81C60010                    add si, 4096
+  1096 00000929 7504                        jnz .next
+  1097 0000092B 43                          inc bx
+  1098 0000092C E83DFE                      call select_bank
+  1099                                  .next:
+  1100 0000092F 4D                          dec bp
+  1101 00000930 75ED                        jnz .page
+  1102 00000932 07                          pop es
+  1103 00000933 5D                          pop bp
+  1104 00000934 5E                          pop si
+  1105 00000935 5B                          pop bx
+  1106 00000936 58                          pop ax
+  1107 00000937 C3                          ret
+  1108                                  %endif
+  1109                                  
+  1110                                  %if PAN_STYLE != 2
+  1111                                  ; Synchronize the BitBLT or display-start change to a new vertical retrace.
+  1112                                  ; Input Status 1 bit 3 is also driven by 86Box's XGA scanout. Bounded
+  1113                                  ; polling keeps the demo responsive if a machine does not expose the bit.
+  1114                                  wait_vsync:
+  1115 00000938 50                          push ax
+  1116 00000939 51                          push cx
+  1117 0000093A 52                          push dx
+  1118 0000093B BADA03                      mov dx, 0x3da
+  1119 0000093E B9FFFF                      mov cx, 0xffff
+  1120                                  .leave_retrace:
+  1121 00000941 EC                          in al, dx
+  1122 00000942 A808                        test al, 8
+  1123 00000944 7404                        jz .wait_retrace
+  1124 00000946 E2F9                        loop .leave_retrace
+  1125 00000948 EB0A                        jmp .timeout
+  1126                                  .wait_retrace:
+  1127 0000094A B9FFFF                      mov cx, 0xffff
+  1128                                  .rise:
+  1129 0000094D EC                          in al, dx
+  1130 0000094E A808                        test al, 8
+  1131 00000950 7505                        jnz .synced
+  1132 00000952 E2F9                        loop .rise
+  1133                                  .timeout:
+  1134 00000954 F9                          stc
+  1135 00000955 EB01                        jmp .done
+  1136                                  .synced:
+  1137 00000957 F8                          clc
+  1138                                  .done:
+  1139 00000958 5A                          pop dx
+  1140 00000959 59                          pop cx
+  1141 0000095A 58                          pop ax
+  1142 0000095B C3                          ret
+  1143                                  %endif
+  1144                                  
+  1145                                  ; Count completed panorama steps over at least 36 BIOS clock ticks (~2 s).
+  1146                                  ; A slow frame can span several seconds; tick subtraction preserves that time.
+  1147                                  ; This measures the guest animation loop, not host-window presentation.
+  1148                                  update_fps:
+  1149 0000095C 6660                        pushad
+  1150 0000095E 30E4                        xor ah, ah
+  1151 00000960 CD1A                        int 0x1a
+  1152 00000962 660FB7C1                    movzx eax, cx
+  1153 00000966 66C1E010                    shl eax, 16
+  1154 0000096A 89D0                        mov ax, dx
+  1155 0000096C 66A3[3F0C]                  mov [fps_now], eax
+  1156 00000970 803E[3A0C]00                cmp byte [fps_started], 0
+  1157 00000975 750B                        jne .elapsed
+  1158 00000977 66A3[3B0C]                  mov [fps_start], eax
+  1159 0000097B C606[3A0C]01                mov byte [fps_started], 1
+  1160 00000980 EB4C                        jmp .done                      ; this completed frame precedes the timer
+  1161                                  .elapsed:
+  1162 00000982 FF06[430C]                  inc word [hud_frames]
+  1163 00000986 6689C3                      mov ebx, eax
+  1164 00000989 662B1E[3B0C]                sub ebx, [fps_start]
+  1165 0000098E 7307                        jnc .delta_ready
+  1166 00000990 6681C3B0001800              add ebx, 0x1800b0             ; BIOS midnight rollover
+  1167                                  .delta_ready:
+  1168 00000997 6683FB24                    cmp ebx, 36
+  1169 0000099B 7231                        jb .done
+  1170 0000099D 660FB706[430C]              movzx eax, word [hud_frames]
+  1171 000009A3 66B9B6000000                mov ecx, 182                  ; 18.2 ticks/s * 10 for tenths
+  1172 000009A9 66F7E1                      mul ecx
+  1173 000009AC 6631D2                      xor edx, edx
+  1174 000009AF 66F7F3                      div ebx
+  1175 000009B2 663D0F270000                cmp eax, 9999
+  1176 000009B8 7603                        jbe .store
+  1177                                  .cap:
+  1178 000009BA B80F27                      mov ax, 9999
+  1179                                  .store:
+  1180 000009BD A3[450C]                    mov [hud_fps10], ax
+  1181 000009C0 66A1[3F0C]                  mov eax, [fps_now]
+  1182 000009C4 66A3[3B0C]                  mov [fps_start], eax
+  1183 000009C8 C706[430C]0000              mov word [hud_frames], 0
+  1184                                  .done:
+  1185 000009CE 6661                        popad
+  1186 000009D0 C3                          ret
+  1187                                  
+  1188                                  restore_hud:
+  1189 000009D1 803E[470C]00                cmp byte [hud_active], 0
+  1190 000009D6 740E                        je .done
+  1191 000009D8 66A1[480C]                  mov eax, [hud_old_addr]
+  1192 000009DC 66A3[4C0C]                  mov [hud_work_addr], eax
+  1193 000009E0 BE[CE0C]                    mov si, hud_saved
+  1194 000009E3 E88B00                      call copy_to_vram
+  1195                                  .done:
+  1196 000009E6 C3                          ret
+  1197                                  
+  1198                                  show_hud:
+  1199                                  %if PAN_STYLE = 1
+  1200                                      ; Legacy VRAM text path is retained so the verified 193007 DREAMS
+  1201                                      ; binary remains reproducible. The active FPS path is the sprite above.
+  1202 000009E7 660FB706[310C]              movzx eax, word [pan_y]
+  1203 000009ED 6683C008                    add eax, 8
+  1204 000009F1 6669C0C0030000              imul eax, eax, SOURCE_W
+  1205 000009F8 660FB71E[2F0C]              movzx ebx, word [pan_x]
+  1206 000009FE 6601D8                      add eax, ebx
+  1207 00000A01 660508B00400                add eax, SOURCE_BASE + 8
+  1208 00000A07 66A3[480C]                  mov [hud_old_addr], eax
+  1209 00000A0B 66A3[4C0C]                  mov [hud_work_addr], eax
+  1210 00000A0F C706[500C]C003              mov word [hud_pitch], SOURCE_W
+  1211                                  %else
+  1212                                      mov dword [hud_old_addr], 2 * SCREEN_W + 8
+  1213                                      mov eax, [hud_old_addr]
+  1214                                      mov [hud_work_addr], eax
+  1215                                      mov word [hud_pitch], SCREEN_W
+  1216                                  %endif
+  1217 00000A15 BE[CE0C]                    mov si, hud_saved
+  1218 00000A18 E81700                      call copy_from_vram
+  1219 00000A1B E89100                      call render_hud
+  1220 00000A1E 66A1[480C]                  mov eax, [hud_old_addr]
+  1221 00000A22 66A3[4C0C]                  mov [hud_work_addr], eax
+  1222 00000A26 BE[4E0F]                    mov si, hud_canvas
+  1223 00000A29 E84500                      call copy_to_vram
+  1224 00000A2C C606[470C]01                mov byte [hud_active], 1
+  1225 00000A31 C3                          ret
+  1226                                  
+  1227                                  ; Rectangle copy: 64 x 10 bytes at hud_work_addr.
+  1228                                  ; Recompute the bank for each row and also handle a row crossing a bank edge.
+  1229                                  copy_from_vram:
+  1230 00000A32 6660                        pushad
+  1231 00000A34 06                          push es
+  1232 00000A35 B800A0                      mov ax, 0xa000
+  1233 00000A38 8EC0                        mov es, ax
+  1234 00000A3A BD0A00                      mov bp, 10
+  1235                                  .row:
+  1236 00000A3D 66A1[4C0C]                  mov eax, [hud_work_addr]
+  1237 00000A41 6689C3                      mov ebx, eax
+  1238 00000A44 66C1EB10                    shr ebx, 16
+  1239 00000A48 89C7                        mov di, ax
+  1240 00000A4A E81FFD                      call select_bank
+  1241 00000A4D B94000                      mov cx, 64
+  1242                                  .pixel:
+  1243 00000A50 268A05                      mov al, [es:di]
+  1244 00000A53 8804                        mov [si], al
+  1245 00000A55 46                          inc si
+  1246 00000A56 47                          inc di
+  1247 00000A57 7504                        jnz .same_bank
+  1248 00000A59 43                          inc bx
+  1249 00000A5A E80FFD                      call select_bank
+  1250                                  .same_bank:
+  1251 00000A5D E2F1                        loop .pixel
+  1252 00000A5F 660FB706[500C]              movzx eax, word [hud_pitch]
+  1253 00000A65 660106[4C0C]                add [hud_work_addr], eax
+  1254 00000A6A 4D                          dec bp
+  1255 00000A6B 75D0                        jnz .row
+  1256 00000A6D 07                          pop es
+  1257 00000A6E 6661                        popad
+  1258 00000A70 C3                          ret
+  1259                                  
+  1260                                  copy_to_vram:
+  1261 00000A71 6660                        pushad
+  1262 00000A73 06                          push es
+  1263 00000A74 FC                          cld
+  1264 00000A75 B800A0                      mov ax, 0xa000
+  1265 00000A78 8EC0                        mov es, ax
+  1266 00000A7A BD0A00                      mov bp, 10
+  1267                                  .row:
+  1268 00000A7D 66A1[4C0C]                  mov eax, [hud_work_addr]
+  1269 00000A81 6689C3                      mov ebx, eax
+  1270 00000A84 66C1EB10                    shr ebx, 16
+  1271 00000A88 89C7                        mov di, ax
+  1272 00000A8A E8DFFC                      call select_bank
+  1273 00000A8D B94000                      mov cx, 64
+  1274                                  .pixel:
+  1275 00000A90 AC                          lodsb
+  1276 00000A91 268805                      mov [es:di], al
+  1277 00000A94 47                          inc di
+  1278 00000A95 7504                        jnz .same_bank
+  1279 00000A97 43                          inc bx
+  1280 00000A98 E8D1FC                      call select_bank
+  1281                                  .same_bank:
+  1282 00000A9B E2F3                        loop .pixel
+  1283 00000A9D 660FB706[500C]              movzx eax, word [hud_pitch]
+  1284 00000AA3 660106[4C0C]                add [hud_work_addr], eax
+  1285 00000AA8 4D                          dec bp
+  1286 00000AA9 75D2                        jnz .row
+  1287 00000AAB 07                          pop es
+  1288 00000AAC 6661                        popad
+  1289 00000AAE C3                          ret
+  1290                                  
+  1291                                  render_hud:
+  1292 00000AAF 6660                        pushad
+  1293 00000AB1 06                          push es
+  1294 00000AB2 1E                          push ds
+  1295 00000AB3 07                          pop es
+  1296 00000AB4 FC                          cld
+  1297 00000AB5 BF[4E0F]                    mov di, hud_canvas
+  1298 00000AB8 B98002                      mov cx, 64 * 10
+  1299 00000ABB 30C0                        xor al, al
+  1300 00000ABD F3AA                        rep stosb
+  1301 00000ABF A1[450C]                    mov ax, [hud_fps10]
+  1302 00000AC2 BB0A00                      mov bx, 10
+  1303 00000AC5 31D2                        xor dx, dx
+  1304 00000AC7 F7F3                        div bx
+  1305 00000AC9 80C204                      add dl, 4
+  1306 00000ACC 8816[5C0C]                  mov [hud_text+8], dl          ; tenths
+  1307 00000AD0 31D2                        xor dx, dx
+  1308 00000AD2 F7F3                        div bx
+  1309 00000AD4 80C204                      add dl, 4
+  1310 00000AD7 8816[5A0C]                  mov [hud_text+6], dl          ; ones
+  1311 00000ADB 31D2                        xor dx, dx
+  1312 00000ADD F7F3                        div bx
+  1313 00000ADF 80C204                      add dl, 4
+  1314 00000AE2 8816[590C]                  mov [hud_text+5], dl          ; tens
+  1315 00000AE6 0404                        add al, 4
+  1316 00000AE8 A2[580C]                    mov [hud_text+4], al          ; hundreds
+  1317                                  %if PAN_STYLE != 2
+  1318 00000AEB C606[5D0C]0F                mov byte [hud_text+9], 15     ; blank when running without VSYNC wait
+  1319 00000AF0 803E[370C]00                cmp byte [vsync_enabled], 0
+  1320 00000AF5 7405                        je .mode_ready
+  1321 00000AF7 C606[5D0C]02                mov byte [hud_text+9], 2      ; S marks synchronized panning
+  1322                                  .mode_ready:
+  1323                                  %endif
+  1324 00000AFC C706[520C][8F0F]            mov word [hud_char_base], hud_canvas + 65
+  1325 00000B02 31DB                        xor bx, bx
+  1326                                  .char:
+  1327 00000B04 8A87[540C]                  mov al, [hud_text+bx]
+  1328 00000B08 B107                        mov cl, 7
+  1329 00000B0A F6E1                        mul cl
+  1330 00000B0C BE[5E0C]                    mov si, hud_glyphs
+  1331 00000B0F 01C6                        add si, ax
+  1332 00000B11 8B3E[520C]                  mov di, [hud_char_base]
+  1333 00000B15 BD0700                      mov bp, 7
+  1334                                  .row:
+  1335 00000B18 8A14                        mov dl, [si]
+  1336 00000B1A B90500                      mov cx, 5
+  1337                                  .bit:
+  1338 00000B1D F6C210                      test dl, 0x10
+  1339 00000B20 7403                        jz .skip
+  1340 00000B22 C6054A                      mov byte [di], PROGRESS_COLOR
+  1341                                  .skip:
+  1342 00000B25 D0E2                        shl dl, 1
+  1343 00000B27 47                          inc di
+  1344 00000B28 E2F3                        loop .bit
+  1345 00000B2A 46                          inc si
+  1346 00000B2B 83C73B                      add di, 59
+  1347 00000B2E 4D                          dec bp
+  1348 00000B2F 75E7                        jnz .row
+  1349 00000B31 8306[520C]06                add word [hud_char_base], 6
+  1350 00000B36 43                          inc bx
+  1351                                  %if PAN_STYLE != 2
+  1352 00000B37 83FB0A                      cmp bx, 10
+  1353                                  %else
+  1354                                      cmp bx, 9
+  1355                                  %endif
+  1356 00000B3A 72C8                        jb .char
+  1357 00000B3C 07                          pop es
+  1358 00000B3D 6661                        popad
+  1359 00000B3F C3                          ret
+  1360                                  
+  1361                                  %if PAN_STYLE = 2
+  1362                                  ; CPU-only comparison: read each 640-byte row through the banked A000
+  1363                                  ; window into conventional RAM, switch banks, then write the display row.
+  1364                                  cpu_blit:
+  1365                                      pushad
+  1366                                      push es
+  1367                                      movzx eax, word [pan_y]
+  1368                                      imul eax, eax, SOURCE_W
+  1369                                      movzx ebx, word [pan_x]
+  1370                                      add eax, ebx
+  1371                                      add eax, SOURCE_BASE
+  1372                                      mov [cpu_src_addr], eax
+  1373                                      mov dword [cpu_dst_addr], 0
+  1374                                      mov bp, SCREEN_H
+  1375                                  .row:
+  1376                                      mov ax, 0xa000
+  1377                                      mov es, ax
+  1378                                      mov eax, [cpu_src_addr]
+  1379                                      mov ebx, eax
+  1380                                      shr ebx, 16
+  1381                                      mov di, ax
+  1382                                      call select_bank
+  1383                                      mov si, image_page
+  1384                                      mov cx, SCREEN_W
+  1385                                  .read:
+  1386                                      mov al, [es:di]
+  1387                                      mov [si], al
+  1388                                      inc si
+  1389                                      inc di
+  1390                                      jnz .read_same_bank
+  1391                                      inc bx
+  1392                                      call select_bank
+  1393                                  .read_same_bank:
+  1394                                      loop .read
+  1395                                  
+  1396                                      mov eax, [cpu_dst_addr]
+  1397                                      mov ebx, eax
+  1398                                      shr ebx, 16
+  1399                                      mov di, ax
+  1400                                      call select_bank
+  1401                                      mov si, image_page
+  1402                                      mov cx, SCREEN_W
+  1403                                      cld
+  1404                                  .write:
+  1405                                      lodsb
+  1406                                      mov [es:di], al
+  1407                                      inc di
+  1408                                      jnz .write_same_bank
+  1409                                      inc bx
+  1410                                      call select_bank
+  1411                                  .write_same_bank:
+  1412                                      loop .write
+  1413                                      add dword [cpu_src_addr], SOURCE_W
+  1414                                      add dword [cpu_dst_addr], SCREEN_W
+  1415                                      dec bp
+  1416                                      jnz .row
+  1417                                      pop es
+  1418                                      popad
+  1419                                      ret
+  1420                                  %endif
+  1421                                  
+  1422                                  full_blit:
+  1423 00000B40 E84D00                      call wait_cp
+  1424 00000B43 7229                        jc .failed
+  1425 00000B45 26C70670000000              mov word [es:0x70], 0
+  1426 00000B4C 26C70672000000              mov word [es:0x72], 0
+  1427 00000B53 26C70678000000              mov word [es:0x78], 0
+  1428 00000B5A 26C7067A000000              mov word [es:0x7a], 0
+  1429 00000B61 2666C7067C00008021-         mov dword [es:0x7c], BLT_OP
+  1429 00000B6A A8                 
+  1430 00000B6B E82200                      call wait_cp
+  1431                                  .failed:
+  1432 00000B6E C3                          ret
+  1433                                  
+  1434                                  ; A small guest-written marker establishes that DOS reached a completed BLT.
+  1435                                  ; Visual correctness still requires an emulator screenshot or user inspection.
+  1436                                  log_first_blit:
+  1437 00000B6F B43C                        mov ah, 0x3c
+  1438 00000B71 31C9                        xor cx, cx
+  1439 00000B73 BA[A195]                    mov dx, log_name
+  1440 00000B76 CD21                        int 0x21
+  1441 00000B78 7215                        jc .done
+  1442 00000B7A 89C3                        mov bx, ax
+  1443 00000B7C B440                        mov ah, 0x40
+  1444 00000B7E B93200                      mov cx, log_end-log_text
+  1445 00000B81 BA[F795]                    mov dx, log_text
+  1446 00000B84 CD21                        int 0x21
+  1447 00000B86 B43E                        mov ah, 0x3e
+  1448 00000B88 CD21                        int 0x21
+  1449 00000B8A A1[210C]                    mov ax, [cp_seg]
+  1450 00000B8D 8EC0                        mov es, ax
+  1451                                  .done:
+  1452 00000B8F C3                          ret
+  1453                                  
+  1454                                  wait_cp:
+  1455 00000B90 51                          push cx
+  1456 00000B91 52                          push dx
+  1457 00000B92 BA4000                      mov dx, 64
+  1458                                  .outer:
+  1459 00000B95 B9FFFF                      mov cx, 0xffff
+  1460                                  .inner:
+  1461 00000B98 813E[1A0C]DA8F              cmp word [card_id], 0x8fda
+  1462 00000B9E 740A                        je .xga2
+  1463 00000BA0 26F606110080                test byte [es:0x11], 0x80
+  1464 00000BA6 7413                        jz .done
+  1465 00000BA8 EB08                        jmp .retry
+  1466                                  .xga2:
+  1467 00000BAA 26F606090080                test byte [es:0x09], 0x80
+  1468 00000BB0 7409                        jz .done
+  1469                                  .retry:
+  1470 00000BB2 E2E4                        loop .inner
+  1471 00000BB4 4A                          dec dx
+  1472 00000BB5 75DE                        jnz .outer
+  1473 00000BB7 5A                          pop dx
+  1474 00000BB8 59                          pop cx
+  1475 00000BB9 F9                          stc
+  1476 00000BBA C3                          ret
+  1477                                  .done:
+  1478 00000BBB 5A                          pop dx
+  1479 00000BBC 59                          pop cx
+  1480 00000BBD F8                          clc
+  1481 00000BBE C3                          ret
+  1482                                  
+  1483                                  restore_mode:
+  1484 00000BBF 803E[170C]00                cmp byte [mode_active], 0
+  1485 00000BC4 744F                        je .done
+  1486 00000BC6 8B16[1F0C]                  mov dx, [io_base]
+  1487 00000BCA 83C20A                      add dx, 0x0a
+  1488 00000BCD B83600                      mov ax, 0x0036                  ; disable hardware sprite
+  1489 00000BD0 EF                          out dx, ax
+  1490 00000BD1 8B16[1F0C]                  mov dx, [io_base]
+  1491 00000BD5 42                          inc dx
+  1492 00000BD6 30C0                        xor al, al
+  1493 00000BD8 EE                          out dx, al
+  1494 00000BD9 8B16[1F0C]                  mov dx, [io_base]
+  1495 00000BDD 83C20A                      add dx, 0x0a
+  1496 00000BE0 B864FF                      mov ax, 0xff64
+  1497 00000BE3 EF                          out dx, ax
+  1498 00000BE4 B85015                      mov ax, 0x1550
+  1499 00000BE7 EF                          out dx, ax
+  1500 00000BE8 B85014                      mov ax, 0x1450
+  1501 00000BEB EF                          out dx, ax
+  1502 00000BEC B85100                      mov ax, 0x0051
+  1503 00000BEF EF                          out dx, ax
+  1504 00000BF0 B85404                      mov ax, 0x0454
+  1505 00000BF3 EF                          out dx, ax
+  1506 00000BF4 B8707F                      mov ax, 0x7f70
+  1507 00000BF7 EF                          out dx, ax
+  1508 00000BF8 B82A20                      mov ax, 0x202a
+  1509 00000BFB EF                          out dx, ax
+  1510 00000BFC 8B16[1F0C]                  mov dx, [io_base]
+  1511 00000C00 B001                        mov al, 1
+  1512 00000C02 EE                          out dx, al
+  1513 00000C03 BAC303                      mov dx, 0x3c3
+  1514 00000C06 EE                          out dx, al
+  1515 00000C07 B80212                      mov ax, 0x1202
+  1516 00000C0A B330                        mov bl, 0x30
+  1517 00000C0C CD10                        int 0x10
+  1518 00000C0E 30E4                        xor ah, ah
+  1519 00000C10 A0[160C]                    mov al, [old_mode]
+  1520 00000C13 CD10                        int 0x10
+  1521                                  .done:
+  1522 00000C15 C3                          ret
+  1523                                  
+  1524 00000C16 03                      old_mode db 3
+  1525 00000C17 00                      mode_active db 0
+  1526 00000C18 0000                    pos_base dw 0
+  1527 00000C1A 0000                    card_id dw 0
+  1528 00000C1C 00                      pos1 db 0
+  1529 00000C1D 00                      pos3 db 0
+  1530 00000C1E 00                      pos4 db 0
+  1531 00000C1F 0000                    io_base dw 0
+  1532 00000C21 0000                    cp_seg dw 0
+  1533 00000C23 00000000                aperture dd 0
+  1534 00000C27 00000000                cp_aperture dd 0
+  1535 00000C2B 0000                    row dw 0
+  1536 00000C2D 0000                    col dw 0
+  1537 00000C2F 0000                    pan_x dw 0
+  1538 00000C31 0000                    pan_y dw 0
+  1539 00000C33 0100                    step_x dw 1
+  1540 00000C35 0100                    step_y dw 1
+  1541                                  %if PAN_STYLE != 2
+  1542 00000C37 00                      vsync_enabled db 0
+  1543                                  %endif
+  1544 00000C38 FFFF                    hud_last_fps dw 0xffff
+  1545 00000C3A 00                      fps_started db 0
+  1546 00000C3B 00000000                fps_start dd 0
+  1547 00000C3F 00000000                fps_now dd 0
+  1548 00000C43 0000                    hud_frames dw 0
+  1549 00000C45 0000                    hud_fps10 dw 0
+  1550 00000C47 00                      hud_active db 0
+  1551 00000C48 00000000                hud_old_addr dd 0
+  1552 00000C4C 00000000                hud_work_addr dd 0
+  1553 00000C50 C003                    hud_pitch dw SOURCE_W
+  1554 00000C52 0000                    hud_char_base dw 0
+  1555 00000C54 000102030404040E04      hud_text db 0, 1, 2, 3, 4, 4, 4, 14, 4 ; FPS:000.0
+  1556                                  %if PAN_STYLE != 2
+  1557 00000C5D 0F                          db 15                             ; optional S at the right
+  1558                                  %endif
+  1559                                  ; Five-bit rows for F, P, S, colon, digits 0..9, and dot.
+  1560                                  hud_glyphs:
+  1561 00000C5E 1F10101E101010              db 0x1f,0x10,0x10,0x1e,0x10,0x10,0x10
+  1562 00000C65 1E11111E101010              db 0x1e,0x11,0x11,0x1e,0x10,0x10,0x10
+  1563 00000C6C 0F10100E01011E              db 0x0f,0x10,0x10,0x0e,0x01,0x01,0x1e
+  1564 00000C73 00040400040400              db 0x00,0x04,0x04,0x00,0x04,0x04,0x00
+  1565 00000C7A 0E11131519110E              db 0x0e,0x11,0x13,0x15,0x19,0x11,0x0e
+  1566 00000C81 040C040404040E              db 0x04,0x0c,0x04,0x04,0x04,0x04,0x0e
+  1567 00000C88 0E11010204081F              db 0x0e,0x11,0x01,0x02,0x04,0x08,0x1f
+  1568 00000C8F 1E01010E01011E              db 0x1e,0x01,0x01,0x0e,0x01,0x01,0x1e
+  1569 00000C96 02060A121F0202              db 0x02,0x06,0x0a,0x12,0x1f,0x02,0x02
+  1570 00000C9D 1F10101E01011E              db 0x1f,0x10,0x10,0x1e,0x01,0x01,0x1e
+  1571 00000CA4 0E10101E11110E              db 0x0e,0x10,0x10,0x1e,0x11,0x11,0x0e
+  1572 00000CAB 1F010204080808              db 0x1f,0x01,0x02,0x04,0x08,0x08,0x08
+  1573 00000CB2 0E11110E11110E              db 0x0e,0x11,0x11,0x0e,0x11,0x11,0x0e
+  1574 00000CB9 0E11110F01010E              db 0x0e,0x11,0x11,0x0f,0x01,0x01,0x0e
+  1575 00000CC0 00000000000404              db 0x00,0x00,0x00,0x00,0x00,0x04,0x04
+  1576                                  %if PAN_STYLE != 2
+  1577 00000CC7 00<rep 7h>                  times 7 db 0                      ; blank glyph 15
+  1578                                  %endif
+  1579 00000CCE 00<rep 280h>            hud_saved times 64 * 10 db 0
+  1580 00000F4E 00<rep 280h>            hud_canvas times 64 * 10 db 0
+  1581                                  %if TEST_MODE = 3
+  1582 000011CE 445245414D532E4441-     image_name db 'DREAMS.DAT', 0
+  1582 000011D7 5400               
+  1583 000011D9 0000                    image_handle dw 0
+  1584 000011DB 0400                    load_bank dw 4
+  1585 000011DD 00B0                    load_offset dw 0xb000
+  1586 000011DF 0000                    loaded_pages dw 0
+  1587 000011E1 0000                    chunk_bytes dw 0
+  1588 000011E3 0000                    input_end dw 0
+  1589 000011E5 0000                    match_count dw 0
+  1590 000011E7 0000                    match_distance dw 0
+  1591 000011E9 00                      bits_left db 0
+  1592 000011EA 00                      bit_value db 0
+  1593 000011EB <bin 300h>              image_palette incbin "bin/DREAMS.DAT", 0, 768
+  1594 000014EB 90                      align 2
+  1595 000014EC 00<rep 8000h>           image_page times 32768 db 0
+  1596                                  %endif
+  1597                                  %if PAN_STYLE = 2
+  1598                                  cpu_src_addr dd 0
+  1599                                  cpu_dst_addr dd 0
+  1600                                  %endif
+  1601 000094EC 5847412050616E6F72-     msg_start db 'XGA Panorama', 13, 10, '$'
+  1601 000094F5 616D610D0A24       
+  1602 000094FB 5847412D312F584741-     msg_no_xga db 'XGA-1/XGA-2 not found on MCA.', 13, 10, '$'
+  1602 00009504 2D32206E6F7420666F-
+  1602 0000950D 756E64206F6E204D43-
+  1602 00009516 412E0D0A24         
+  1603 0000951B 4E6F20584741203120-     msg_no_aperture db 'No XGA 1 MB or 4 MB aperture in POS.', 13, 10, '$'
+  1603 00009524 4D42206F722034204D-
+  1603 0000952D 422061706572747572-
+  1603 00009536 6520696E20504F532E-
+  1603 0000953F 0D0A24             
+  1604 00009542 50616E6F72616D6120-     msg_no_vram db 'Panorama needs 1 MB XGA VRAM.', 13, 10, '$'
+  1604 0000954B 6E656564732031204D-
+  1604 00009554 422058474120565241-
+  1604 0000955D 4D2E0D0A24         
+  1605 00009562 445245414D532E4441-     msg_image_error db 'DREAMS.DAT missing or incomplete.', 13, 10, '$'
+  1605 0000956B 54206D697373696E67-
+  1605 00009574 206F7220696E636F6D-
+  1605 0000957D 706C6574652E0D0A24 
+  1606 00009586 58474120636F70726F-     msg_cp_timeout db 'XGA coprocessor timeout.', 13, 10, '$'
+  1606 0000958F 636573736F72207469-
+  1606 00009598 6D656F75742E0D0A24 
+  1607 000095A1 5847414F4B2E545854-     log_name db 'XGAOK.TXT', 0
+  1607 000095AA 00                 
+  1608 000095AB 584741424F4F542E54-     log_boot_name db 'XGABOOT.TXT', 0
+  1608 000095B4 585400             
+  1609 000095B7 5847414445542E5458-     log_detect_name db 'XGADET.TXT', 0
+  1609 000095C0 5400               
+  1610 000095C2 5847414D4F44452E54-     log_mode_name db 'XGAMODE.TXT', 0
+  1610 000095CB 585400             
+  1611 000095CE 4E4F5847412E545854-     log_xga_error db 'NOXGA.TXT', 0
+  1611 000095D7 00                 
+  1612 000095D8 4E4F415045522E5458-     log_ap_error db 'NOAPER.TXT', 0
+  1612 000095E1 5400               
+  1613 000095E3 4E4F5652414D2E5458-     log_vram_error db 'NOVRAM.TXT', 0
+  1613 000095EC 5400               
+  1614 000095EE 4E4F43502E54585400      log_cp_error db 'NOCP.TXT', 0
+  1615 000095F7 584741206D6F64652C-     log_text db 'XGA mode, maps, and first BLT command completed.', 13, 10
+  1615 00009600 206D6170732C20616E-
+  1615 00009609 642066697273742042-
+  1615 00009612 4C5420636F6D6D616E-
+  1615 0000961B 6420636F6D706C6574-
+  1615 00009624 65642E0D0A         
+  1616                                  log_end:
+  1617                                  
+  1618                                  %include "xga_mode_640.inc"
+     1                              <1> ; Generated from XGA Toolkit/XGAKIT.ASM by build_mode_table.py.
+     2                              <1> ; Entries: I/O offset, register index (0 for direct), value.
+     3                              <1> mode_table:
+     4 00009629 040000              <1>     db 0x04, 0x00, 0x00
+     5 0000962C 0500FF              <1>     db 0x05, 0x00, 0xff
+     6 0000962F 000004              <1>     db 0x00, 0x00, 0x04
+     7 00009632 0A6400              <1>     db 0x0a, 0x64, 0x00
+     8 00009635 010001              <1>     db 0x01, 0x00, 0x01
+     9 00009638 080000              <1>     db 0x08, 0x00, 0x00
+    10 0000963B 060000              <1>     db 0x06, 0x00, 0x00
+    11 0000963E 090003              <1>     db 0x09, 0x00, 0x03
+    12 00009641 0A5001              <1>     db 0x0a, 0x50, 0x01
+    13 00009644 0A5000              <1>     db 0x0a, 0x50, 0x00
+    14 00009647 0A1063              <1>     db 0x0a, 0x10, 0x63
+    15 0000964A 0A1100              <1>     db 0x0a, 0x11, 0x00
+    16 0000964D 0A124F              <1>     db 0x0a, 0x12, 0x4f
+    17 00009650 0A1300              <1>     db 0x0a, 0x13, 0x00
+    18 00009653 0A144F              <1>     db 0x0a, 0x14, 0x4f
+    19 00009656 0A1500              <1>     db 0x0a, 0x15, 0x00
+    20 00009659 0A1663              <1>     db 0x0a, 0x16, 0x63
+    21 0000965C 0A1700              <1>     db 0x0a, 0x17, 0x00
+    22 0000965F 0A1855              <1>     db 0x0a, 0x18, 0x55
+    23 00009662 0A1900              <1>     db 0x0a, 0x19, 0x00
+    24 00009665 0A1A61              <1>     db 0x0a, 0x1a, 0x61
+    25 00009668 0A1B00              <1>     db 0x0a, 0x1b, 0x00
+    26 0000966B 0A1C00              <1>     db 0x0a, 0x1c, 0x00
+    27 0000966E 0A1E00              <1>     db 0x0a, 0x1e, 0x00
+    28 00009671 0A200C              <1>     db 0x0a, 0x20, 0x0c
+    29 00009674 0A2102              <1>     db 0x0a, 0x21, 0x02
+    30 00009677 0A22DF              <1>     db 0x0a, 0x22, 0xdf
+    31 0000967A 0A2301              <1>     db 0x0a, 0x23, 0x01
+    32 0000967D 0A24DF              <1>     db 0x0a, 0x24, 0xdf
+    33 00009680 0A2501              <1>     db 0x0a, 0x25, 0x01
+    34 00009683 0A260C              <1>     db 0x0a, 0x26, 0x0c
+    35 00009686 0A2702              <1>     db 0x0a, 0x27, 0x02
+    36 00009689 0A28EA              <1>     db 0x0a, 0x28, 0xea
+    37 0000968C 0A2901              <1>     db 0x0a, 0x29, 0x01
+    38 0000968F 0A2AEC              <1>     db 0x0a, 0x2a, 0xec
+    39 00009692 0A2CFF              <1>     db 0x0a, 0x2c, 0xff
+    40 00009695 0A2DFF              <1>     db 0x0a, 0x2d, 0xff
+    41 00009698 0A3600              <1>     db 0x0a, 0x36, 0x00
+    42 0000969B 0A4000              <1>     db 0x0a, 0x40, 0x00
+    43 0000969E 0A4100              <1>     db 0x0a, 0x41, 0x00
+    44 000096A1 0A4200              <1>     db 0x0a, 0x42, 0x00
+    45 000096A4 0A4350              <1>     db 0x0a, 0x43, 0x50
+    46 000096A7 0A4400              <1>     db 0x0a, 0x44, 0x00
+    47 000096AA 0A5400              <1>     db 0x0a, 0x54, 0x00
+    48 000096AD 0A5103              <1>     db 0x0a, 0x51, 0x03
+    49 000096B0 0A7000              <1>     db 0x0a, 0x70, 0x00
+    50 000096B3 0A50C7              <1>     db 0x0a, 0x50, 0xc7
+    51 000096B6 0A5500              <1>     db 0x0a, 0x55, 0x00
+    52 000096B9 0A6000              <1>     db 0x0a, 0x60, 0x00
+    53 000096BC 0A6100              <1>     db 0x0a, 0x61, 0x00
+    54 000096BF 0A6200              <1>     db 0x0a, 0x62, 0x00
+    55 000096C2 0A6300              <1>     db 0x0a, 0x63, 0x00
+    56 000096C5 0A64FF              <1>     db 0x0a, 0x64, 0xff
+    57 000096C8 FF0000              <1>     db 0xff, 0, 0
