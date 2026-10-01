@@ -1,0 +1,1595 @@
+     1                                  ; NASM syntax version of CGADEMO4
+     2                                  ; Compile with: nasm -f bin CGADEMO5-NASM.asm -o CGADEMO5.COM
+     3                                  
+     4                                  		cpu 8086
+     5                                  		org 100h
+     6                                  
+     7                                  ; =============== S U B R O U T I N E =======================================
+     8                                  
+     9                                  ; Attributes: noreturn
+    10                                  
+    11                                  start:
+    12 00000000 B44A                    		mov	ah, 4Ah
+    13 00000002 BB0010                  		mov	bx, 1000h
+    14 00000005 CD21                    		int	21h		; DOS - 2+ - ADJUST MEMORY BLOCK SIZE (SETBLOCK)
+    15                                  					; ES = segment address of block to change
+    16                                  					; BX = new size in paragraphs
+    17 00000007 B448                    		mov	ah, 48h
+    18 00000009 BB0210                  		mov	bx, 1002h
+    19 0000000C CD21                    		int	21h		; DOS - 2+ - ALLOCATE MEMORY
+    20                                  					; BX = number of 16-byte paragraphs desired
+    21 0000000E 7302                    		jnb	short init
+    22 00000010 CD20                    		int	20h		; DOS - PROGRAM TERMINATION
+    23                                  					; returns to DOS--identical to INT 21/AH=00h
+    24                                  ; ---------------------------------------------------------------------------
+    25                                  
+    26                                  init:					; CODE XREF: start_0+Ej
+    27 00000012 2EA3[A246]              		mov	[cs:sinTable], ax
+    28 00000016 E82B01                  		call	initSinTable
+    29 00000019 E8AC03                  		call	initFont
+    30 0000001C B80400                  		mov	ax, 4
+    31 0000001F CD10                    		int	10h		; - VIDEO - SET VIDEO MODE
+    32                                  					; AL = mode
+    33 00000021 E461                    		in	al, 61h		; PC/XT PPI port B bits
+    34 00000023 0C03                    		or	al, 3
+    35 00000025 E661                    		out	61h, al		; PC/XT PPI port B bits
+    36 00000027 B0B6                    		mov	al, 0B6h
+    37 00000029 E643                    		out	43h, al		; Timer 8253-5 (AT: 8254.2).
+    38 0000002B BB0000                  		mov	bx, 0
+    39 0000002E 88D8                    		mov	al, bl
+    40 00000030 E642                    		out	42h, al		; Timer 8253-5 (AT: 8254.2).
+    41 00000032 88F8                    		mov	al, bh
+    42 00000034 E642                    		out	42h, al		; Timer 8253-5 (AT: 8254.2).
+    43 00000036 E8B800                  		call	SetInt9Handler
+    44 00000039 E8F400                  		call	setCGAMono
+    45 0000003C BAD903                  		mov	dx, 3D9h
+    46 0000003F B001                    		mov	al, 1
+    47 00000041 EE                      		out	dx, al
+    48 00000042 E88E02                  		call	initLogo
+    49                                  
+    50                                  mainloop:				; CODE XREF: start_0+BDj
+    51 00000045 FA                      		cli
+    52 00000046 E8E700                  		call	setCGAMono
+    53 00000049 BADA03                  		mov	dx, 3DAh
+    54 0000004C B97900                  		mov	cx, 121
+    55 0000004F 2E8B36[A446]            		mov	si, [cs:rasterbarPos]
+    56 00000054 2E8306[A446]79          		add	word [cs:rasterbarPos], 121
+    57 0000005A 81FEA376                		cmp	si, (251*121)	; 8267h
+    58 0000005E 7207                    		jb	short loc_214A
+    59 00000060 2EC706[A446]0000        		mov	word [cs:rasterbarPos], 0
+    60                                  
+    61                                  loc_214A:				; CODE XREF: start_0+5Fj
+    62 00000067 2E8E1E[A246]            		mov	ds, [cs:sinTable]
+    63                                  		
+    64 0000006C B701                    		mov	bh, 1
+    65                                  		
+    66                                  loopHBL:		
+    67 0000006E AC                      		lodsb
+    68 0000006F 93                      		xchg	ax, bx
+    69                                  
+    70                                  waitHBL1:				; CODE XREF: start_0+70j start_0+7Fj
+    71 00000070 EC                      		in	al, dx		; Video status bits
+    72 00000071 84E0                    		test	al, ah
+    73 00000073 75FB                    		jnz	short waitHBL1
+    74                                  
+    75                                  waitHBL2:				; CODE XREF: start_0+75j
+    76 00000075 EC                      		in	al, dx		; Video status bits
+    77 00000076 84E0                    		test	al, ah
+    78 00000078 74FB                    		jz	short waitHBL2
+    79 0000007A BAD903                  		mov	dx, 3D9h
+    80 0000007D 93                      		xchg	ax, bx
+    81 0000007E EE                      		out	dx, al
+    82 0000007F BADA03                  		mov	dx, 3DAh
+    83 00000082 E2EA                    		loop	loopHBL
+    84                                  
+    85 00000084 B84000                  		mov	ax, 40h
+    86 00000087 8EC0                    		mov	es, ax
+    87 00000089 26A06500                		mov	al, [es:65h]
+    88 0000008D 24FB                    		and	al, 0FBh
+    89 0000008F BAD803                  		mov	dx, 3D8h
+    90 00000092 EE                      		out	dx, al
+    91 00000093 E8D602                  		call	doScroll
+    92 00000096 E84E02                  		call	addNewChar
+    93 00000099 E89003                  		call	doMusic
+    94 0000009C BADA03                  		mov	dx, 3DAh
+    95                                  		
+    96 0000009F B408                    		mov	ah, 8
+    97                                  
+    98                                  waitVBL1:				; CODE XREF: start_0+AFj
+    99 000000A1 EC                      		in	al, dx		; Video status bits
+   100 000000A2 84E0                    		test	al, ah
+   101 000000A4 74FB                    		jz	short waitVBL1
+   102                                  
+   103                                  waitVBL2:				; CODE XREF: start_0+B4j
+   104 000000A6 EC                      		in	al, dx		; Video status bits
+   105 000000A7 84E0                    		test	al, ah
+   106 000000A9 75FB                    		jnz	short waitVBL2
+   107 000000AB FB                      		sti
+   108 000000AC 2E833E[9C46]01          		cmp	word [cs:exitflag], 1
+   109 000000B2 7591                    		jnz	mainloop
+   110                                  endMainLoop:
+   111 000000B4 E86000                  		call	ResetInt9Handler
+   112 000000B7 E461                    		in	al, 61h		; PC/XT PPI port B bits
+   113 000000B9 24FC                    		and	al, 0FCh
+   114 000000BB E661                    		out	61h, al		; PC/XT PPI port B bits
+   115 000000BD B80300                  		mov	ax, 3
+   116 000000C0 CD10                    		int	10h		; - VIDEO - SET VIDEO MODE
+   117                                  					; AL = mode
+   118 000000C2 B449                    		mov	ah, 49h
+   119 000000C4 2E8E06[A246]            		mov	es, [cs:sinTable]
+   120 000000C9 CD21                    		int	21h		; DOS - 2+ - FREE MEMORY
+   121                                  					; ES = segment address of area to be freed
+   122 000000CB CD20                    		int	20h		; DOS - PROGRAM TERMINATION
+   123                                  					; returns to DOS--identical to INT 21/AH=00h
+   124                                  
+   125                                  int9Handler:				; DATA XREF: SetInt9Handler+8o
+   126 000000CD 1E                      		push	ds
+   127 000000CE 53                      		push	bx
+   128 000000CF 50                      		push	ax
+   129 000000D0 E460                    		in	al, 60h		; AT Keyboard controller 8042.
+   130 000000D2 50                      		push	ax
+   131 000000D3 E461                    		in	al, 61h		; PC/XT PPI port B bits
+   132 000000D5 0C80                    		or	al, 80h
+   133 000000D7 E661                    		out	61h, al		; PC/XT PPI port B bits
+   134 000000D9 247F                    		and	al, 7Fh
+   135 000000DB E661                    		out	61h, al		; PC/XT PPI port B bits
+   136 000000DD 58                      		pop	ax
+   137 000000DE 3C01                    		cmp	al, 1
+   138 000000E0 7507                    		jnz	short loc_1D45
+   139 000000E2 2EC706[9C46]0100        		mov	word [cs:exitflag], 1
+   140                                  
+   141                                  loc_1D45:				; CODE XREF: seg000:1D3Cj
+   142 000000E9 B020                    		mov	al, 20h
+   143 000000EB E620                    		out	20h, al		; Interrupt controller, 8259A.
+   144 000000ED 58                      		pop	ax
+   145 000000EE 5B                      		pop	bx
+   146 000000EF 1F                      		pop	ds
+   147 000000F0 CF                      		iret
+   148                                  
+   149                                  ; =============== S U B R O U T I N E =======================================
+   150                                  
+   151                                  
+   152                                  SetInt9Handler:				; CODE XREF: start_0+36p
+   153 000000F1 B80000                  		mov	ax, 0
+   154 000000F4 8EC0                    		mov	es, ax
+   155 000000F6 BF2400                  		mov	di, 24h
+   156 000000F9 B8[CD00]                		mov	ax, int9Handler
+   157 000000FC FC                      		cld
+   158 000000FD 268B1D                  		mov	bx, [es:di]
+   159 00000100 2E891E[9E46]            		mov	word [cs:oldInt9], bx
+   160 00000105 AB                      		stosw
+   161 00000106 8CC8                    		mov	ax, cs
+   162 00000108 268B1D                  		mov	bx, [es:di]
+   163 0000010B 2E891E[A046]            		mov	word [cs:oldInt9+2], bx
+   164 00000110 AB                      		stosw
+   165 00000111 B0FC                    		mov	al, 0FCh
+   166 00000113 E621                    		out	21h, al		; Interrupt controller, 8259A.
+   167 00000115 FB                      		sti
+   168 00000116 C3                      		ret
+   169                                  
+   170                                  
+   171                                  ; =============== S U B R O U T I N E =======================================
+   172                                  
+   173                                  
+   174                                  ResetInt9Handler:			; CODE XREF: start_0+BFp
+   175 00000117 B80000                  		mov	ax, 0
+   176 0000011A 8EC0                    		mov	es, ax
+   177 0000011C BF2400                  		mov	di, 24h
+   178 0000011F FC                      		cld
+   179 00000120 2EA1[9E46]              		mov	ax, word [cs:oldInt9]
+   180 00000124 AB                      		stosw
+   181 00000125 2EA1[A046]              		mov	ax, word [cs:oldInt9+2]
+   182 00000129 AB                      		stosw
+   183 0000012A B000                    		mov	al, 0
+   184 0000012C E621                    		out	21h, al		; Interrupt controller, 8259A.
+   185 0000012E FB                      		sti
+   186 0000012F C3                      		ret
+   187                                  
+   188                                  
+   189                                  ; =============== S U B R O U T I N E =======================================
+   190                                  
+   191                                  
+   192                                  setCGAMono:				; CODE XREF: start_0+39p start_0+46p
+   193 00000130 B84000                  		mov	ax, 40h
+   194 00000133 8EC0                    		mov	es, ax
+   195 00000135 26A06500                		mov	al, [es:65h]
+   196 00000139 0C04                    		or	al, 4
+   197 0000013B BAD803                  		mov	dx, 3D8h
+   198 0000013E EE                      		out	dx, al
+   199 0000013F 26A26500                		mov	[es:65h], al
+   200 00000143 C3                      		ret
+   201                                  
+   202                                  
+   203                                  ; =============== S U B R O U T I N E =======================================
+   204                                  
+   205                                  
+   206                                  initSinTable:				; CODE XREF: start_0+16p
+   207 00000144 2E8E1E[A246]            		mov	ds, [cs:sinTable]
+   208 00000149 2E8E06[A246]            		mov	es, [cs:sinTable]
+   209 0000014E B010                    		mov	al, 10h
+   210 00000150 88C4                    		mov	ah, al
+   211 00000152 B97241                  		mov	cx, 4172h
+   212 00000155 F3AB                    		rep	stosw
+   213 00000157 31DB                    		xor	bx, bx
+   214 00000159 89DE                    		mov	si, bx
+   215 0000015B B9FC00                  		mov	cx, 0FCh
+   216                                  
+   217                                  loc_1DBC:				; CODE XREF: initSinTable:loc_1F2Fj
+   218 0000015E 89F7                    		mov	di, si
+   219 00000160 C60514                  		mov	byte [di], 14h
+   220 00000163 C6450114                		mov	byte [di+1], 14h
+   221 00000167 C645021C                		mov	byte [di+2], 1Ch
+   222 0000016B C645031C                		mov	byte [di+3], 1Ch
+   223 0000016F C645041D                		mov	byte [di+4], 1Dh
+   224 00000173 C645051D                		mov	byte [di+5], 1Dh
+   225 00000177 C645061C                		mov	byte [di+6], 1Ch
+   226 0000017B C645071C                		mov	byte [di+7], 1Ch
+   227 0000017F C6450814                		mov	byte [di+8], 14h
+   228 00000183 C6450914                		mov	byte [di+9], 14h
+   229 00000187 83C76E                  		add	di, 110
+   230 0000018A C60514                  		mov	byte [di], 14h
+   231 0000018D C6450114                		mov	byte [di+1], 14h
+   232 00000191 C645021C                		mov	byte [di+2], 1Ch
+   233 00000195 C645031C                		mov	byte [di+3], 1Ch
+   234 00000199 C645041D                		mov	byte [di+4], 1Dh
+   235 0000019D C645051D                		mov	byte [di+5], 1Dh
+   236 000001A1 C645061C                		mov	byte [di+6], 1Ch
+   237 000001A5 C645071C                		mov	byte [di+7], 1Ch
+   238 000001A9 C6450814                		mov	byte [di+8], 14h
+   239 000001AD C6450914                		mov	byte [di+9], 14h
+   240 000001B1 C6450A10                		mov	byte [di+10], 10h
+   241 000001B5 2E8A87[8844]            		mov	al, [cs:byte_109+bx]
+   242 000001BA 30E4                    		xor	ah, ah
+   243 000001BC 89F7                    		mov	di, si
+   244 000001BE D1E8                    		shr	ax, 1
+   245 000001C0 01C7                    		add	di, ax
+   246 000001C2 C6450A14                		mov	byte [di+0Ah], 14h
+   247 000001C6 C6450B14                		mov	byte [di+0Bh], 14h
+   248 000001CA C6450C1C                		mov	byte [di+0Ch], 1Ch
+   249 000001CE C6450D1C                		mov	byte [di+0Dh], 1Ch
+   250 000001D2 C6450E1D                		mov	byte [di+0Eh], 1Dh
+   251 000001D6 C6450F1D                		mov	byte [di+0Fh], 1Dh
+   252 000001DA C645101C                		mov	byte [di+10h], 1Ch
+   253 000001DE C645111C                		mov	byte [di+11h], 1Ch
+   254 000001E2 C6451214                		mov	byte [di+12h], 14h
+   255 000001E6 C6451314                		mov	byte [di+13h], 14h
+   256 000001EA 2E8A87[8F44]            		mov	al, [cs:byte_110+bx]
+   257 000001EF 30E4                    		xor	ah, ah
+   258 000001F1 89F7                    		mov	di, si
+   259 000001F3 D1E8                    		shr	ax, 1
+   260 000001F5 01C7                    		add	di, ax
+   261 000001F7 C6450A16                		mov	byte [di+0Ah], 16h
+   262 000001FB C6450B16                		mov	byte [di+0Bh], 16h
+   263 000001FF C6450C1E                		mov	byte [di+0Ch], 1Eh
+   264 00000203 C6450D1E                		mov	byte [di+0Dh], 1Eh
+   265 00000207 C6450E1F                		mov	byte [di+0Eh], 1Fh
+   266 0000020B C6450F1F                		mov	byte [di+0Fh], 1Fh
+   267 0000020F C645101E                		mov	byte [di+10h], 1Eh
+   268 00000213 C645111E                		mov	byte [di+11h], 1Eh
+   269 00000217 C6451216                		mov	byte [di+12h], 16h
+   270 0000021B C6451316                		mov	byte [di+13h], 16h
+   271 0000021F 2E8A87[9644]            		mov	al, [cs:byte_117+bx]
+   272 00000224 30E4                    		xor	ah, ah
+   273 00000226 89F7                    		mov	di, si
+   274 00000228 D1E8                    		shr	ax, 1
+   275 0000022A 01C7                    		add	di, ax
+   276 0000022C C6450A12                		mov	byte [di+0Ah], 12h
+   277 00000230 C6450B12                		mov	byte [di+0Bh], 12h
+   278 00000234 C6450C1A                		mov	byte [di+0Ch], 1Ah
+   279 00000238 C6450D1A                		mov	byte [di+0Dh], 1Ah
+   280 0000023C C6450E1B                		mov	byte [di+0Eh], 1Bh
+   281 00000240 C6450F1B                		mov	byte [di+0Fh], 1Bh
+   282 00000244 C645101A                		mov	byte [di+10h], 1Ah
+   283 00000248 C645111A                		mov	byte [di+11h], 1Ah
+   284 0000024C C6451212                		mov	byte [di+12h], 12h
+   285 00000250 C6451312                		mov	byte [di+13h], 12h
+   286 00000254 2E8A87[9C44]            		mov	al, [cs:byte_11D+bx]
+   287 00000259 30E4                    		xor	ah, ah
+   288 0000025B 89F7                    		mov	di, si
+   289 0000025D D1E8                    		shr	ax, 1
+   290 0000025F 01C7                    		add	di, ax
+   291 00000261 C6450A13                		mov	byte [di+0Ah], 13h
+   292 00000265 C6450B13                		mov	byte [di+0Bh], 13h
+   293 00000269 C6450C1B                		mov	byte [di+0Ch], 1Bh
+   294 0000026D C6450D1B                		mov	byte [di+0Dh], 1Bh
+   295 00000271 C6450E1F                		mov	byte [di+0Eh], 1Fh
+   296 00000275 C6450F1F                		mov	byte [di+0Fh], 1Fh
+   297 00000279 C645101B                		mov	byte [di+10h], 1Bh
+   298 0000027D C645111B                		mov	byte [di+11h], 1Bh
+   299 00000281 C6451213                		mov	byte [di+12h], 13h
+   300 00000285 C6451313                		mov	byte [di+13h], 13h
+   301 00000289 2E8A87[A344]            		mov	al, [cs:byte_124+bx]
+   302 0000028E 30E4                    		xor	ah, ah
+   303 00000290 89F7                    		mov	di, si
+   304 00000292 D1E8                    		shr	ax, 1
+   305 00000294 01C7                    		add	di, ax
+   306 00000296 C6450A11                		mov	byte [di+0Ah], 11h
+   307 0000029A C6450B11                		mov	byte [di+0Bh], 11h
+   308 0000029E C6450C19                		mov	byte [di+0Ch], 19h
+   309 000002A2 C6450D19                		mov	byte [di+0Dh], 19h
+   310 000002A6 C6450E1B                		mov	byte [di+0Eh], 1Bh
+   311 000002AA C6450F1B                		mov	byte [di+0Fh], 1Bh
+   312 000002AE C6451019                		mov	byte [di+10h], 19h
+   313 000002B2 C6451119                		mov	byte [di+11h], 19h
+   314 000002B6 C6451211                		mov	byte [di+12h], 11h
+   315 000002BA C6451311                		mov	byte [di+13h], 11h
+   316 000002BE 83C679                  		add	si, 121
+   317 000002C1 43                      		inc	bx
+   318 000002C2 43                      		inc	bx
+   319 000002C3 81FBF801                		cmp	bx, (252*2)
+   320 000002C7 7202                    		jb	short loc_1F2B
+   321 000002C9 31DB                    		xor	bx, bx
+   322                                  
+   323                                  loc_1F2B:				; CODE XREF: initSinTable+187j
+   324 000002CB E202                    		loop	loc_1F2F
+   325 000002CD EB03                    		jmp	short locret_1F32
+   326                                  ; ---------------------------------------------------------------------------
+   327                                  
+   328                                  loc_1F2F:				; CODE XREF: initSinTable:loc_1F2Bj
+   329 000002CF E98CFE                  		jmp	loc_1DBC
+   330                                  ; ---------------------------------------------------------------------------
+   331                                  
+   332                                  locret_1F32:				; CODE XREF: initSinTable+18Dj
+   333 000002D2 C3                      		ret
+   334                                  
+   335                                  
+   336                                  ; =============== S U B R O U T I N E =======================================
+   337                                  
+   338                                  
+   339                                  initLogo:				; CODE XREF: start_0+42p
+   340 000002D3 B800B8                  		mov	ax, 0B800h
+   341 000002D6 8EC0                    		mov	es, ax
+   342 000002D8 8CC8                    		mov	ax, cs
+   343 000002DA 8ED8                    		mov	ds, ax
+   344 000002DC BE[8904]                		mov	si, logo
+   345 000002DF 31FF                    		xor	di, di
+   346 000002E1 B90020                  		mov	cx, 2000h
+   347 000002E4 F3A5                    		rep	movsw
+   348 000002E6 C3                      		ret
+   349                                  
+   350                                  
+   351                                  ; =============== S U B R O U T I N E =======================================
+   352                                  
+   353                                  
+   354                                  addNewChar:				; CODE XREF: start_0+A3p
+   355 000002E7 2E833E[A846]00          		cmp	word [cs:charColPos], 0
+   356 000002ED 7530                    		jnz	short loc_1F7F
+   357 000002EF 2E8B1E[AA46]            		mov	bx, [cs:scrollPos]
+   358 000002F4 2EFF06[AA46]            		inc	word [cs:scrollPos]
+   359 000002F9 81C3[B056]              		add	bx, scrollText	; "HI... HO... HERE WE GO....   WELCOME TO"...
+   360 000002FD 30E4                    		xor	ah, ah
+   361 000002FF 2E8A07                  		mov	al, [cs:bx]
+   362 00000302 3C00                    		cmp	al, 0
+   363 00000304 7507                    		jnz	short loc_1F6D
+   364 00000306 2EC706[AA46]0000        		mov	word [cs:scrollPos], 0
+   365                                  
+   366                                  loc_1F6D:				; CODE XREF: addNewChar+1Dj
+   367 0000030D B105                    		mov	cl, 5
+   368 0000030F D3E0                    		shl	ax, cl
+   369 00000311 05[B046]                		add	ax, fontbuffer
+   370 00000314 2EA3[A646]              		mov	[cs:charPos], ax
+   371 00000318 2EC706[A846]0400        		mov	word [cs:charColPos], 4
+   372                                  
+   373                                  loc_1F7F:				; CODE XREF: addNewChar+6j
+   374 0000031F 2EFF0E[A846]            		dec	word [cs:charColPos]
+   375 00000324 B800B8                  		mov	ax, 0B800h
+   376 00000327 8EC0                    		mov	es, ax
+   377 00000329 8CC8                    		mov	ax, cs
+   378 0000032B 8ED8                    		mov	ds, ax
+   379 0000032D 2E8B36[A646]            		mov	si, [cs:charPos]
+   380 00000332 BFDF1A                  		mov	di, 1ADFh
+   381 00000335 A4                      		movsb
+   382 00000336 83C603                  		add	si, 3
+   383 00000339 83C74F                  		add	di, 4Fh
+   384 0000033C A4                      		movsb
+   385 0000033D 83C603                  		add	si, 3
+   386 00000340 83C74F                  		add	di, 4Fh
+   387 00000343 A4                      		movsb
+   388 00000344 83C603                  		add	si, 3
+   389 00000347 83C74F                  		add	di, 4Fh
+   390 0000034A A4                      		movsb
+   391 0000034B 83C603                  		add	si, 3
+   392 0000034E 83C74F                  		add	di, 4Fh
+   393 00000351 A4                      		movsb
+   394 00000352 83C603                  		add	si, 3
+   395 00000355 83C74F                  		add	di, 4Fh
+   396 00000358 A4                      		movsb
+   397 00000359 83C603                  		add	si, 3
+   398 0000035C 83C74F                  		add	di, 4Fh
+   399 0000035F A4                      		movsb
+   400 00000360 83C603                  		add	si, 3
+   401 00000363 83C74F                  		add	di, 4Fh
+   402 00000366 2EFF06[A646]            		inc	word [cs:charPos]
+   403 0000036B C3                      		ret
+   404                                  
+   405                                  
+   406                                  ; =============== S U B R O U T I N E =======================================
+   407                                  
+   408                                  
+   409                                  doScroll:				; CODE XREF: start_0+A0p
+   410 0000036C B800B8                  		mov	ax, 0B800h
+   411 0000036F 8ED8                    		mov	ds, ax
+   412 00000371 8EC0                    		mov	es, ax
+   413 00000373 BE911A                  		mov	si, 1A91h
+   414 00000376 BF901A                  		mov	di, 1A90h
+   415 00000379 B92700                  		mov	cx, 27h
+   416 0000037C F3A5                    		rep	movsw
+   417 0000037E A4                      		movsb
+   418 0000037F BEE11A                  		mov	si, 1AE1h
+   419 00000382 BFE01A                  		mov	di, 1AE0h
+   420 00000385 B92700                  		mov	cx, 27h
+   421 00000388 F3A5                    		rep	movsw
+   422 0000038A A4                      		movsb
+   423 0000038B BE311B                  		mov	si, 1B31h
+   424 0000038E BF301B                  		mov	di, 1B30h
+   425 00000391 B92700                  		mov	cx, 27h
+   426 00000394 F3A5                    		rep	movsw
+   427 00000396 A4                      		movsb
+   428 00000397 BE811B                  		mov	si, 1B81h
+   429 0000039A BF801B                  		mov	di, 1B80h
+   430 0000039D B92700                  		mov	cx, 27h
+   431 000003A0 F3A5                    		rep	movsw
+   432 000003A2 A4                      		movsb
+   433 000003A3 BED11B                  		mov	si, 1BD1h
+   434 000003A6 BFD01B                  		mov	di, 1BD0h
+   435 000003A9 B92700                  		mov	cx, 27h
+   436 000003AC F3A5                    		rep	movsw
+   437 000003AE A4                      		movsb
+   438 000003AF BE211C                  		mov	si, 1C21h
+   439 000003B2 BF201C                  		mov	di, 1C20h
+   440 000003B5 B92700                  		mov	cx, 27h
+   441 000003B8 F3A5                    		rep	movsw
+   442 000003BA A4                      		movsb
+   443 000003BB BE711C                  		mov	si, 1C71h
+   444 000003BE BF701C                  		mov	di, 1C70h
+   445 000003C1 B92700                  		mov	cx, 27h
+   446 000003C4 F3A5                    		rep	movsw
+   447 000003C6 A4                      		movsb
+   448 000003C7 C3                      		ret
+   449                                  
+   450                                  
+   451                                  ; =============== S U B R O U T I N E =======================================
+   452                                  
+   453                                  
+   454                                  initFont:				; CODE XREF: start_0+19p
+   455 000003C8 B800F0                  		mov	ax, 0F000h
+   456 000003CB 8ED8                    		mov	ds, ax
+   457 000003CD BE6EFA                  		mov	si, 0FA6Eh
+   458 000003D0 BF[B046]                		mov	di, fontbuffer
+   459 000003D3 B90004                  		mov	cx, 400h
+   460                                  
+   461                                  loc_202F:				; CODE XREF: initFont+61j
+   462 000003D6 51                      		push	cx
+   463 000003D7 AC                      		lodsb
+   464 000003D8 B300                    		mov	bl, 0
+   465 000003DA D0D0                    		rcl	al, 1
+   466 000003DC 7303                    		jnb	short loc_203A
+   467 000003DE 80CB40                  		or	bl, 40h
+   468                                  
+   469                                  loc_203A:				; CODE XREF: initFont+14j
+   470 000003E1 D0D0                    		rcl	al, 1
+   471 000003E3 7303                    		jnb	short loc_2041
+   472 000003E5 80CB04                  		or	bl, 4
+   473                                  
+   474                                  loc_2041:				; CODE XREF: initFont+1Bj
+   475 000003E8 2E881D                  		mov	[cs:di], bl
+   476 000003EB 47                      		inc	di
+   477 000003EC B300                    		mov	bl, 0
+   478 000003EE D0D0                    		rcl	al, 1
+   479 000003F0 7303                    		jnb	short loc_204E
+   480 000003F2 80CB40                  		or	bl, 40h
+   481                                  
+   482                                  loc_204E:				; CODE XREF: initFont+28j
+   483 000003F5 D0D0                    		rcl	al, 1
+   484 000003F7 7303                    		jnb	short loc_2055
+   485 000003F9 80CB04                  		or	bl, 4
+   486                                  
+   487                                  loc_2055:				; CODE XREF: initFont+2Fj
+   488 000003FC 2E881D                  		mov	[cs:di], bl
+   489 000003FF 47                      		inc	di
+   490 00000400 B300                    		mov	bl, 0
+   491 00000402 D0D0                    		rcl	al, 1
+   492 00000404 7303                    		jnb	short loc_2062
+   493 00000406 80CB40                  		or	bl, 40h
+   494                                  
+   495                                  loc_2062:				; CODE XREF: initFont+3Cj
+   496 00000409 D0D0                    		rcl	al, 1
+   497 0000040B 7303                    		jnb	short loc_2069
+   498 0000040D 80CB04                  		or	bl, 4
+   499                                  
+   500                                  loc_2069:				; CODE XREF: initFont+43j
+   501 00000410 2E881D                  		mov	[cs:di], bl
+   502 00000413 47                      		inc	di
+   503 00000414 B300                    		mov	bl, 0
+   504 00000416 D0D0                    		rcl	al, 1
+   505 00000418 7303                    		jnb	short loc_2076
+   506 0000041A 80CB40                  		or	bl, 40h
+   507                                  
+   508                                  loc_2076:				; CODE XREF: initFont+50j
+   509 0000041D D0D0                    		rcl	al, 1
+   510 0000041F 7303                    		jnb	short loc_207D
+   511 00000421 80CB04                  		or	bl, 4
+   512                                  
+   513                                  loc_207D:				; CODE XREF: initFont+57j
+   514 00000424 2E881D                  		mov	[cs:di], bl
+   515 00000427 47                      		inc	di
+   516 00000428 59                      		pop	cx
+   517 00000429 E2AB                    		loop	loc_202F
+   518 0000042B C3                      		ret
+   519                                  
+   520                                  
+   521                                  ; =============== S U B R O U T I N E =======================================
+   522                                  
+   523                                  
+   524                                  doMusic:				; CODE XREF: start_0+A6p
+   525 0000042C 2E833E[AC46]00          		cmp	word [cs:musicTick], 0
+   526 00000432 754F                    		jnz	short doneMusic
+   527 00000434 2E8B36[AE46]            		mov	si, [cs:musicPos]
+   528 00000439 2E8306[AE46]02          		add	word [cs:musicPos], 2
+   529 0000043F 81C6[3059]              		add	si, music
+   530 00000443 B0B6                    		mov	al, 0B6h
+   531 00000445 E643                    		out	43h, al		; Timer 8253-5 (AT: 8254.2).
+   532 00000447 2E8B1C                  		mov	bx, [cs:si]
+   533 0000044A 83FBFF                  		cmp	bx, 0FFFFh
+   534 0000044D 750D                    		jnz	short disableSpkr
+   535 0000044F BE[3059]                		mov	si, music
+   536 00000452 2E8B1C                  		mov	bx, [cs:si]
+   537 00000455 2EC706[AE46]0200        		mov	word [cs:musicPos], 2
+   538                                  
+   539                                  disableSpkr:				; CODE XREF: doMusic+21j
+   540 0000045C 83FB00                  		cmp	bx, 0
+   541 0000045F 7509                    		jnz	short enableSpkr
+   542 00000461 E461                    		in	al, 61h		; PC/XT PPI port B bits
+   543 00000463 24FC                    		and	al, 0FCh
+   544 00000465 E661                    		out	61h, al		; PC/XT PPI port B bits
+   545 00000467 EB07                    		jmp	short updateMusicTimer
+   546                                  ; ---------------------------------------------------------------------------
+   547 00000469 90                      		nop
+   548                                  
+   549                                  enableSpkr:				; CODE XREF: doMusic+33j
+   550 0000046A E461                    		in	al, 61h		; PC/XT PPI port B bits
+   551 0000046C 0C03                    		or	al, 3
+   552 0000046E E661                    		out	61h, al		; PC/XT PPI port B bits
+   553                                  
+   554                                  updateMusicTimer:			; CODE XREF: doMusic+3Bj
+   555 00000470 B0B6                    		mov	al, 0B6h
+   556 00000472 E643                    		out	43h, al		; Timer 8253-5 (AT: 8254.2).
+   557 00000474 88D8                    		mov	al, bl
+   558 00000476 E642                    		out	42h, al		; Timer 8253-5 (AT: 8254.2).
+   559 00000478 88F8                    		mov	al, bh
+   560 0000047A E642                    		out	42h, al		; Timer 8253-5 (AT: 8254.2).
+   561 0000047C 2EC706[AC46]0200        		mov	word [cs:musicTick], 2
+   562                                  
+   563                                  doneMusic:				; CODE XREF: doMusic+6j
+   564 00000483 2EFF0E[AC46]            		dec	word [cs:musicTick]
+   565 00000488 C3                      		ret
+   566                                  
+   567                                  ; ---------------------------------------------------------------------------
+   568 00000489 00<rep 1FDh>            logo:		times 0x1FD db 0
+   569 00000686 80                      		db 80h
+   570 00000687 00<rep 9Fh>             		times 0x9F db 0
+   571 00000726 80                      		db 80h
+   572 00000727 00<rep 9Fh>             		times 0x9F db 0
+   573 000007C6 80                      		db 80h
+   574 000007C7 00<rep 3Eh>             		times 0x3E db 0
+   575 00000805 07                      		db 7
+   576 00000806 00<rep 8h>              		times 8 db 0
+   577 0000080E 34                      		db 34h
+   578 0000080F 00<rep 3h>              		times 3 db 0
+   579 00000812 01393939                		db 1, 39h, 39h, 39h
+   580 00000816 00<rep 8h>              		times 8 db 0
+   581 0000081E 34                      		db 34h
+   582 0000081F 00<rep 39h>             		times 0x39 db 0
+   583 00000858 1570358888              		db 15h, 70h, 35h, 88h, 88h
+   584 0000085D 8734                    		db 87h, 34h
+   585 0000085F 00<rep 6h>              		times 6 db 0
+   586 00000865 07348888970355          		db 7, 34h, 88h, 88h, 97h, 3, 55h
+   587 0000086C 00<rep 3Eh>             		times 0x3E db 0
+   588 000008AA 5C358887                		db 5Ch, 35h, 88h, 87h
+   589 000008AE 00<rep 8h>              		times 8 db 0
+   590 000008B6 3488970D40              		db 34h, 88h, 97h, 0Dh, 40h
+   591 000008BB 00<rep 40h>             		times 0x40 db 0
+   592 000008FB 5C34                    		db 5Ch, 34h
+   593 000008FD 88<rep Ah>              		times 0x0A db 88h
+   594 00000907 870D40                  		db 87h, 0Dh, 40h
+   595 0000090A 00<rep Bh>              		times 0x0B db 0
+   596 00000915 70                      		db 70h
+   597 00000916 00<rep 7h>              		times 7 db 0
+   598 0000091D 0340                    		db 3, 40h
+   599 0000091F 00<rep 2Dh>             		times 0x2D db 0
+   600 0000094C 7348                    		db 73h, 48h
+   601 0000094E 88<rep 9h>              		times 9 db 88h
+   602 00000957 7350                    		db 73h, 50h
+   603 00000959 00<rep Ch>              		times 0x0C db 0
+   604 00000965 73488889703550          		db 73h, 48h, 88h, 89h, 70h, 35h, 50h
+   605 0000096C 00<rep 30h>             		times 0x30 db 0
+   606 0000099C 0734                    		db 7, 34h
+   607 0000099E 88<rep 8h>              		times 8 db 88h
+   608 000009A6 87340000015C            		db 87h, 34h, 0, 0, 1, 5Ch
+   609 000009AC 00<rep 9h>              		times 9 db 0
+   610 000009B5 03488970D4              		db 3, 48h, 89h, 70h, 0D4h
+   611 000009BA 00<rep 33h>             		times 0x33 db 0
+   612 000009ED 730000003487000000      		db 73h, 0, 0, 0, 34h, 87h, 0, 0, 0
+   613 000009F6 7340000070D5            		db 73h, 40h, 0, 0, 70h, 0D5h
+   614 000009FC 88<rep Bh>              		times 0x0B db 88h
+   615 00000A07 70D4                    		db 70h, 0D4h
+   616 00000A09 00<rep 34h>             		times 0x34 db 0
+   617 00000A3D 1D3400073487340007-     		db 1Dh, 34h, 0, 7, 34h, 87h, 34h, 0, 7, 3Dh, 0, 0, 1Ch, 34h
+   617 00000A46 3D00001C34         
+   618 00000A4B 88<rep Bh>              		times 0x0B db 88h
+   619 00000A56 873400000007            		db 87h, 34h, 0, 0, 0, 7
+   620 00000A5C 00<rep 8h>              		times 8 db 0
+   621 00000A64 D4                      		db 0D4h
+   622 00000A65 00<rep 28h>             		times 0x28 db 0
+   623 00000A8D 077400073487340007-     		db 7, 74h, 0, 7, 34h, 87h, 34h, 0, 7, 74h, 0, 0, 73h, 48h
+   623 00000A96 7400007348         
+   624 00000A9B 88<rep Bh>              		times 0x0B db 88h
+   625 00000AA6 73400000000734          		db 73h, 40h, 0, 0, 0, 7, 34h
+   626 00000AAD 88<rep 6h>              		times 6 db 88h
+   627 00000AB3 8970D0                  		db 89h, 70h, 0D0h
+   628 00000AB6 00<rep 2Ah>             		times 0x2A db 0
+   629 00000AE0 073487340000000007-     		db 7, 34h, 87h, 34h, 0, 0, 0, 0, 7, 34h
+   629 00000AE9 34                 
+   630 00000AEA 88<rep 5h>              		times 5 db 88h
+   631 00000AEF 970000000000033400-     		db 97h, 0, 0, 0, 0, 0, 3, 34h, 0, 0, 0, 0, 7, 34h
+   631 00000AF8 0000000734         
+   632 00000AFD 88<rep 7h>              		times 7 db 88h
+   633 00000B04 89CD                    		db 89h, 0CDh
+   634 00000B06 00<rep 2Ah>             		times 0x2A db 0
+   635 00000B30 07348734000000001C-     		db 7, 34h, 87h, 34h, 0, 0, 0, 0, 1Ch, 0D8h
+   635 00000B39 D8                 
+   636 00000B3A 88<rep 4h>              		times 4 db 88h
+   637 00000B3E 89CD400000000070D0-     		db 89h, 0CDh, 40h, 0, 0, 0, 0, 70h, 0D0h, 0, 0, 0, 0, 7, 34h
+   637 00000B47 000000000734       
+   638 00000B4D 88<rep 8h>              		times 8 db 88h
+   639 00000B55 7340                    		db 73h, 40h
+   640 00000B57 00<rep 29h>             		times 0x29 db 0
+   641 00000B80 07348734000000001C-     		db 7, 34h, 87h, 34h, 0, 0, 0, 0, 1Ch, 0D8h
+   641 00000B89 D8                 
+   642 00000B8A 88<rep 4h>              		times 4 db 88h
+   643 00000B8E 9CD000000000007340-     		db 9Ch, 0D0h, 0, 0, 0, 0, 0, 73h, 40h, 0, 0, 0, 0, 7, 34h, 88h, 87h, 0, 0, 0Dh, 48h, 88h, 88h, 9Ch, 0D0h
+   643 00000B97 000000000734888700-
+   643 00000BA0 000D4888889CD0     
+   644 00000BA7 00<rep 29h>             		times 0x29 db 0
+   645 00000BD0 073487340000000073-     		db 7, 34h, 87h, 34h, 0, 0, 0, 0, 73h, 48h
+   645 00000BD9 48                 
+   646 00000BDA 88<rep 4h>              		times 4 db 88h
+   647 00000BDE 7340                    		db 73h, 40h
+   648 00000BE0 00<rep Bh>              		times 0x0B db 0
+   649 00000BEB 0734888734001CD888-     		db 7, 34h, 88h, 87h, 34h, 0, 1Ch, 0D8h, 88h, 88h, 87h, 34h
+   649 00000BF4 888734             
+   650 00000BF7 00<rep 29h>             		times 0x29 db 0
+   651 00000C20 073487340000000073-     		db 7, 34h, 87h, 34h, 0, 0, 0, 0, 73h, 48h
+   651 00000C29 48                 
+   652 00000C2A 88<rep 4h>              		times 4 db 88h
+   653 00000C2E 734000000000000000-     		db 73h, 40h, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 7, 34h, 88h, 87h, 34h, 0, 7, 34h, 88h, 88h, 87h, 34h
+   653 00000C37 040000000734888734-
+   653 00000C40 00073488888734     
+   654 00000C47 00<rep 29h>             		times 0x29 db 0
+   655 00000C70 073487340000000073-     		db 7, 34h, 87h, 34h, 0, 0, 0, 0, 73h, 48h
+   655 00000C79 48                 
+   656 00000C7A 88<rep 4h>              		times 4 db 88h
+   657 00000C7E 734000000000000000-     		db 73h, 40h, 0, 0, 0, 0, 0, 0, 0, 0Ch, 0, 0, 0, 7, 34h, 88h, 87h, 34h, 0, 1Ch, 0D8h, 88h, 88h, 87h, 34h
+   657 00000C87 0C0000000734888734-
+   657 00000C90 001CD888888734     
+   658 00000C97 00<rep 29h>             		times 0x29 db 0
+   659 00000CC0 07348734000000001C-     		db 7, 34h, 87h, 34h, 0, 0, 0, 0, 1Ch, 0D8h
+   659 00000CC9 D8                 
+   660 00000CCA 88<rep 4h>              		times 4 db 88h
+   661 00000CCE 9CD000000000000000-     		db 9Ch, 0D0h, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 7, 34h, 88h, 87h, 0, 0, 0Dh, 48h, 88h, 88h, 9Ch, 0D0h
+   661 00000CD7 040000000734888700-
+   661 00000CE0 000D4888889CD0     
+   662 00000CE7 00<rep 29h>             		times 0x29 db 0
+   663 00000D10 07348734000000001C-     		db 7, 34h, 87h, 34h, 0, 0, 0, 0, 1Ch, 0D8h
+   663 00000D19 D8                 
+   664 00000D1A 88<rep 4h>              		times 4 db 88h
+   665 00000D1E 89CD40000000000000-     		db 89h, 0CDh, 40h, 0, 0, 0, 0, 0, 0, 0Ch, 0, 0, 0, 7, 34h
+   665 00000D27 0C0000000734       
+   666 00000D2D 88<rep 8h>              		times 8 db 88h
+   667 00000D35 7340                    		db 73h, 40h
+   668 00000D37 00<rep 29h>             		times 0x29 db 0
+   669 00000D60 073487340000000007-     		db 7, 34h, 87h, 34h, 0, 0, 0, 0, 7, 34h
+   669 00000D69 34                 
+   670 00000D6A 88<rep 5h>              		times 5 db 88h
+   671 00000D6F 9700000000000D5004-     		db 97h, 0, 0, 0, 0, 0, 0Dh, 50h, 4, 0, 0, 0, 7, 34h
+   671 00000D78 0000000734         
+   672 00000D7D 88<rep 7h>              		times 7 db 88h
+   673 00000D84 89CD                    		db 89h, 0CDh
+   674 00000D86 00<rep 2Ah>             		times 0x2A db 0
+   675 00000DB0 073487340000000000-     		db 7, 34h, 87h, 34h, 0, 0, 0, 0, 0, 73h, 48h
+   675 00000DB9 7348               
+   676 00000DBB 88<rep Ah>              		times 0x0A db 88h
+   677 00000DC5 95C34C0000000734        		db 95h, 0C3h, 4Ch, 0, 0, 0, 7, 34h
+   678 00000DCD 88<rep 6h>              		times 6 db 88h
+   679 00000DD3 8970D0                  		db 89h, 70h, 0D0h
+   680 00000DD6 00<rep 2Ah>             		times 0x2A db 0
+   681 00000E00 073487340000000000-     		db 7, 34h, 87h, 34h, 0, 0, 0, 0, 0, 1Ch, 34h
+   681 00000E09 1C34               
+   682 00000E0B 88<rep Bh>              		times 0x0B db 88h
+   683 00000E16 87050000000734          		db 87h, 5, 0, 0, 0, 7, 34h
+   684 00000E1D 88<rep 5h>              		times 5 db 88h
+   685 00000E22 8700D5                  		db 87h, 0, 0D5h
+   686 00000E25 00<rep 2Ah>             		times 0x2A db 0
+   687 00000E4F 074074871574000000-     		db 7, 40h, 74h, 87h, 15h, 74h, 0, 0, 0, 0, 0, 70h, 0D5h
+   687 00000E58 000070D5           
+   688 00000E5C 88<rep Bh>              		times 0x0B db 88h
+   689 00000E67 734000000734            		db 73h, 40h, 0, 0, 7, 34h
+   690 00000E6D 88<rep 6h>              		times 6 db 88h
+   691 00000E73 895C34                  		db 89h, 5Ch, 34h
+   692 00000E76 00<rep 29h>             		times 0x29 db 0
+   693 00000E9F 073488873500000000-     		db 7, 34h, 88h, 87h, 35h, 0, 0, 0, 0, 0, 0, 1, 5Ch
+   693 00000EA8 0000015C           
+   694 00000EAC 00<rep 9h>              		times 9 db 0
+   695 00000EB5 3588873400000734        		db 35h, 88h, 87h, 34h, 0, 0, 7, 34h
+   696 00000EBD 88<rep 8h>              		times 8 db 88h
+   697 00000EC5 70D0                    		db 70h, 0D0h
+   698 00000EC7 00<rep 28h>             		times 0x28 db 0
+   699 00000EEF 0734887340              		db 7, 34h, 88h, 73h, 40h
+   700 00000EF4 00<rep 11h>             		times 0x11 db 0
+   701 00000F05 5CD889CD00000734        		db 5Ch, 0D8h, 89h, 0CDh, 0, 0, 7, 34h
+   702 00000F0D 88<rep 8h>              		times 8 db 88h
+   703 00000F15 8734                    		db 87h, 34h
+   704 00000F17 00<rep 28h>             		times 0x28 db 0
+   705 00000F3F 07348734                		db 7, 34h, 87h, 34h
+   706 00000F43 00<rep 12h>             		times 0x12 db 0
+   707 00000F55 01CD89CD0000073488-     		db 1, 0CDh, 89h, 0CDh, 0, 0, 7, 34h, 88h, 87h, 0, 3, 58h
+   707 00000F5E 87000358           
+   708 00000F62 88<rep 4h>              		times 4 db 88h
+   709 00000F66 7340                    		db 73h, 40h
+   710 00000F68 00<rep 27h>             		times 0x27 db 0
+   711 00000F8F 07347340                		db 7, 34h, 73h, 40h
+   712 00000F93 00<rep 13h>             		times 0x13 db 0
+   713 00000FA6 734873400007348887-     		db 73h, 48h, 73h, 40h, 0, 7, 34h, 88h, 87h, 34h, 5, 0CDh
+   713 00000FAF 3405CD             
+   714 00000FB2 88<rep 4h>              		times 4 db 88h
+   715 00000FB6 9CD0                    		db 9Ch, 0D0h
+   716 00000FB8 00<rep 27h>             		times 0x27 db 0
+   717 00000FDF 0735CD                  		db 7, 35h, 0CDh
+   718 00000FE2 00<rep 13h>             		times 0x13 db 0
+   719 00000FF5 700348700340073488-     		db 70h, 3, 48h, 70h, 3, 40h, 7, 34h, 88h, 87h, 34h, 0, 1Ch, 0D8h
+   719 00000FFE 8734001CD8         
+   720 00001003 88<rep 3h>              		times 3 db 88h
+   721 00001006 9CD0                    		db 9Ch, 0D0h
+   722 00001008 00<rep 27h>             		times 0x27 db 0
+   723 0000102F 073734                  		db 7, 37h, 34h
+   724 00001032 00<rep 13h>             		times 0x13 db 0
+   725 00001045 017348887340073488-     		db 1, 73h, 48h, 88h, 73h, 40h, 7, 34h, 88h, 87h, 34h, 0, 7, 34h
+   725 0000104E 8734000734         
+   726 00001053 88<rep 3h>              		times 3 db 88h
+   727 00001056 8734                    		db 87h, 34h
+   728 00001058 00<rep 27h>             		times 0x27 db 0
+   729 0000107F 073CD0                  		db 7, 3Ch, 0D0h
+   730 00001082 00<rep 14h>             		times 0x14 db 0
+   731 00001096 073488734007348887-     		db 7, 34h, 88h, 73h, 40h, 7, 34h, 88h, 87h, 34h, 0, 7, 34h
+   731 0000109F 34000734           
+   732 000010A3 88<rep 3h>              		times 3 db 88h
+   733 000010A6 8734                    		db 87h, 34h
+   734 000010A8 00<rep 27h>             		times 0x27 db 0
+   735 000010CF 073340                  		db 7, 33h, 40h
+   736 000010D2 00<rep 15h>             		times 0x15 db 0
+   737 000010E7 734873400734888734-     		db 73h, 48h, 73h, 40h, 7, 34h, 88h, 87h, 34h, 0, 7, 34h
+   737 000010F0 000734             
+   738 000010F3 88<rep 3h>              		times 3 db 88h
+   739 000010F6 8734                    		db 87h, 34h
+   740 000010F8 00<rep 27h>             		times 0x27 db 0
+   741 0000111F 073340                  		db 7, 33h, 40h
+   742 00001122 00<rep 15h>             		times 0x15 db 0
+   743 00001137 073473400734888734-     		db 7, 34h, 73h, 40h, 7, 34h, 88h, 87h, 34h, 0, 1Ch, 0D8h
+   743 00001140 001CD8             
+   744 00001143 88<rep 3h>              		times 3 db 88h
+   745 00001146 9CD0                    		db 9Ch, 0D0h
+   746 00001148 00<rep 27h>             		times 0x27 db 0
+   747 0000116F 070D                    		db 7, 0Dh
+   748 00001171 00<rep 16h>             		times 0x16 db 0
+   749 00001187 01CD73400734888734-     		db 1, 0CDh, 73h, 40h, 7, 34h, 88h, 87h, 34h, 5, 0CDh
+   749 00001190 05CD               
+   750 00001192 88<rep 4h>              		times 4 db 88h
+   751 00001196 9CD0                    		db 9Ch, 0D0h
+   752 00001198 00<rep 27h>             		times 0x27 db 0
+   753 000011BF 070D                    		db 7, 0Dh
+   754 000011C1 00<rep 17h>             		times 0x17 db 0
+   755 000011D8 737340073488870003-     		db 73h, 73h, 40h, 7, 34h, 88h, 87h, 0, 3, 58h
+   755 000011E1 58                 
+   756 000011E2 88<rep 4h>              		times 4 db 88h
+   757 000011E6 7340                    		db 73h, 40h
+   758 000011E8 00<rep 27h>             		times 0x27 db 0
+   759 0000120F 0734                    		db 7, 34h
+   760 00001211 00<rep 17h>             		times 0x17 db 0
+   761 00001228 1CF3400734              		db 1Ch, 0F3h, 40h, 7, 34h
+   762 0000122D 88<rep 8h>              		times 8 db 88h
+   763 00001235 871B1B1B                		db 87h, 1Bh, 1Bh, 1Bh
+   764 00001239 00<rep 26h>             		times 0x26 db 0
+   765 0000125F 0734                    		db 7, 34h
+   766 00001261 00<rep 17h>             		times 0x17 db 0
+   767 00001278 0733400734              		db 7, 33h, 40h, 7, 34h
+   768 0000127D 88<rep 8h>              		times 8 db 88h
+   769 00001285 7090                    		db 70h, 90h
+   770 00001287 00<rep 28h>             		times 0x28 db 0
+   771 000012AF 0734                    		db 7, 34h
+   772 000012B1 00<rep 17h>             		times 0x17 db 0
+   773 000012C8 0733400734              		db 7, 33h, 40h, 7, 34h
+   774 000012CD 88<rep 6h>              		times 6 db 88h
+   775 000012D3 895C34                  		db 89h, 5Ch, 34h
+   776 000012D6 00<rep 29h>             		times 0x29 db 0
+   777 000012FF 0734                    		db 7, 34h
+   778 00001301 00<rep 17h>             		times 0x17 db 0
+   779 00001318 01C34007                		db 1, 0C3h, 40h, 7
+   780 0000131C 00<rep 8h>              		times 8 db 0
+   781 00001324 D50080                  		db 0D5h, 0, 80h
+   782 00001327 00<rep 28h>             		times 0x28 db 0
+   783 0000134F 0774                    		db 7, 74h
+   784 00001351 00<rep 17h>             		times 0x17 db 0
+   785 00001368 01C340                  		db 1, 0C3h, 40h
+   786 0000136B 00<rep 35h>             		times 0x35 db 0
+   787 000013A0 C0                      		db 0C0h
+   788 000013A1 00<rep 18h>             		times 0x18 db 0
+   789 000013B9 7340                    		db 73h, 40h
+   790 000013BB 00<rep Bh>              		times 0x0B db 0
+   791 000013C6 80                      		db 80h
+   792 000013C7 00<rep 29h>             		times 0x29 db 0
+   793 000013F0 40                      		db 40h
+   794 000013F1 00<rep 18h>             		times 0x18 db 0
+   795 00001409 7340                    		db 73h, 40h
+   796 0000140B 00<rep 35h>             		times 0x35 db 0
+   797 00001440 C0                      		db 0C0h
+   798 00001441 00<rep 18h>             		times 0x18 db 0
+   799 00001459 7340                    		db 73h, 40h
+   800 0000145B 00<rep 35h>             		times 0x35 db 0
+   801 00001490 40                      		db 40h
+   802 00001491 00<rep 18h>             		times 0x18 db 0
+   803 000014A9 7340                    		db 73h, 40h
+   804 000014AB 00<rep 35h>             		times 0x35 db 0
+   805 000014E0 C0                      		db 0C0h
+   806 000014E1 00<rep 18h>             		times 0x18 db 0
+   807 000014F9 7340                    		db 73h, 40h
+   808 000014FB 00<rep E2Eh>            		times 0xE2E db 0
+   809 00002329 C0CF0CC0C0C0C0CC03-     		db 0C0h, 0CFh, 0Ch, 0C0h, 0C0h, 0C0h, 0C0h, 0CCh, 3, 3, 0, 3, 0, 0C0h, 0CCh, 3, 0, 0C0h, 0CCh, 0Ch, 0C0h, 0CCh, 0, 0, 0C0h, 0CCh, 0Ch, 0, 3, 3, 3, 30h, 0, 0Ch, 0, 0C0h, 0CCh, 0Ch, 0C0h, 30h, 33h, 0, 0C0h, 0CCh, 0, 30h, 30h, 0Ch, 0Ch, 0C0h, 0, 0Ch, 0F0h, 0C0h, 3, 30h, 0CCh, 30h, 0Ch, 30h
+   809 00002332 03000300C0CC0300C0-
+   809 0000233B CC0CC0CC0000C0CC0C-
+   809 00002344 0003030330000C00C0-
+   809 0000234D CC0CC0303300C0CC00-
+   809 00002356 30300C0CC0000CF0C0-
+   809 0000235F 0330CC300C30       
+   810 00002365 00<rep 14h>             		times 0x14 db 0
+   811 00002379 FFCC3CC0C0C0C0CC03-     		db 0FFh, 0CCh, 3Ch, 0C0h, 0C0h, 0C0h, 0C0h, 0CCh, 3, 3, 0, 3, 0, 0C0h, 0CCh, 3, 0, 0CCh, 0CFh, 0FCh, 0C0h, 0CCh, 0, 0, 0C0h, 0C0h, 0C0h, 0, 3, 3, 3, 30h, 0, 0Ch, 0, 0C0h, 0CCh, 0Ch, 0C0h, 30h, 33h, 0, 0FFh, 0C0h, 30h, 30h, 30h, 0Ch, 0Ch, 3, 0, 0Ch, 0C3h, 0C0h, 3, 0, 0C0h, 33h
+   811 00002382 03000300C0CC0300CC-
+   811 0000238B CFFCC0CC0000C0C0C0-
+   811 00002394 0003030330000C00C0-
+   811 0000239D CC0CC0303300FFC030-
+   811 000023A6 30300C0C03000CC3C0-
+   811 000023AF 0300C033           
+   812 000023B3 00<rep 283h>            		times 0x283 db 0
+   813 00002636 C0                      		db 0C0h
+   814 00002637 00<rep 4Fh>             		times 0x4F db 0
+   815 00002686 40                      		db 40h
+   816 00002687 00<rep 4Fh>             		times 0x4F db 0
+   817 000026D6 C0                      		db 0C0h
+   818 000026D7 00<rep 4Fh>             		times 0x4F db 0
+   819 00002726 40                      		db 40h
+   820 00002727 00<rep 4Fh>             		times 0x4F db 0
+   821 00002776 C0                      		db 0C0h
+   822 00002777 00<rep 3Eh>             		times 0x3E db 0
+   823 000027B5 015555555555555555-     		db 1, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 50h
+   823 000027BE 50                 
+   824 000027BF 00<rep 6h>              		times 6 db 0
+   825 000027C5 015555555555555555-     		db 1, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 50h
+   825 000027CE 50                 
+   826 000027CF 00<rep 36h>             		times 0x36 db 0
+   827 00002805 015555700D55555555-     		db 1, 55h, 55h, 70h, 0Dh, 55h, 55h, 55h, 55h, 34h
+   827 0000280E 34                 
+   828 0000280F 00<rep 6h>              		times 6 db 0
+   829 00002815 07355555555C035555-     		db 7, 35h, 55h, 55h, 55h, 5Ch, 3, 55h, 55h, 50h
+   829 0000281E 50                 
+   830 0000281F 00<rep 3Ah>             		times 0x3A db 0
+   831 00002859 15C352222735555555-     		db 15h, 0C3h, 52h, 22h, 27h, 35h, 55h, 55h, 55h, 55h, 55h, 55h, 57h, 36h, 22h, 21h, 70h, 0D5h
+   831 00002862 5555555736222170D5 
+   832 0000286B 00<rep 3Fh>             		times 0x3F db 0
+   833 000028AA 05C352215555555555-     		db 5, 0C3h, 52h, 21h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 52h, 21h, 70h, 0D4h
+   833 000028B3 555555522170D4     
+   834 000028BA 00<rep Bh>              		times 0x0B db 0
+   835 000028C5 155555555555555555      		db 15h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h
+   836 000028CE 00<rep 2Dh>             		times 0x2D db 0
+   837 000028FB 05CD22222222222222-     		db 5, 0CDh, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 1Ch, 0D4h
+   837 00002904 2222221CD4         
+   838 00002909 00<rep Ch>              		times 0x0C db 0
+   839 00002915 7355555555C0355555      		db 73h, 55h, 55h, 55h, 55h, 0C0h, 35h, 55h, 55h
+   840 0000291E 00<rep 2Eh>             		times 0x2E db 0
+   841 0000294C 1CD222222222222222-     		db 1Ch, 0D2h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 21h, 0CDh, 0, 0, 0, 5, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 73h, 62h, 22h, 17h, 0Dh, 50h
+   841 00002955 2221CD000000055555-
+   841 0000295E 555555555555557362-
+   841 00002967 22170D50           
+   842 0000296B 00<rep 31h>             		times 0x31 db 0
+   843 0000299C 01CD55555552215555-     		db 1, 0CDh, 55h, 55h, 55h, 52h, 21h, 55h, 55h, 55h, 5Ch, 0D0h, 0, 0, 17h, 3, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 22h, 17h, 0Dh, 40h
+   843 000029A5 555CD0000017035555-
+   843 000029AE 555555555555555522-
+   843 000029B7 170D40             
+   844 000029BA 00<rep 33h>             		times 0x33 db 0
+   845 000029ED 1C3555573627355557-     		db 1Ch, 35h, 55h, 57h, 36h, 27h, 35h, 55h, 57h, 0Dh, 0, 0, 5, 0CDh, 62h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 21h, 0CDh, 40h, 0, 0, 1, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 40h
+   845 000029F6 0D000005CD62222222-
+   845 000029FF 2222222222222221CD-
+   845 00002A08 400000015555555555-
+   845 00002A11 55555540           
+   846 00002A15 00<rep 28h>             		times 0x28 db 0
+   847 00002A3D 077400073627340007-     		db 7, 74h, 0, 7, 36h, 27h, 34h, 0, 7, 34h, 0, 0, 73h, 52h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 1Ch, 0D0h, 0, 0, 0, 7, 35h, 55h, 55h, 55h, 55h, 55h, 55h, 57h, 0Dh, 40h
+   847 00002A46 340000735222222222-
+   847 00002A4F 222222222222221CD0-
+   847 00002A58 000000073555555555-
+   847 00002A61 5555570D40         
+   848 00002A66 00<rep 27h>             		times 0x27 db 0
+   849 00002A8D 015000073627340001-     		db 1, 50h, 0, 7, 36h, 27h, 34h, 0, 1, 50h, 0, 1, 0CDh, 22h, 22h, 22h, 22h, 22h, 21h, 55h, 55h, 55h, 55h, 55h, 55h, 0CDh, 0, 0, 0, 0, 7, 36h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 17h, 34h
+   849 00002A96 500001CD2222222222-
+   849 00002A9F 21555555555555CD00-
+   849 00002AA8 000000073622222222-
+   849 00002AB1 2222221734         
+   850 00002AB6 00<rep 2Ah>             		times 0x2A db 0
+   851 00002AE0 073627340000000007-     		db 7, 36h, 27h, 34h, 0, 0, 0, 0, 7, 36h, 22h, 22h, 22h, 22h, 22h, 70h, 0D5h, 55h, 55h, 55h, 55h, 70h, 0D0h, 0, 0, 0, 0, 7, 36h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 73h, 40h
+   851 00002AE9 36222222222270D555-
+   851 00002AF2 55555570D000000000-
+   851 00002AFB 073622222222222222-
+   851 00002B04 227340             
+   852 00002B07 00<rep 29h>             		times 0x29 db 0
+   853 00002B30 07362734000000001C-     		db 7, 36h, 27h, 34h, 0, 0, 0, 0, 1Ch, 0D2h, 22h, 22h, 22h, 22h, 27h, 34h, 0, 0, 0, 0, 0, 73h, 40h, 0, 0, 0, 0, 7, 36h, 22h, 21h, 55h, 55h, 56h, 22h, 22h, 22h, 1Ch, 0D0h
+   853 00002B39 D22222222227340000-
+   853 00002B42 000000734000000000-
+   853 00002B4B 073622215555562222-
+   853 00002B54 221CD0             
+   854 00002B57 00<rep 29h>             		times 0x29 db 0
+   855 00002B80 073627340000000073-     		db 7, 36h, 27h, 34h, 0, 0, 0, 0, 73h, 62h, 22h, 22h, 22h, 22h, 1Ch, 0D0h, 0, 0, 0, 0, 0, 15h, 0, 0, 0, 0, 0, 7, 36h, 22h, 27h, 35h, 55h, 70h, 0D2h, 22h, 22h, 27h, 34h
+   855 00002B89 62222222221CD00000-
+   855 00002B92 000000150000000000-
+   855 00002B9B 07362227355570D222-
+   855 00002BA4 222734             
+   856 00002BA7 00<rep 29h>             		times 0x29 db 0
+   857 00002BD0 073627340000000073-     		db 7, 36h, 27h, 34h, 0, 0, 0, 0, 73h, 62h, 22h, 22h, 22h, 22h, 73h, 40h
+   857 00002BD9 62222222227340     
+   858 00002BE0 00<rep Bh>              		times 0x0B db 0
+   859 00002BEB 073622273400073622-     		db 7, 36h, 22h, 27h, 34h, 0, 7, 36h, 22h, 22h, 27h, 34h
+   859 00002BF4 222734             
+   860 00002BF7 00<rep 29h>             		times 0x29 db 0
+   861 00002C20 073627340000000073-     		db 7, 36h, 27h, 34h, 0, 0, 0, 0, 73h, 62h, 22h, 22h, 22h, 22h, 73h, 40h
+   861 00002C29 62222222227340     
+   862 00002C30 00<rep Bh>              		times 0x0B db 0
+   863 00002C3B 073622273400073622-     		db 7, 36h, 22h, 27h, 34h, 0, 7, 36h, 22h, 22h, 27h, 34h
+   863 00002C44 222734             
+   864 00002C47 00<rep 29h>             		times 0x29 db 0
+   865 00002C70 073627340000000073-     		db 7, 36h, 27h, 34h, 0, 0, 0, 0, 73h, 62h, 22h, 22h, 22h, 22h, 1Ch, 0D0h, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 7, 36h, 22h, 27h, 35h, 55h, 70h, 0D2h, 22h, 22h, 27h, 34h
+   865 00002C79 62222222221CD00000-
+   865 00002C82 000000000008000000-
+   865 00002C8B 07362227355570D222-
+   865 00002C94 222734             
+   866 00002C97 00<rep 29h>             		times 0x29 db 0
+   867 00002CC0 07362734000000001C-     		db 7, 36h, 27h, 34h, 0, 0, 0, 0, 1Ch, 0D2h, 22h, 22h, 22h, 22h, 27h, 34h
+   867 00002CC9 D2222222222734     
+   868 00002CD0 00<rep Bh>              		times 0x0B db 0
+   869 00002CDB 073622215555562222-     		db 7, 36h, 22h, 21h, 55h, 55h, 56h, 22h, 22h, 22h, 1Ch, 0D0h
+   869 00002CE4 221CD0             
+   870 00002CE7 00<rep 29h>             		times 0x29 db 0
+   871 00002D10 073627340000000007-     		db 7, 36h, 27h, 34h, 0, 0, 0, 0, 7, 36h, 22h, 22h, 22h, 22h, 22h, 70h, 0D5h, 55h, 55h, 55h, 54h, 0, 8, 0, 0, 0, 7, 36h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 73h, 40h
+   871 00002D19 36222222222270D555-
+   871 00002D22 555554000800000007-
+   871 00002D2B 362222222222222222-
+   871 00002D34 7340               
+   872 00002D36 00<rep 29h>             		times 0x29 db 0
+   873 00002D5F 073627340000000001-     		db 7, 36h, 27h, 34h, 0, 0, 0, 0, 1, 0CDh, 22h, 22h, 22h, 22h, 22h, 21h, 55h, 55h, 55h, 55h, 55h, 70h, 35h, 0, 0, 0, 0, 7, 36h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 17h, 34h
+   873 00002D68 CD2222222222215555-
+   873 00002D71 555555703500000000-
+   873 00002D7A 073622222222222222-
+   873 00002D83 1734               
+   874 00002D85 00<rep 2Ah>             		times 0x2A db 0
+   875 00002DAF 073627340000000000-     		db 7, 36h, 27h, 34h, 0, 0, 0, 0, 0, 73h, 52h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 5Ch, 0D8h, 0, 0, 0, 7, 36h, 22h, 22h, 22h, 22h, 22h, 21h, 57h, 0Dh, 40h
+   875 00002DB8 735222222222222222-
+   875 00002DC1 222222225CD8000000-
+   875 00002DCA 073622222222222157-
+   875 00002DD3 0D40               
+   876 00002DD5 00<rep 29h>             		times 0x29 db 0
+   877 00002DFE 015736273550000000-     		db 1, 57h, 36h, 27h, 35h, 50h, 0, 0, 0, 0, 5, 0CDh, 62h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 21h, 71h, 0B1h, 0B1h, 0B1h, 7, 36h, 22h, 22h, 22h, 22h, 22h, 21h, 57h, 3, 50h
+   877 00002E07 0005CD622222222222-
+   877 00002E10 22222222222171B1B1-
+   877 00002E19 B10736222222222221-
+   877 00002E22 570350             
+   878 00002E25 00<rep 29h>             		times 0x29 db 0
+   879 00002E4E 07355221C750000000-     		db 7, 35h, 52h, 21h, 0C7h, 50h, 0, 0, 0, 0, 0, 17h, 3, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 52h, 22h, 1Ch, 0D0h, 0, 0, 7, 36h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 25h, 0CDh, 40h
+   879 00002E57 000017035555555555-
+   879 00002E60 5555555552221CD000-
+   879 00002E69 000736222222222222-
+   879 00002E72 2225CD40           
+   880 00002E76 00<rep 28h>             		times 0x28 db 0
+   881 00002E9E 0736221CD000000000-     		db 7, 36h, 22h, 1Ch, 0D0h, 0, 0, 0, 0, 0, 0, 0, 5, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 0C3h, 62h, 27h, 34h, 0, 0, 7, 36h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 17h, 34h
+   881 00002EA7 000000055555555555-
+   881 00002EB0 55555555C362273400-
+   881 00002EB9 000736222222222222-
+   881 00002EC2 22221734           
+   882 00002EC6 00<rep 28h>             		times 0x28 db 0
+   883 00002EEE 073621CD                		db 7, 36h, 21h, 0CDh
+   884 00002EF2 00<rep 12h>             		times 0x12 db 0
+   885 00002F04 073621CD0000073622-     		db 7, 36h, 21h, 0CDh, 0, 0, 7, 36h, 22h, 21h, 55h, 55h, 22h, 22h, 22h, 22h, 21h, 0CDh
+   885 00002F0D 2155552222222221CD 
+   886 00002F16 00<rep 28h>             		times 0x28 db 0
+   887 00002F3E 07361CD0                		db 7, 36h, 1Ch, 0D0h
+   888 00002F42 00<rep 12h>             		times 0x12 db 0
+   889 00002F54 01CD22734000073622-     		db 1, 0CDh, 22h, 73h, 40h, 0, 7, 36h, 22h, 27h, 35h, 5Ch, 36h, 22h, 22h, 22h, 22h, 73h, 40h
+   889 00002F5D 27355C362222222273-
+   889 00002F66 40                 
+   890 00002F67 00<rep 27h>             		times 0x27 db 0
+   891 00002F8E 07367340                		db 7, 36h, 73h, 40h
+   892 00002F92 00<rep 12h>             		times 0x12 db 0
+   893 00002FA4 157362735500073622-     		db 15h, 73h, 62h, 73h, 55h, 0, 7, 36h, 22h, 27h, 34h, 0, 73h, 62h, 22h, 22h, 22h, 1Ch, 0D0h
+   893 00002FAD 27340073622222221C-
+   893 00002FB6 D0                 
+   894 00002FB7 00<rep 27h>             		times 0x27 db 0
+   895 00002FDE 0735CD                  		db 7, 35h, 0CDh
+   896 00002FE1 00<rep 13h>             		times 0x13 db 0
+   897 00002FF4 170D22157340073622-     		db 17h, 0Dh, 22h, 15h, 73h, 40h, 7, 36h, 22h, 27h, 34h, 0, 1Ch, 0D2h, 22h, 22h, 22h, 27h, 34h
+   897 00002FFD 2734001CD222222227-
+   897 00003006 34                 
+   898 00003007 00<rep 27h>             		times 0x27 db 0
+   899 0000302E 073734                  		db 7, 37h, 34h
+   900 00003031 00<rep 14h>             		times 0x14 db 0
+   901 00003045 1CD222734007362227-     		db 1Ch, 0D2h, 22h, 73h, 40h, 7, 36h, 22h, 27h, 34h, 0, 7, 36h, 22h, 22h, 22h, 27h, 34h
+   901 0000304E 340007362222222734 
+   902 00003057 00<rep 27h>             		times 0x27 db 0
+   903 0000307E 073CD0                  		db 7, 3Ch, 0D0h
+   904 00003081 00<rep 14h>             		times 0x14 db 0
+   905 00003095 01CD22734007362227-     		db 1, 0CDh, 22h, 73h, 40h, 7, 36h, 22h, 27h, 34h, 0, 7, 36h, 22h, 22h, 22h, 27h, 34h
+   905 0000309E 340007362222222734 
+   906 000030A7 00<rep 27h>             		times 0x27 db 0
+   907 000030CE 073340                  		db 7, 33h, 40h
+   908 000030D1 00<rep 15h>             		times 0x15 db 0
+   909 000030E6 1CD273400736222734-     		db 1Ch, 0D2h, 73h, 40h, 7, 36h, 22h, 27h, 34h, 0, 1Ch, 0D2h, 22h, 22h, 22h, 27h, 34h
+   909 000030EF 001CD22222222734   
+   910 000030F7 00<rep 27h>             		times 0x27 db 0
+   911 0000311E 070D                    		db 7, 0Dh
+   912 00003120 00<rep 16h>             		times 0x16 db 0
+   913 00003136 073673400736222734-     		db 7, 36h, 73h, 40h, 7, 36h, 22h, 27h, 34h, 0, 73h, 62h, 22h, 22h, 22h, 1Ch, 0D0h
+   913 0000313F 0073622222221CD0   
+   914 00003147 00<rep 27h>             		times 0x27 db 0
+   915 0000316E 070D                    		db 7, 0Dh
+   916 00003170 00<rep 16h>             		times 0x16 db 0
+   917 00003186 01CD73400736222735-     		db 1, 0CDh, 73h, 40h, 7, 36h, 22h, 27h, 35h, 5Ch, 36h, 22h, 22h, 22h, 22h, 73h, 40h
+   917 0000318F 5C36222222227340   
+   918 00003197 00<rep 27h>             		times 0x27 db 0
+   919 000031BE 0734                    		db 7, 34h
+   920 000031C0 00<rep 17h>             		times 0x17 db 0
+   921 000031D7 737340073622215555-     		db 73h, 73h, 40h, 7, 36h, 22h, 21h, 55h, 55h, 22h, 22h, 22h, 22h, 21h, 0CDh
+   921 000031E0 2222222221CD       
+   922 000031E6 00<rep 28h>             		times 0x28 db 0
+   923 0000320E 0734                    		db 7, 34h
+   924 00003210 00<rep 17h>             		times 0x17 db 0
+   925 00003227 1CF340073622222222-     		db 1Ch, 0F3h, 40h, 7, 36h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 17h, 74h
+   925 00003230 222222221774       
+   926 00003236 00<rep 28h>             		times 0x28 db 0
+   927 0000325E 0734                    		db 7, 34h
+   928 00003260 00<rep 17h>             		times 0x17 db 0
+   929 00003277 073340073622222222-     		db 7, 33h, 40h, 7, 36h, 22h, 22h, 22h, 22h, 22h, 22h, 22h, 25h, 0CDh, 0C0h
+   929 00003280 22222225CDC0       
+   930 00003286 00<rep 28h>             		times 0x28 db 0
+   931 000032AE 0734                    		db 7, 34h
+   932 000032B0 00<rep 17h>             		times 0x17 db 0
+   933 000032C7 01C340073555555555-     		db 1, 0C3h, 40h, 7, 35h, 55h, 55h, 55h, 55h, 55h, 55h, 57h, 3, 50h, 40h
+   933 000032D0 555557035040       
+   934 000032D6 00<rep 25h>             		times 0x25 db 0
+   935 000032FB 0139393934              		db 1, 39h, 39h, 39h, 34h
+   936 00003300 00<rep 17h>             		times 0x17 db 0
+   937 00003317 01C340015555555555-     		db 1, 0C3h, 40h, 1, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 55h, 40h, 0, 0C0h
+   937 00003320 5555554000C0       
+   938 00003326 00<rep 28h>             		times 0x28 db 0
+   939 0000334E 0190                    		db 1, 90h
+   940 00003350 00<rep 18h>             		times 0x18 db 0
+   941 00003368 7340                    		db 73h, 40h
+   942 0000336A 00<rep Bh>              		times 0x0B db 0
+   943 00003375 40                      		db 40h
+   944 00003376 00<rep 42h>             		times 0x42 db 0
+   945 000033B8 7340                    		db 73h, 40h
+   946 000033BA 00<rep Bh>              		times 0x0B db 0
+   947 000033C5 C0                      		db 0C0h
+   948 000033C6 00<rep 29h>             		times 0x29 db 0
+   949 000033EF 80                      		db 80h
+   950 000033F0 00<rep 18h>             		times 0x18 db 0
+   951 00003408 7340                    		db 73h, 40h
+   952 0000340A 00<rep Bh>              		times 0x0B db 0
+   953 00003415 40                      		db 40h
+   954 00003416 00<rep 42h>             		times 0x42 db 0
+   955 00003458 7340                    		db 73h, 40h
+   956 0000345A 00<rep 35h>             		times 0x35 db 0
+   957 0000348F 80                      		db 80h
+   958 00003490 00<rep 18h>             		times 0x18 db 0
+   959 000034A8 7340                    		db 73h, 40h
+   960 000034AA 00<rep 4Eh>             		times 0x4E db 0
+   961 000034F8 15                      		db 15h
+   962 000034F9 00<rep DDFh>            		times 0xDDF db 0
+   963 000042D8 FFCC0CFFCFFCC0CFF3-     		db 0FFh, 0CCh, 0Ch, 0FFh, 0CFh, 0FCh, 0C0h, 0CFh, 0F3h, 0FCh, 0, 3, 0FCh, 0FFh, 0Fh, 0F3h, 0FCh, 0C0h, 0CFh, 0FCh, 0FFh, 0Fh, 0F0h, 0, 0FFh, 0Ch, 0Ch, 0, 3Fh, 0F3h, 3, 3Fh, 0C0h, 0Fh, 0FCh, 0FFh, 0CFh, 0F0h, 0FFh, 3Fh, 0C3h, 0, 0FFh, 0CFh, 0F3h, 0FFh, 3Fh, 0CFh, 0F0h, 0FFh, 0, 0Ch, 0C0h, 0C0h, 3, 3Fh, 0CFh, 0F3h, 0FCh, 30h
+   963 000042E1 FC0003FCFF0FF3FCC0-
+   963 000042EA CFFCFF0FF000FF0C0C-
+   963 000042F3 003FF3033FC00FFCFF-
+   963 000042FC CFF0FF3FC300FFCFF3-
+   963 00004305 FF3FCFF0FF000CC0C0-
+   963 0000430E 033FCFF3FC30       
+   964 00004314 00<rep 14h>             		times 0x14 db 0
+   965 00004328 C0CCCCC0C0C0FFCFC3-     		db 0C0h, 0CCh, 0CCh, 0C0h, 0C0h, 0C0h, 0FFh, 0CFh, 0C3h, 0FCh, 0, 3, 0F0h, 0FFh, 0Fh, 0C3h, 0F0h, 0C0h, 0CCh, 0Ch, 0FFh, 0Fh, 0C0h, 0, 0FFh, 3, 0F0h, 0, 3, 3, 0FFh, 3Fh, 0, 0Ch, 0, 0C0h, 0CCh, 0Ch, 0FCh, 3Fh, 0C3h, 0, 0C0h, 0CFh, 0F0h, 30h, 3Fh, 0Fh, 0F0h, 0FFh, 0, 0Ch, 0CCh, 0C0h, 3, 3Fh, 0CFh, 0F3h, 0FCh, 30h
+   965 00004331 FC0003F0FF0FC3F0C0-
+   965 0000433A CC0CFF0FC000FF03F0-
+   965 00004343 000303FF3F000C00C0-
+   965 0000434C CC0CFC3FC300C0CFF0-
+   965 00004355 303F0FF0FF000CCCC0-
+   965 0000435E 033FCFF3FC30       
+   966 00004364 00<rep 14h>             		times 0x14 db 0
+   967 00004378 C0CC0CFFC0C0C0CFF3-     		db 0C0h, 0CCh, 0Ch, 0FFh, 0C0h, 0C0h, 0C0h, 0CFh, 0F3h, 3, 0, 3, 0, 0C0h, 0CFh, 0F3h, 0FCh, 0FFh, 0CCh, 0Ch, 0C0h, 0CFh, 0F0h, 0, 0FFh, 0, 0C0h, 0, 3, 3, 3, 3Fh, 0C0h, 0Fh, 0FCh, 0FFh, 0CFh, 0F0h, 0FFh, 3Fh, 0C3h, 0FCh, 0C0h, 0CFh, 0F0h, 30h, 3Fh, 0CCh, 0Ch, 0FFh, 0, 0Ch, 0C0h, 0C0h, 3, 3Fh, 0CFh, 0F3h, 0FCh, 30h
+   967 00004381 03000300C0CFF3FCFF-
+   967 0000438A CC0CC0CFF000FF00C0-
+   967 00004393 000303033FC00FFCFF-
+   967 0000439C CFF0FF3FC3FCC0CFF0-
+   967 000043A5 303FCC0CFF000CC0C0-
+   967 000043AE 033FCFF3FC30       
+   968 000043B4 00<rep D4h>             		times 0xD4 db 0
+   969                                  
+   970                                  ; ---------------------------------------------------------------------------
+   971 00004488 7B7B7A7A797978          byte_109:	db 7Bh, 7Bh, 7Ah, 7Ah, 79h, 79h, 78h
+   972 0000448F 7776757372716F          byte_110:	db 77h, 76h, 75h, 73h, 72h, 71h, 6Fh
+   973 00004496 6E6C6B696766            byte_117:	db 6Eh, 6Ch, 6Bh, 69h, 67h, 66h
+   974 0000449C 6462605F5D5C5A          byte_11D:	db 64h, 62h, 60h, 5Fh, 5Dh, 5Ch, 5Ah
+   975 000044A3 59575654535251504F-     byte_124:	db 59h, 57h, 56h, 54h, 53h, 52h, 51h, 50h, 4Fh, 4Fh
+   975 000044AC 4F                 
+   976 000044AD 4E4E4D4D4D4D4D4E4E-     		db 4Eh, 4Eh, 4Dh, 4Dh, 4Dh, 4Dh, 4Dh, 4Eh, 4Eh, 4Fh, 50h, 50h
+   976 000044B6 4F5050             
+   977 000044B9 5153545557585A5C5D-     		db 51h, 53h, 54h, 55h, 57h, 58h, 5Ah, 5Ch, 5Dh, 5Fh, 61h
+   977 000044C2 5F61               
+   978 000044C4 6365676A6C6E707275-     		db 63h, 65h, 67h, 6Ah, 6Ch, 6Eh, 70h, 72h, 75h, 77h, 79h
+   978 000044CD 7779               
+   979 000044CF 7B7D7F81838587888A-     		db 7Bh, 7Dh, 7Fh, 81h, 83h, 85h, 87h, 88h, 8Ah, 8Bh, 8Ch
+   979 000044D8 8B8C               
+   980 000044DA 8D8E8F909091919191-     		db 8Dh, 8Eh, 8Fh, 90h, 90h, 91h, 91h, 91h, 91h, 91h, 90h, 8Fh, 8Fh
+   980 000044E3 91908F8F           
+   981 000044E7 8E8C8B8A8886848280-     		db 8Eh, 8Ch, 8Bh, 8Ah, 88h, 86h, 84h, 82h, 80h, 7Eh, 7Bh
+   981 000044F0 7E7B               
+   982 000044F2 787673706D6A666360-     		db 78h, 76h, 73h, 70h, 6Dh, 6Ah, 66h, 63h, 60h, 5Ch, 59h
+   982 000044FB 5C59               
+   983 000044FD 55524E4B4744403D3A-     		db 55h, 52h, 4Eh, 4Bh, 47h, 44h, 40h, 3Dh, 3Ah, 36h, 33h
+   983 00004506 3633               
+   984 00004508 302D2A272522201E1B-     		db 30h, 2Dh, 2Ah, 27h, 25h, 22h, 20h, 1Eh, 1Bh, 19h, 18h
+   984 00004511 1918               
+   985 00004513 1614131211100F0F0E-     		db 16h, 14h, 13h, 12h, 11h, 10h, 0Fh, 0Fh, 0Eh, 0Eh, 0Eh, 0Eh
+   985 0000451C 0E0E0E             
+   986 0000451F 0F0F10101112141516-     		db 0Fh, 0Fh, 10h, 10h, 11h, 12h, 14h, 15h, 16h, 18h
+   986 00004528 18                 
+   987 00004529 1A1B1D1F212325272A-     		db 1Ah, 1Bh, 1Dh, 1Fh, 21h, 23h, 25h, 27h, 2Ah, 2Ch, 2Eh
+   987 00004532 2C2E               
+   988 00004534 30323537393B3D3F41-     		db 30h, 32h, 35h, 37h, 39h, 3Bh, 3Dh, 3Fh, 41h, 43h, 45h
+   988 0000453D 4345               
+   989 0000453F 4648494B4C4D4E4F50-     		db 46h, 48h, 49h, 4Bh, 4Ch, 4Dh, 4Eh, 4Fh, 50h, 51h, 51h, 51h
+   989 00004548 515151             
+   990 0000454B 52525252515150504F-     		db 52h, 52h, 52h, 52h, 51h, 51h, 50h, 50h, 4Fh, 4Eh, 4Dh, 4Ch
+   990 00004554 4E4D4C             
+   991 00004557 4B4A4847454442413F-     		db 4Bh, 4Ah, 48h, 47h, 45h, 44h, 42h, 41h, 3Fh, 3Dh, 3Ch
+   991 00004560 3D3C               
+   992 00004562 3A3837353332302F2D-     		db 3Ah, 38h, 37h, 35h, 33h, 32h, 30h, 2Fh, 2Dh, 2Ch, 2Bh
+   992 0000456B 2C2B               
+   993 0000456D 2A2828272625252524-     		db 2Ah, 28h, 28h, 27h, 26h, 25h, 25h, 25h, 24h, 24h, 24h, 25h, 25h
+   993 00004576 24242525           
+   994 0000457A 26262728292B2C2E30-     		db 26h, 26h, 27h, 28h, 29h, 2Bh, 2Ch, 2Eh, 30h, 32h
+   994 00004583 32                 
+   995 00004584 3436383B3D40434648-     		db 34h, 36h, 38h, 3Bh, 3Dh, 40h, 43h, 46h, 48h, 4Ch, 4Fh
+   995 0000458D 4C4F               
+   996 0000458F 5255585C5F6265696C-     		db 52h, 55h, 58h, 5Ch, 5Fh, 62h, 65h, 69h, 6Ch, 6Fh, 73h
+   996 00004598 6F73               
+   997 0000459A 76797C7F8284878A8C-     		db 76h, 79h, 7Ch, 7Fh, 82h, 84h, 87h, 8Ah, 8Ch, 8Eh, 91h
+   997 000045A3 8E91               
+   998 000045A5 93949698999A9B9C9D-     		db 93h, 94h, 96h, 98h, 99h, 9Ah, 9Bh, 9Ch, 9Dh, 9Dh
+   998 000045AE 9D                 
+   999 000045AF 9E9E9E9E9D9D9C9B9A-     		db 9Eh, 9Eh, 9Eh, 9Eh, 9Dh, 9Dh, 9Ch, 9Bh, 9Ah, 99h, 97h, 96h
+   999 000045B8 999796             
+  1000 000045BB 9492908E8C8A878582-     		db 94h, 92h, 90h, 8Eh, 8Ch, 8Ah, 87h, 85h, 82h, 80h, 7Dh
+  1000 000045C4 807D               
+  1001 000045C6 7A7875726F6C696764-     		db 7Ah, 78h, 75h, 72h, 6Fh, 6Ch, 69h, 67h, 64h, 61h, 5Eh
+  1001 000045CF 615E               
+  1002 000045D1 5C59575452504E4C4A-     		db 5Ch, 59h, 57h, 54h, 52h, 50h, 4Eh, 4Ch, 4Ah, 48h, 46h
+  1002 000045DA 4846               
+  1003 000045DC 45434241403F3E3E3D-     		db 45h, 43h, 42h, 41h, 40h, 3Fh, 3Eh, 3Eh, 3Dh, 3Dh, 3Dh, 3Dh, 3Dh, 3Dh, 3Dh
+  1003 000045E5 3D3D3D3D3D3D       
+  1004 000045EB 3E3F3F404142434446-     		db 3Eh, 3Fh, 3Fh, 40h, 41h, 42h, 43h, 44h, 46h, 47h
+  1004 000045F4 47                 
+  1005 000045F5 484A4B4D4E50515354-     		db 48h, 4Ah, 4Bh, 4Dh, 4Eh, 50h, 51h, 53h, 54h, 55h, 57h
+  1005 000045FE 5557               
+  1006 00004600 58595B5C5D5E5F6060-     		db 58h, 59h, 5Bh, 5Ch, 5Dh, 5Eh, 5Fh, 60h, 60h, 61h
+  1006 00004609 61                 
+  1007 0000460A 626262626262626161-     		db 62h, 62h, 62h, 62h, 62h, 62h, 62h, 61h, 61h, 60h, 5Fh, 5Eh, 5Dh, 5Ch, 5Ah
+  1007 00004613 605F5E5D5C5A       
+  1008 00004619 59575553514F4D4B48-     		db 59h, 57h, 55h, 53h, 51h, 4Fh, 4Dh, 4Bh, 48h, 46h, 43h
+  1008 00004622 4643               
+  1009 00004624 413E3B383633302D2A-     		db 41h, 3Eh, 3Bh, 38h, 36h, 33h, 30h, 2Dh, 2Ah, 27h, 25h
+  1009 0000462D 2725               
+  1010 0000462F 221F1D1A181513110F-     		db 22h, 1Fh, 1Dh, 1Ah, 18h, 15h, 13h, 11h, 0Fh, 0Dh, 0Bh
+  1010 00004638 0D0B               
+  1011 0000463A 090806050403020201-     		db 9, 8, 6, 5, 4, 3, 2, 2, 1, 1, 1, 1, 2, 2, 3, 4
+  1011 00004643 01010102020304     
+  1012 0000464A 050607090B0C0F1113-     		db 5, 6, 7, 9, 0Bh, 0Ch, 0Fh, 11h, 13h, 15h, 18h, 1Bh
+  1012 00004653 15181B             
+  1013 00004656 1D202326292C303336-     		db 1Dh, 20h, 23h, 26h, 29h, 2Ch, 30h, 33h, 36h, 3Ah, 3Dh
+  1013 0000465F 3A3D               
+  1014 00004661 4044474A4D5054575A-     		db 40h, 44h, 47h, 4Ah, 4Dh, 50h, 54h, 57h, 5Ah, 5Ch, 5Fh
+  1014 0000466A 5C5F               
+  1015 0000466C 626467696B6D6F7173-     		db 62h, 64h, 67h, 69h, 6Bh, 6Dh, 6Fh, 71h, 73h, 74h, 76h
+  1015 00004675 7476               
+  1016 00004677 777879797A7A7B7B7B-     		db 77h, 78h, 79h, 79h, 7Ah, 7Ah, 7Bh, 7Bh, 7Bh, 7Ah, 7Ah, 7Ah
+  1016 00004680 7A7A7A             
+  1017 00004683 797877777574737270-     		db 79h, 78h, 77h, 77h, 75h, 74h, 73h, 72h, 70h, 6Fh
+  1017 0000468C 6F                 
+  1018 0000468D 6D6C6A686765636260-     		db 6Dh, 6Ch, 6Ah, 68h, 67h, 65h, 63h, 62h, 60h, 5Eh, 5Dh
+  1018 00004696 5E5D               
+  1019 00004698 5B595857                		db 5Bh, 59h, 58h, 57h
+  1020                                  
+  1021 0000469C 0000                    exitflag:	dw 0
+  1022 0000469E 00000000                oldInt9:	dd 0
+  1023 000046A2 0000                    sinTable:	dw 0
+  1024 000046A4 0000                    rasterbarPos:	dw 0
+  1025 000046A6 0000                    charPos:	dw 0
+  1026 000046A8 0000                    charColPos:	dw 0
+  1027 000046AA 0000                    scrollPos:	dw 0
+  1028 000046AC 0000                    musicTick:	dw 0
+  1029 000046AE 0000                    musicPos:	dw 0
+  1030 000046B0 00<rep 1000h>           fontbuffer:	times 1000h db 0
+  1031 000056B0 48492E2E2E20484F2E-     scrollText:	db 'HI... HO... HERE WE GO....   WELCOME TO OUR VERY SPECIAL DEMO....'
+  1031 000056B9 2E2E20484552452057-
+  1031 000056C2 4520474F2E2E2E2E20-
+  1031 000056CB 202057454C434F4D45-
+  1031 000056D4 20544F204F55522056-
+  1031 000056DD 455259205350454349-
+  1031 000056E6 414C2044454D4F2E2E-
+  1031 000056EF 2E2E               
+  1032 000056F1 202020202020284920-     		db '      (I BET YOU WONDER WHAT THE THING IS THAT MAKES THIS DEMO SO'
+  1032 000056FA 42455420594F552057-
+  1032 00005703 4F4E44455220574841-
+  1032 0000570C 542054484520544849-
+  1032 00005715 4E4720495320544841-
+  1032 0000571E 54204D414B45532054-
+  1032 00005727 4849532044454D4F20-
+  1032 00005730 534F               
+  1033 00005732 205350454349414C20-     		db ' SPECIAL !)     WELL, I',27h,'D BETTER TELL YOU....    IT IS THE ONL'
+  1033 0000573B 212920202020205745-
+  1033 00005744 4C4C2C204927442042-
+  1033 0000574D 45545445522054454C-
+  1033 00005756 4C20594F552E2E2E2E-
+  1033 0000575F 202020204954204953-
+  1033 00005768 20544845204F4E4C   
+  1034 00005770 592044454D4F205448-     		db 'Y DEMO THAT WORKS FINE, AND GIVES FULL COLOUR ON AN 8088 WITH CGA'
+  1034 00005779 415420574F524B5320-
+  1034 00005782 46494E452C20414E44-
+  1034 0000578B 204749564553204655-
+  1034 00005794 4C4C20434F4C4F5552-
+  1034 0000579D 204F4E20414E203830-
+  1034 000057A6 383820574954482043-
+  1034 000057AF 4741               
+  1035 000057B1 202120202020202048-     		db ' !      HAVE YOU EVER SEEN THE 320x200x16 RESOLUTION ON A CGA BEF'
+  1035 000057BA 41564520594F552045-
+  1035 000057C3 564552205345454E20-
+  1035 000057CC 544845203332307832-
+  1035 000057D5 303078313620524553-
+  1035 000057DE 4F4C5554494F4E204F-
+  1035 000057E7 4E2041204347412042-
+  1035 000057F0 4546               
+  1036 000057F2 4F5245203F20202020-     		db 'ORE ?    I BET YOU',27h,'VE NOT.....   BUT AS WE ALWAYS SAY: EVERYTH'
+  1036 000057FB 492042455420594F55-
+  1036 00005804 275645204E4F542E2E-
+  1036 0000580D 2E2E2E202020425554-
+  1036 00005816 20415320574520414C-
+  1036 0000581F 57415953205341593A-
+  1036 00005828 2045564552595448   
+  1037 00005830 494E4720495320504F-     		db 'ING IS POSSIBLE WITH SOME EXTREME CODING.           SORRY FOR NOT'
+  1037 00005839 535349424C45205749-
+  1037 00005842 544820534F4D452045-
+  1037 0000584B 585452454D4520434F-
+  1037 00005854 44494E472E20202020-
+  1037 0000585D 20202020202020534F-
+  1037 00005866 52525920464F52204E-
+  1037 0000586F 4F54               
+  1038 00005871 204252494E47494E47-     		db ' BRINGING YOU THE USUAL 4-VOICED SOUND.......    BECAUSE.... THER'
+  1038 0000587A 20594F552054484520-
+  1038 00005883 555355414C20342D56-
+  1038 0000588C 4F4943454420534F55-
+  1038 00005895 4E442E2E2E2E2E2E2E-
+  1038 0000589E 202020204245434155-
+  1038 000058A7 53452E2E2E2E205448-
+  1038 000058B0 4552               
+  1039 000058B2 4520415245204C494D-     		db 'E ARE LIMITS FOR WHAT AN 8088 CAN DO....               WELL WELL.'
+  1039 000058BB 49545320464F522057-
+  1039 000058C4 48415420414E203830-
+  1039 000058CD 38382043414E20444F-
+  1039 000058D6 2E2E2E2E2020202020-
+  1039 000058DF 202020202020202020-
+  1039 000058E8 2057454C4C2057454C-
+  1039 000058F1 4C2E               
+  1040 000058F3 2E2E2E204920544849-     		db '... I THINK IT',27h,'S TIME TO WRAP.......                        ',0
+  1040 000058FC 4E4B20495427532054-
+  1040 00005905 494D4520544F205752-
+  1040 0000590E 41502E2E2E2E2E2E2E-
+  1040 00005917 202020202020202020-
+  1040 00005920 202020202020202020-
+  1040 00005929 20202020202000     
+  1041 00005930 94239423                music:		db 94h, 23h, 94h, 23h
+  1042 00005934 00<rep Ch>              		times 0x0C db 0
+  1043 00005940 9423                    		db 94h, 23h
+  1044 00005942 00<rep 6h>              		times 6 db 0
+  1045 00005948 9423                    		db 94h, 23h
+  1046 0000594A 00<rep 6h>              		times 6 db 0
+  1047 00005950 94239423                		db 94h, 23h, 94h, 23h
+  1048 00005954 00<rep Ch>              		times 0x0C db 0
+  1049 00005960 9423                    		db 94h, 23h
+  1050 00005962 00<rep 6h>              		times 6 db 0
+  1051 00005968 9423                    		db 94h, 23h
+  1052 0000596A 00<rep 6h>              		times 6 db 0
+  1053 00005970 94239423                		db 94h, 23h, 94h, 23h
+  1054 00005974 00<rep Ch>              		times 0x0C db 0
+  1055 00005980 9423                    		db 94h, 23h
+  1056 00005982 00<rep 6h>              		times 6 db 0
+  1057 00005988 9423                    		db 94h, 23h
+  1058 0000598A 00<rep 6h>              		times 6 db 0
+  1059 00005990 94239423                		db 94h, 23h, 94h, 23h
+  1060 00005994 00<rep Ch>              		times 0x0C db 0
+  1061 000059A0 9423                    		db 94h, 23h
+  1062 000059A2 00<rep 6h>              		times 6 db 0
+  1063 000059A8 9423                    		db 94h, 23h
+  1064 000059AA 00<rep 6h>              		times 6 db 0
+  1065 000059B0 94239423                		db 94h, 23h, 94h, 23h
+  1066 000059B4 00<rep Ch>              		times 0x0C db 0
+  1067 000059C0 9423                    		db 94h, 23h
+  1068 000059C2 00<rep 6h>              		times 6 db 0
+  1069 000059C8 9423                    		db 94h, 23h
+  1070 000059CA 00<rep 6h>              		times 6 db 0
+  1071 000059D0 94239423                		db 94h, 23h, 94h, 23h
+  1072 000059D4 00<rep Ch>              		times 0x0C db 0
+  1073 000059E0 9423                    		db 94h, 23h
+  1074 000059E2 00<rep 6h>              		times 6 db 0
+  1075 000059E8 9423                    		db 94h, 23h
+  1076 000059EA 00<rep 6h>              		times 6 db 0
+  1077 000059F0 94239423                		db 94h, 23h, 94h, 23h
+  1078 000059F4 00<rep Ch>              		times 0x0C db 0
+  1079 00005A00 9423                    		db 94h, 23h
+  1080 00005A02 00<rep 6h>              		times 6 db 0
+  1081 00005A08 9423                    		db 94h, 23h
+  1082 00005A0A 00<rep 6h>              		times 6 db 0
+  1083 00005A10 94239423                		db 94h, 23h, 94h, 23h
+  1084 00005A14 00<rep Ch>              		times 0x0C db 0
+  1085 00005A20 9423                    		db 94h, 23h
+  1086 00005A22 00<rep 6h>              		times 6 db 0
+  1087 00005A28 9423                    		db 94h, 23h
+  1088 00005A2A 00<rep 6h>              		times 6 db 0
+  1089 00005A30 94239423E908E30B        		db 94h, 23h, 94h, 23h, 0E9h, 8, 0E3h, 0Bh
+  1090 00005A38 00<rep 8h>              		times 8 db 0
+  1091 00005A40 9423                    		db 94h, 23h
+  1092 00005A42 00<rep 6h>              		times 6 db 0
+  1093 00005A48 9423                    		db 94h, 23h
+  1094 00005A4A 00<rep 6h>              		times 6 db 0
+  1095 00005A50 94239423E908E30B        		db 94h, 23h, 94h, 23h, 0E9h, 8, 0E3h, 0Bh
+  1096 00005A58 00<rep 8h>              		times 8 db 0
+  1097 00005A60 942300006F09E30B94-     		db 94h, 23h, 0, 0, 6Fh, 9, 0E3h, 0Bh, 94h, 23h
+  1097 00005A69 23                 
+  1098 00005A6A 00<rep 6h>              		times 6 db 0
+  1099 00005A70 94239423                		db 94h, 23h, 94h, 23h
+  1100 00005A74 00<rep Ch>              		times 0x0C db 0
+  1101 00005A80 9423                    		db 94h, 23h
+  1102 00005A82 00<rep 6h>              		times 6 db 0
+  1103 00005A88 9423                    		db 94h, 23h
+  1104 00005A8A 00<rep 6h>              		times 6 db 0
+  1105 00005A90 94239423                		db 94h, 23h, 94h, 23h
+  1106 00005A94 00<rep Ch>              		times 0x0C db 0
+  1107 00005AA0 9423                    		db 94h, 23h
+  1108 00005AA2 00<rep 6h>              		times 6 db 0
+  1109 00005AA8 9423                    		db 94h, 23h
+  1110 00005AAA 00<rep 6h>              		times 6 db 0
+  1111 00005AB0 94239423                		db 94h, 23h, 94h, 23h
+  1112 00005AB4 00<rep Ch>              		times 0x0C db 0
+  1113 00005AC0 9423                    		db 94h, 23h
+  1114 00005AC2 00<rep 6h>              		times 6 db 0
+  1115 00005AC8 9423                    		db 94h, 23h
+  1116 00005ACA 00<rep 6h>              		times 6 db 0
+  1117 00005AD0 94239423                		db 94h, 23h, 94h, 23h
+  1118 00005AD4 00<rep Ch>              		times 0x0C db 0
+  1119 00005AE0 9423                    		db 94h, 23h
+  1120 00005AE2 00<rep 6h>              		times 6 db 0
+  1121 00005AE8 9423                    		db 94h, 23h
+  1122 00005AEA 00<rep 6h>              		times 6 db 0
+  1123 00005AF0 94239423                		db 94h, 23h, 94h, 23h
+  1124 00005AF4 00<rep Ch>              		times 0x0C db 0
+  1125 00005B00 9423                    		db 94h, 23h
+  1126 00005B02 00<rep 6h>              		times 6 db 0
+  1127 00005B08 9423                    		db 94h, 23h
+  1128 00005B0A 00<rep 6h>              		times 6 db 0
+  1129 00005B10 94239423                		db 94h, 23h, 94h, 23h
+  1130 00005B14 00<rep Ch>              		times 0x0C db 0
+  1131 00005B20 9423                    		db 94h, 23h
+  1132 00005B22 00<rep 6h>              		times 6 db 0
+  1133 00005B28 9423                    		db 94h, 23h
+  1134 00005B2A 00<rep 6h>              		times 6 db 0
+  1135 00005B30 94239423970A5A0D        		db 94h, 23h, 94h, 23h, 97h, 0Ah, 5Ah, 0Dh
+  1136 00005B38 00<rep 8h>              		times 8 db 0
+  1137 00005B40 9423                    		db 94h, 23h
+  1138 00005B42 00<rep 6h>              		times 6 db 0
+  1139 00005B48 9423                    		db 94h, 23h
+  1140 00005B4A 00<rep 6h>              		times 6 db 0
+  1141 00005B50 94239423970A5A0D        		db 94h, 23h, 94h, 23h, 97h, 0Ah, 5Ah, 0Dh
+  1142 00005B58 00<rep 8h>              		times 8 db 0
+  1143 00005B60 94230000E30B1F0E94-     		db 94h, 23h, 0, 0, 0E3h, 0Bh, 1Fh, 0Eh, 94h, 23h
+  1143 00005B69 23                 
+  1144 00005B6A 00<rep 6h>              		times 6 db 0
+  1145 00005B70 94239423                		db 94h, 23h, 94h, 23h
+  1146 00005B74 00<rep Ch>              		times 0x0C db 0
+  1147 00005B80 9423                    		db 94h, 23h
+  1148 00005B82 00<rep 6h>              		times 6 db 0
+  1149 00005B88 9423                    		db 94h, 23h
+  1150 00005B8A 00<rep 6h>              		times 6 db 0
+  1151 00005B90 94239423                		db 94h, 23h, 94h, 23h
+  1152 00005B94 00<rep Ch>              		times 0x0C db 0
+  1153 00005BA0 9423                    		db 94h, 23h
+  1154 00005BA2 00<rep 6h>              		times 6 db 0
+  1155 00005BA8 9423                    		db 94h, 23h
+  1156 00005BAA 00<rep 6h>              		times 6 db 0
+  1157 00005BB0 94239423                		db 94h, 23h, 94h, 23h
+  1158 00005BB4 00<rep Ch>              		times 0x0C db 0
+  1159 00005BC0 9423                    		db 94h, 23h
+  1160 00005BC2 00<rep 6h>              		times 6 db 0
+  1161 00005BC8 9423                    		db 94h, 23h
+  1162 00005BCA 00<rep 6h>              		times 6 db 0
+  1163 00005BD0 94239423                		db 94h, 23h, 94h, 23h
+  1164 00005BD4 00<rep Ch>              		times 0x0C db 0
+  1165 00005BE0 9423                    		db 94h, 23h
+  1166 00005BE2 00<rep 6h>              		times 6 db 0
+  1167 00005BE8 9423                    		db 94h, 23h
+  1168 00005BEA 00<rep 6h>              		times 6 db 0
+  1169 00005BF0 94239423                		db 94h, 23h, 94h, 23h
+  1170 00005BF4 00<rep Ch>              		times 0x0C db 0
+  1171 00005C00 9423                    		db 94h, 23h
+  1172 00005C02 00<rep 6h>              		times 6 db 0
+  1173 00005C08 9423                    		db 94h, 23h
+  1174 00005C0A 00<rep 6h>              		times 6 db 0
+  1175 00005C10 94239423                		db 94h, 23h, 94h, 23h
+  1176 00005C14 00<rep Ch>              		times 0x0C db 0
+  1177 00005C20 9423                    		db 94h, 23h
+  1178 00005C22 00<rep 6h>              		times 6 db 0
+  1179 00005C28 9423                    		db 94h, 23h
+  1180 00005C2A 00<rep 6h>              		times 6 db 0
+  1181 00005C30 94239423E30B1F0E        		db 94h, 23h, 94h, 23h, 0E3h, 0Bh, 1Fh, 0Eh
+  1182 00005C38 00<rep 8h>              		times 8 db 0
+  1183 00005C40 9423                    		db 94h, 23h
+  1184 00005C42 00<rep 6h>              		times 6 db 0
+  1185 00005C48 9423                    		db 94h, 23h
+  1186 00005C4A 00<rep 6h>              		times 6 db 0
+  1187 00005C50 94239423E30B1F0E        		db 94h, 23h, 94h, 23h, 0E3h, 0Bh, 1Fh, 0Eh
+  1188 00005C58 00<rep 8h>              		times 8 db 0
+  1189 00005C60 942300005A0DDA0F94-     		db 94h, 23h, 0, 0, 5Ah, 0Dh, 0DAh, 0Fh, 94h, 23h
+  1189 00005C69 23                 
+  1190 00005C6A 00<rep 6h>              		times 6 db 0
+  1191 00005C70 94239423                		db 94h, 23h, 94h, 23h
+  1192 00005C74 00<rep Ch>              		times 0x0C db 0
+  1193 00005C80 9423                    		db 94h, 23h
+  1194 00005C82 00<rep 6h>              		times 6 db 0
+  1195 00005C88 9423                    		db 94h, 23h
+  1196 00005C8A 00<rep 6h>              		times 6 db 0
+  1197 00005C90 94239423                		db 94h, 23h, 94h, 23h
+  1198 00005C94 00<rep Ch>              		times 0x0C db 0
+  1199 00005CA0 9423                    		db 94h, 23h
+  1200 00005CA2 00<rep 6h>              		times 6 db 0
+  1201 00005CA8 9423                    		db 94h, 23h
+  1202 00005CAA 00<rep 6h>              		times 6 db 0
+  1203 00005CB0 94239423                		db 94h, 23h, 94h, 23h
+  1204 00005CB4 00<rep Ch>              		times 0x0C db 0
+  1205 00005CC0 9423                    		db 94h, 23h
+  1206 00005CC2 00<rep 6h>              		times 6 db 0
+  1207 00005CC8 9423                    		db 94h, 23h
+  1208 00005CCA 00<rep 6h>              		times 6 db 0
+  1209 00005CD0 94239423                		db 94h, 23h, 94h, 23h
+  1210 00005CD4 00<rep Ch>              		times 0x0C db 0
+  1211 00005CE0 9423                    		db 94h, 23h
+  1212 00005CE2 00<rep 6h>              		times 6 db 0
+  1213 00005CE8 9423                    		db 94h, 23h
+  1214 00005CEA 00<rep 6h>              		times 6 db 0
+  1215 00005CF0 94239423                		db 94h, 23h, 94h, 23h
+  1216 00005CF4 00<rep Ch>              		times 0x0C db 0
+  1217 00005D00 9423                    		db 94h, 23h
+  1218 00005D02 00<rep 6h>              		times 6 db 0
+  1219 00005D08 9423                    		db 94h, 23h
+  1220 00005D0A 00<rep 6h>              		times 6 db 0
+  1221 00005D10 94239423                		db 94h, 23h, 94h, 23h
+  1222 00005D14 00<rep Ch>              		times 0x0C db 0
+  1223 00005D20 9423                    		db 94h, 23h
+  1224 00005D22 00<rep 6h>              		times 6 db 0
+  1225 00005D28 9423                    		db 94h, 23h
+  1226 00005D2A 00<rep 6h>              		times 6 db 0
+  1227 00005D30 94239423DA0FDE12        		db 94h, 23h, 94h, 23h, 0DAh, 0Fh, 0DEh, 12h
+  1228 00005D38 00<rep 8h>              		times 8 db 0
+  1229 00005D40 9423                    		db 94h, 23h
+  1230 00005D42 00<rep 6h>              		times 6 db 0
+  1231 00005D48 9423                    		db 94h, 23h
+  1232 00005D4A 00<rep 6h>              		times 6 db 0
+  1233 00005D50 94239423DA0FDE12        		db 94h, 23h, 94h, 23h, 0DAh, 0Fh, 0DEh, 12h
+  1234 00005D58 00<rep 8h>              		times 8 db 0
+  1235 00005D60 9423CA111F0ECA1194-     		db 94h, 23h, 0CAh, 11h, 1Fh, 0Eh, 0CAh, 11h, 94h, 23h, 0DAh, 0Fh
+  1235 00005D69 23DA0F             
+  1236 00005D6C 00<rep 4h>              		times 4 db 0
+  1237 00005D70 9423FC0E                		db 94h, 23h, 0FCh, 0Eh
+  1238 00005D74 00<rep 6h>              		times 6 db 0
+  1239 00005D7A E30B                    		db 0E3h, 0Bh
+  1240 00005D7C 00<rep 4h>              		times 4 db 0
+  1241 00005D80 9423CA11                		db 94h, 23h, 0CAh, 11h
+  1242 00005D84 00<rep 4h>              		times 4 db 0
+  1243 00005D88 9423DA0F                		db 94h, 23h, 0DAh, 0Fh
+  1244 00005D8C 00<rep 4h>              		times 4 db 0
+  1245 00005D90 9423FC0E                		db 94h, 23h, 0FCh, 0Eh
+  1246 00005D94 00<rep 6h>              		times 6 db 0
+  1247 00005D9A E30B                    		db 0E3h, 0Bh
+  1248 00005D9C 00<rep 4h>              		times 4 db 0
+  1249 00005DA0 9423CA11                		db 94h, 23h, 0CAh, 11h
+  1250 00005DA4 00<rep 4h>              		times 4 db 0
+  1251 00005DA8 9423DA0F                		db 94h, 23h, 0DAh, 0Fh
+  1252 00005DAC 00<rep 4h>              		times 4 db 0
+  1253 00005DB0 9423FC0E                		db 94h, 23h, 0FCh, 0Eh
+  1254 00005DB4 00<rep 6h>              		times 6 db 0
+  1255 00005DBA E30B                    		db 0E3h, 0Bh
+  1256 00005DBC 00<rep 4h>              		times 4 db 0
+  1257 00005DC0 9423CA11                		db 94h, 23h, 0CAh, 11h
+  1258 00005DC4 00<rep 4h>              		times 4 db 0
+  1259 00005DC8 9423DA0F                		db 94h, 23h, 0DAh, 0Fh
+  1260 00005DCC 00<rep 4h>              		times 4 db 0
+  1261 00005DD0 9423FC0E                		db 94h, 23h, 0FCh, 0Eh
+  1262 00005DD4 00<rep 6h>              		times 6 db 0
+  1263 00005DDA E30B                    		db 0E3h, 0Bh
+  1264 00005DDC 00<rep 4h>              		times 4 db 0
+  1265 00005DE0 9423CA11                		db 94h, 23h, 0CAh, 11h
+  1266 00005DE4 00<rep 4h>              		times 4 db 0
+  1267 00005DE8 9423DA0F                		db 94h, 23h, 0DAh, 0Fh
+  1268 00005DEC 00<rep 4h>              		times 4 db 0
+  1269 00005DF0 9423FC0E                		db 94h, 23h, 0FCh, 0Eh
+  1270 00005DF4 00<rep 6h>              		times 6 db 0
+  1271 00005DFA E30B                    		db 0E3h, 0Bh
+  1272 00005DFC 00<rep 4h>              		times 4 db 0
+  1273 00005E00 9423CA11                		db 94h, 23h, 0CAh, 11h
+  1274 00005E04 00<rep 4h>              		times 4 db 0
+  1275 00005E08 9423DA0F                		db 94h, 23h, 0DAh, 0Fh
+  1276 00005E0C 00<rep 4h>              		times 4 db 0
+  1277 00005E10 9423FC0E                		db 94h, 23h, 0FCh, 0Eh
+  1278 00005E14 00<rep 6h>              		times 6 db 0
+  1279 00005E1A E30B                    		db 0E3h, 0Bh
+  1280 00005E1C 00<rep 4h>              		times 4 db 0
+  1281 00005E20 9423CA11                		db 94h, 23h, 0CAh, 11h
+  1282 00005E24 00<rep 4h>              		times 4 db 0
+  1283 00005E28 9423DA0F                		db 94h, 23h, 0DAh, 0Fh
+  1284 00005E2C 00<rep 4h>              		times 4 db 0
+  1285 00005E30 9423FC0E                		db 94h, 23h, 0FCh, 0Eh
+  1286 00005E34 00<rep 6h>              		times 6 db 0
+  1287 00005E3A E30B                    		db 0E3h, 0Bh
+  1288 00005E3C 00<rep 4h>              		times 4 db 0
+  1289 00005E40 9423CA11                		db 94h, 23h, 0CAh, 11h
+  1290 00005E44 00<rep 4h>              		times 4 db 0
+  1291 00005E48 9423DA0F                		db 94h, 23h, 0DAh, 0Fh
+  1292 00005E4C 00<rep 4h>              		times 4 db 0
+  1293 00005E50 A21AFC0E                		db 0A2h, 1Ah, 0FCh, 0Eh
+  1294 00005E54 00<rep 6h>              		times 6 db 0
+  1295 00005E5A 3B0B                    		db 3Bh, 0Bh
+  1296 00005E5C 00<rep 4h>              		times 4 db 0
+  1297 00005E60 A21ACA11                		db 0A2h, 1Ah, 0CAh, 11h
+  1298 00005E64 00<rep 4h>              		times 4 db 0
+  1299 00005E68 A21ADA0F                		db 0A2h, 1Ah, 0DAh, 0Fh
+  1300 00005E6C 00<rep 4h>              		times 4 db 0
+  1301 00005E70 A21AFC0E                		db 0A2h, 1Ah, 0FCh, 0Eh
+  1302 00005E74 00<rep 6h>              		times 6 db 0
+  1303 00005E7A 3B0B                    		db 3Bh, 0Bh
+  1304 00005E7C 00<rep 4h>              		times 4 db 0
+  1305 00005E80 A21ACA11                		db 0A2h, 1Ah, 0CAh, 11h
+  1306 00005E84 00<rep 4h>              		times 4 db 0
+  1307 00005E88 A21ADA0F                		db 0A2h, 1Ah, 0DAh, 0Fh
+  1308 00005E8C 00<rep 4h>              		times 4 db 0
+  1309 00005E90 A21AFC0E                		db 0A2h, 1Ah, 0FCh, 0Eh
+  1310 00005E94 00<rep 6h>              		times 6 db 0
+  1311 00005E9A 3B0B                    		db 3Bh, 0Bh
+  1312 00005E9C 00<rep 4h>              		times 4 db 0
+  1313 00005EA0 A21ACA11                		db 0A2h, 1Ah, 0CAh, 11h
+  1314 00005EA4 00<rep 4h>              		times 4 db 0
+  1315 00005EA8 A21ADA0F                		db 0A2h, 1Ah, 0DAh, 0Fh
+  1316 00005EAC 00<rep 4h>              		times 4 db 0
+  1317 00005EB0 A21AFC0E                		db 0A2h, 1Ah, 0FCh, 0Eh
+  1318 00005EB4 00<rep 6h>              		times 6 db 0
+  1319 00005EBA 3B0B                    		db 3Bh, 0Bh
+  1320 00005EBC 00<rep 4h>              		times 4 db 0
+  1321 00005EC0 A21ACA11                		db 0A2h, 1Ah, 0CAh, 11h
+  1322 00005EC4 00<rep 4h>              		times 4 db 0
+  1323 00005EC8 A21ADA0F                		db 0A2h, 1Ah, 0DAh, 0Fh
+  1324 00005ECC 00<rep 4h>              		times 4 db 0
+  1325 00005ED0 FFFF                    		db 0FFh, 0FFh

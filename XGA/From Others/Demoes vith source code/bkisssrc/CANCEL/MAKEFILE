@@ -1,0 +1,44 @@
+# makefile MAKE V2.0 or higher
+.autodepend
+
+# to enable debugging information, set "DEBUG" to "yes"
+DEBUG = no
+
+# define all object files that make up the executable
+OBJS = cancel.obj hearts.obj heartpal.obj
+
+##############################################################################
+
+!if ($(DEBUG) == yes)
+TLINKDEBUG = /v
+!endif
+
+##############################################################################
+
+.asm.obj:
+    tasm /ml /m /zi $<
+
+##############################################################################
+
+cancel.exe:     $(OBJS) makefile
+        tlink /x $(TLINKDEBUG) @&&|
+$(OBJS)
+cancel.exe
+cancel.map
+
+|
+        !if ($(DEBUG) != yes)
+        pklite cancel
+        !endif
+
+##############################################################################
+
+hearts.obj:     hearts.gif
+                2obj g /d hearts.gif hearts.obj BitmapSeg:BitmapData
+
+##############################################################################
+
+heartpal.obj:   hearts.gif
+                2obj v /d hearts.gif heartpal.obj MyData:PaletteData
+
+##############################################################################

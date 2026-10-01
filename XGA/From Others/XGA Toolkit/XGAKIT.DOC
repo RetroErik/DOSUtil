@@ -1,0 +1,77 @@
+
+               XGA Programmer's toolkit - version 1.1
+
+(Version 1.1 includes several 800x600 modes that were not in
+the original release.  The 800x600 modes require a multisynch
+adapter.)
+
+This package contains a set of simple routines providing direct-video
+access to IBM's new XGA adapter.  These routines have been tested on
+both single-monitor and dual-monitor (XGA & VGA) setups.  If you have
+multiple XGA adapter/monitors (and you can have up to eight of them!),
+you'll have to modify these routines yourself - I ran out of money after
+buying one XGA adapter <grin>.
+
+The routines and detailed explanations of their operation are in
+XGAKIT.ASM, an assembly module written to interface with a driving
+"C" program using the medium model.  There is also a simple XGADEMO.C
+program provided as proof that these routines work (XGADEMO was also an
+invaluable tool for me in *getting* them to work, which is why the
+commented-out function calls in it exist).
+
+Basically, the routines provide functions for throwing an XGA adapter
+into any of the modes listed below.  For the graphics modes, there are
+also routines for setting the XGA palette (which is *different* from the
+VGA palette), writing/reading individual pixels, and writing/reading
+entire (or portions of) individual scan lines.  The routines use the
+64K aperture of the XGA as opposed to its 1MB or 4MB aperture, so they're
+not as fast as they could be - but they work, and they're relatively
+simple.
+
+The XGA video modes supported by these routines are:
+
+             normal VGA text mode
+             132-col VGA text mode
+             1024x768x256 graphics mode
+             1024x768x16 graphics mode
+             640x480x256 graphics mode
+             640x480x65536 graphics mode
+             800x600x16 graphics mode       |  The 800x600 modes require
+             800x600x256 graphics mode      |  a multisynch monitor (they've
+        *    800x600x65536 graphics mode    |  been tested on a NEC 2A)
+         
+ * - but the 800x600x65536 mode doesn't work on the 2A.  The pixels are
+     doubled up hirozontally so that only the left-hand side of the
+     screen is visible.  No, I don't know why.  Help!
+
+                    
+---------------------
+
+The limitations (of both the XGA adapter and this code):
+
+- Although the XGA adapter works just fine as a VGA adapter when it is in
+a VGA mode (which it can do on single-mode setups), it has a few uglies
+when it is in one of its extended modes.
+
+For one, you can't get an XGA adapter back into a VGA mode just by
+calling a BIOS INT 10H routine, because the (current) PS/2 BIOS doesn't
+know about the XGA's special registers and so can't reset them - you have
+to invoke 'xga_mode(0)' first to get the adapter(s) back into a "normal"
+VGA mode.  On dual-adapter setups, 'xga_mode(0)' leaves the XGA image
+intact but switches the focus back to the VGA monitor.
+
+For another, when it is in an extended mode, the XGA uses its own
+palette registers, which are *different* from those of the VGA.  They are
+accessed differently (use 'xga_setpalette()'), they are *not* initialized
+to the VGA palette (you have to set them explicitly), and they use the
+*top* six bits of a byte instead of the *bottom* six bits (IE, RGB value
+10,20,30 in VGA mode is the same as color 40,80,120 in extended mode).
+'xga_setpalette()' uses XGA-style values - 0 thru 255.
+
+Also, the (current) Windows drivers that are distributed with the XGA
+prevent the XGA routines from working properly, probably because the
+XGA register locations are not virtualized.  The monitor ID is returned
+as an invalid '0000', the memory-detect routines do not work, and
+everything else is equally messed up.  For the moment, if 'xga_detect()'
+receives that impossible '0000' monitor ID, it just returns a "no XGA
+found" and inhibits the other routines from doing anything. 

@@ -222,7 +222,8 @@ render_hud:
     mov si, hud_text_wait+5
     call format_tenths
 
-    mov byte [hud_text_balls], 16 ; B = number of copied balls
+    mov al, [hud_count_label]
+    mov [hud_text_balls], al
     cmp byte [effect], 4
     jne .count_label_ready
     mov byte [hud_text_balls], 2  ; S = speed level in the 3D orbit

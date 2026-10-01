@@ -1,0 +1,25 @@
+public  _pbmodex
+;같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같�
+; Quick put interleaved bitmap to modeX screen
+; In:
+;   EBX - size of each block of bitmap
+;   ESI -> bitmap (4 blocks)
+;   EDI -> screen base
+; Notes:
+;   Index at 3c4h must be 2 (bitplane select).
+;같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같�
+_pbmodex:
+        push ax ecx dx esi
+        mov dx,3c5h
+        mov al,1
+pbmodexml:
+        out dx,al
+        mov ecx,ebx
+        rep movsb
+        sub edi,ebx
+        shl al,1
+        test al,0fh
+        jnz pbmodexml
+        pop esi dx ecx ax
+        ret
+

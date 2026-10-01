@@ -1,0 +1,32 @@
+MAJORCOMP=ntos
+MINORCOMP=dispxga
+
+TARGETNAME=xga3
+TARGETPATH=$(BASEDIR)\lib
+TARGETTYPE=GDI_DRIVER
+
+DLLBASE=0x62200000
+
+!IFNDEF MSC_WARNING_LEVEL
+MSC_WARNING_LEVEL=/W3
+!ENDIF
+
+MSC_WARNING_LEVEL=$(MSC_WARNING_LEVEL) /WX
+
+#INCLUDES=..\inc;..\..\inc
+INCLUDES=C:\DDK\inc
+
+SOURCES=bitblt.c    \
+		 color.c     \
+		 debug.c     \
+		 enable.c    \
+		 hardware.c  \
+		 mm.c        \
+		 palette.c   \
+		 paths.c     \
+		 pointer.c   \
+		 screen.c    \
+		 textout.c   \
+		 xgasup.c    \
+		 res.rc
+

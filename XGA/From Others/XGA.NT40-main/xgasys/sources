@@ -1,0 +1,22 @@
+MAJORCOMP=ntos
+MINORCOMP=video
+
+TARGETNAME=xga3
+TARGETPATH=$(BASEDIR)\lib
+TARGETTYPE=MINIPORT
+
+TARGETLIBS=$(DDK_LIB_PATH)\videoprt.lib
+
+!IFNDEF MSC_WARNING_LEVEL
+MSC_WARNING_LEVEL=/W3
+!ENDIF
+MSC_WARNING_LEVEL=$(MSC_WARNING_LEVEL) /WX
+
+INCLUDES=C:\DDK\src\video\inc;C:\DDK\inc
+
+SOURCES=xga.c            \
+		 xgadata.c        \
+		 i386\xgahard.asm \
+		 xga.rc
+
+NTTARGETFILE0=xgaloger.h

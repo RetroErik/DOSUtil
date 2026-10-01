@@ -1,0 +1,49 @@
+# makefile MAKE V2.0 or higher
+.autodepend
+
+# to enable debugging information, set "DEBUG" to "yes"
+DEBUG = no
+
+# define all object files that make up the executable
+OBJS = title.obj mypal.obj myimage.obj mycupid.obj
+
+##############################################################################
+
+!if ($(DEBUG) == yes)
+TLINKDEBUG = /v
+!endif
+
+##############################################################################
+
+.asm.obj:
+    tasm /ml /m /zi $<
+
+##############################################################################
+
+title.exe:      $(OBJS) makefile
+        tlink /x $(TLINKDEBUG) @&&|
+$(OBJS)
+title.exe
+title.map
+
+|
+        !if ($(DEBUG) != yes)
+        pklite title
+        !endif
+
+##############################################################################
+
+myimage.obj:    myimage.pcx
+                2obj p /d myimage.pcx MyData:MyImage
+
+##############################################################################
+
+mypal.obj:      myimage.pcx
+                2obj v /d myimage.pcx mypal.obj MyData:MyPalette
+
+##############################################################################
+
+mycupid.obj:    mycupid.pcx
+                2obj p /d mycupid.pcx MyCode:MyCupid
+
+##############################################################################

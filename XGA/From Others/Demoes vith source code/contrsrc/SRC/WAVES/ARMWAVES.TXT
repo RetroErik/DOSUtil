@@ -1,0 +1,91 @@
+From rc1.vub.ac.be!idefix.CS.kuleuven.ac.be!ub4b!EU.net!goya!sanson!oasis!mtl93023 Fri Sep 30 15:34:04 1994
+Newsgroups: comp.sys.ibm.pc.demos
+Path: rc1.vub.ac.be!idefix.CS.kuleuven.ac.be!ub4b!EU.net!goya!sanson!oasis!mtl93023
+From: mtl93023@oasis (Cesar Alba)
+Subject: ARM writes about his WAVES
+Message-ID: <Cww38J.825@dit.upm.es>
+Sender: usenet@dit.upm.es (System Management uucp news)
+Nntp-Posting-Host: oasis
+Organization: Dpto. Ingenieria de Sistemas Telematicos, UPM, Madrid, Spain
+X-Newsreader: TIN [version 1.2 PL2]
+Date: Thu, 29 Sep 1994 11:43:31 GMT
+Lines: 77
+
+Hi guys,
+
+I promised this text several moons ago but I've been a little busy so
+I couldn't bring it to you. I've read some of you are in the good way to
+get it, hope this helps.
+
+
+It's an excerpt from the sources of this part.
+The sources of this part and probably the Rubber Polygons will be
+released as soon as I get them, probably next week.
+(If someone is so nice to tell me the procedure do upload something at
+ftp.eng.ufl.edu I'll be eternally grateful as I've never done it before).
+
+Well, here it goes.
+
+===8<=====================================================
+; // UpdateTable : performs one integration step on U[CT]  //  ARM 12/93
+
+; Differential equation is:  u  = a²( u  + u  )
+;                             tt       xx   yy
+;
+; Where a² = tension * gravity / surface_density.
+;
+; Aproximating second derivatives by central differences:
+;
+;  [ u(t+1)-2u(t)+u(t-1) ] / ‹t² = a² (u(x+1)+u(x-1)+u(y+1)+u(y-1)-4u) / h²
+;
+; (where ‹t = time step, h=‹x=‹y = mesh resolution
+;
+; From where u(t+1) may be calculated as:
+;                   õ   1   À
+; u(t+1) = a²‹t²/h² þ 1 0 1 þu - u(t-1) + (2-4a²‹t²/h²)u
+;                   Á   1   ã
+;
+; When a²‹t²/h² = ½ last term vanishes, giving:
+;                   õ   1   À
+;        u(t+1) = ½ þ 1 0 1 þu - u(t-1)
+;                   Á   1   ã
+;
+; This needs only 4 ADD/SUB and one SAR operation per mesh point!
+;
+; (note that u(t-1,x,y) is only used to calculate u(t+1,x,y) so
+;  we can use the same array for both t-1 and t+1, needing only
+;  two arrays, U[0] and U[1])
+;
+; Dampening is simulated by subtracting 1/2^n of result.
+; n=4 gives best-looking result
+; n<4 (eg 2 or 3) thicker consistency, waves die out immediately
+
+; n>4 (eg 8 or 12) more fluid, waves die out slowly
+
+;
+===8<=====================================================
+
+Po' si son torpes ;-), explica que
+
+         õ   1   À
+         þ 1 0 1 þu  1*u(x-1,y)+0*u(x,y)+1*u(x+1,y)
+         Á   1   ã
+                     +1*u(x,y+1)+1*u(x,y-1)
+
+osa, que queda:
+
+u[1,x,y] = (u[0,x-1,y]+u[0,x+1,y]+u[0,x,y-1]+u[0,x,y+1])/2 - u[1,x,y]
+
+intercambiando los papeles de u[0] y u[1] despues de cada paso, claro.
+
+>----------------------------------------------------------------------
+
+
+--
+Saludos Cesar.
+
+mtl93023@oasis.dit.upm.es/*iGUANA
+2:341/27.37@fidonet.eur Pacific Point. Nada de Nada.
+
+
+

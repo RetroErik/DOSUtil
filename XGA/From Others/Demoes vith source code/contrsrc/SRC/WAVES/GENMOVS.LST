@@ -1,0 +1,174 @@
+
+Xwidth% = 160
+DIM buf%(32000)
+
+FILESELECT "*.raw","",n$
+
+OPEN "i",#1,n$
+' load header + pal
+BGET #1,V:buf%(0),800
+x%=PEEK(V:buf%(0)+8)*256+PEEK(V:buf%(0)+9)
+y%=PEEK(V:buf%(0)+10)*256+PEEK(V:buf%(0)+11)
+PRINT MKL$(LPEEK(V:buf%(0)))
+PRINT x%,y%
+' load data
+BGET #1,V:buf%(0),x%*y%
+CLOSE #1
+'
+REPEAT
+UNTIL INKEY$=CHR$(32)
+'
+OPEN "o",#1,LEFT$(n$,LEN(n$)-3)+"asm"
+
+' analyser datas et generer code
+CheckCode
+
+CLOSE #1
+'
+OPEN "o",#1,LEFT$(n$,LEN(n$)-3)+"bin"
+FOR iy%=0 TO y%-1
+  FOR ix%=0 TO x%-1
+    IF PEEK(V:buf%(0)+ix%+iy%*x%)<>0
+      POKE (V:buf%(0)+ix%+iy%*x%),PEEK(V:buf%(0)+ix%+iy%*x%)
+      BPUT #1,V:buf%(0)+ix%+iy%*x%,1
+    ENDIF
+  NEXT ix%
+NEXT iy%
+CLOSE #1
+'
+EDIT
+
+
+PROCEDURE Genadd(ct%)
+  IF (ct% = 1) THEN 
+    ' INC DI
+    PRINT #1;" db 47h"
+  ELSE IF (ct% < 128)
+    ' ADD DI, byte
+    PRINT #1;" db 83h,0c7h,";ct%
+  ELSE
+    ' ADD DI, word
+    PRINT #1," db 81h,0c7h"
+    PRINT #1;" dw ";ct%
+  ENDIF
+RETURN
+
+PROCEDURE Gencode(dt%)
+  IF (dt%>0) THEN 
+    
+    SELECT dt%
+      
+    CASE 1
+      ' A4 = code de MOVSB
+      PRINT #1;" db 0A4h"
+    CASE 2
+      ' A5 = code de MOVSW
+      PRINT #1;" db 0A5h"
+    CASE 3
+      ' 3 octets
+      PRINT #1;" db 0A5h,0A4h"
+    CASE 4
+      ' 4 octets = code de MOVSD
+      PRINT  #1;" db 066h,0A5h"
+    CASE 5
+      ' 5 octets
+      PRINT #1;" db 066h,0A5h,0A4h"
+    CASE 6
+      ' 6 octets
+      PRINT #1;" db 066h,0A5h,0A5h"
+    CASE 7
+      ' 7 octets
+      PRINT #1;" db 066h,0A5h,0A5h,0A4h"
+    CASE 8
+      ' 8 octets
+      PRINT #1;" db 066h,0A5h,066h,0A5h"
+    CASE 9
+      ' 9 octets
+      PRINT #1;" db 066h,0A5h,066h,0A5h,0A4h"
+    CASE 10
+      ' 10 octets
+      PRINT #1;" db 066h,0A5h,066h,0A5h,0A5h"
+    CASE 11
+      ' 11 octets
+      PRINT #1;" db 066h,0A5h,066h,0A5h,0A5h,0A4h"
+      
+    DEFAULT
+      
+      ' MOV CL,x  REP MOVSD
+      PRINT #1;" db 0B1h,";SHR(dt%,2);",0F3h,066h,0A5h"
+      IF (dt% AND 2)=1 THEN 
+        ' MOVSW
+        PRINT #1;" db 0A5h"
+      ENDIF
+      
+      IF (dt% AND 1)=1 THEN 
+        ' MOVSB si Impaire
+        PRINT #1;" db 0A4h"
+      ENDIF
+      
+    ENDSELECT 
+    
+  ENDIF
+  
+RETURN
+
+
+PROCEDURE CheckCode
+  LOCAL ix%,iy%,cod%,ct%,dt%
+  
+  SCREEN $13
+  
+  ' compteur blancs … 0
+  ct%=0
+  dt%=0
+  
+  FOR iy%=0 TO y%-1
+    FOR ix%=0 TO x%-1
+      cod%=PEEK(V:buf%(0)+ix%+iy%*x%)
+      
+      IF (cod% = 0) THEN 
+        
+        IF (ct% = 0) AND (dt% > 0) THEN 
+          Gencode(dt%)
+          dt%=0
+        ENDIF
+        
+        ' un blanc en +
+        INC ct%
+        
+      ELSE
+        
+        POKE $a000:ix%+iy%*320,15
+        
+        IF (dt% = 0) AND (ct%>0) THEN 
+          Genadd(ct%)
+          ct%=0
+        ENDIF
+        
+        ' more data
+        
+        INC dt%
+        
+      ENDIF
+      
+    NEXT ix%
+    
+    IF (ct% > 0) THEN 
+      ' next line
+      ADD ct%,Xwidth% - x%
+    ELSE
+      Gencode(dt%)
+      dt% = 0
+      ' passer a la ligne
+      Genadd(Xwidth%-x%)
+    ENDIF
+    
+  NEXT iy%
+  
+  REPEAT
+  UNTIL INKEY$=CHR$(32)
+  
+  SCREEN $3
+  
+RETURN
+

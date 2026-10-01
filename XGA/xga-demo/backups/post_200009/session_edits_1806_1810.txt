@@ -1,0 +1,86 @@
+2026-09-26T18:06:45.693Z
+text(await tools.apply_patch("*** Begin Patch\n*** Update File: XGA/xga-demo/xga_dreams.asm\n@@\n PAN_MAX_X equ SOURCE_W - SCREEN_W\n PAN_MAX_Y equ SOURCE_H - SCREEN_H\n+PAN_X_AMPLITUDE equ 128\n+PAN_Y_AMPLITUDE equ 64\n BLT_OP equ 0xA8218000                    ; source map B -> dest A, SRC_COPY\n@@\n %else\n     call fill_source\n %endif\n+    call init_motion\n     call setup_maps\n@@\n     xor byte [vsync_enabled], 1\n     mov byte [fps_started], 0\n+    mov byte [fps_measured], 0\n     mov word [hud_frames], 0\n@@\n .animate:\n-    mov ax, [pan_x]\n-    add ax, [step_x]\n-    cmp ax, PAN_MAX_X\n-    jbe .x_ok\n-    neg word [step_x]\n-    add ax, [step_x]\n-    add ax, [step_x]\n-.x_ok:\n-    mov [pan_x], ax\n-    mov ax, [pan_y]\n-    add ax, [step_y]\n-    cmp ax, PAN_MAX_Y\n-    jbe .y_ok\n-    neg word [step_y]\n-    add ax, [step_y]\n-    add ax, [step_y]\n-.y_ok:\n-    mov [pan_y], ax\n+    call update_motion\n     jmp .frame\n@@\n configure_scanout:\n-    mov word [step_x], 4\n     mov dx, [io_base]\n*** End Patch"));
+
+
+====NEXT====
+
+2026-09-26T18:06:55.805Z
+text(await tools.apply_patch("*** Begin Patch\n*** Update File: XGA/xga-demo/xga_dreams.asm\n@@\n %endif\n \n+; Follow demo5a.asm's two-axis sine/Lissajous path. The phase comes from\n+; elapsed BIOS ticks instead of completed frames, so the animation speed\n+; stays constant when the BitBLT benchmark runs uncapped or VSYNC paced.\n+init_motion:\n+    pushad\n+    push es\n+    xor ah, ah\n+    int 0x1a\n+    mov [motion_origin], dx\n+    mov [fps_now], dx\n+    mov byte [motion_phase], 0xff\n+    pop es\n+    popad\n+    call update_motion\n+    ret\n+\n+update_motion:\n+    pushad\n+    mov ax, [fps_now]\n+    sub ax, [motion_origin]\n+    cmp al, [motion_phase]\n+    je .done\n+    mov [motion_phase], al\n+    movzx si, al\n+    mov al, [sine_table + si]\n+    sub al, 50\n+    cbw\n+    mov bx, PAN_X_AMPLITUDE\n+    imul bx\n+    mov bx, 50\n+    idiv bx\n+    add ax, PAN_MAX_X / 2\n+    mov [pan_x], ax\n+\n+    mov al, [motion_phase]\n+    shl al, 1\n+    add al, 64                     ; quarter-cycle Y offset\n+    movzx si, al\n+    mov al, [sine_table + si]\n+    sub al, 50\n+    cbw\n+    mov bx, PAN_Y_AMPLITUDE\n+    imul bx\n+    mov bx, 50\n+    idiv bx\n+    add ax, PAN_MAX_Y / 2\n+    mov [pan_y], ax\n+.done:\n+    popad\n+    ret\n+\n %if PAN_STYLE = 0\n ; Start each BitBLT at a new vertical retrace when S mode is enabled.\n*** End Patch"));
+
+
+====NEXT====
+
+2026-09-26T18:07:01.366Z
+text(await tools.apply_patch("*** Begin Patch\n*** Update File: XGA/xga-demo/xga_dreams.asm\n@@\n .delta_ready:\n+%if PAN_STYLE = 0\n+    cmp byte [fps_measured], 0\n+    jne .normal_window\n+    cmp ebx, 9                     ; show the first reading sooner\n+    jb .done\n+    jmp .calculate\n+.normal_window:\n+%endif\n     cmp ebx, 36\n     jb .done\n+.calculate:\n     movzx eax, word [hud_frames]\n@@\n .store:\n     mov [hud_fps10], ax\n+%if PAN_STYLE = 0\n+    mov byte [fps_measured], 1\n+%endif\n*** End Patch"));
+
+
+====NEXT====
+
+2026-09-26T18:07:06.987Z
+text(await tools.apply_patch("*** Begin Patch\n*** Update File: XGA/xga-demo/xga_dreams.asm\n@@\n .char:\n+%if PAN_STYLE = 0\n+    cmp bx, 9\n+    jne .glyph\n+    add word [hud_char_base], 3    ; visible gap before the optional S\n+.glyph:\n+%endif\n     mov al, [hud_text+bx]\n@@\n pan_x dw 0\n pan_y dw 0\n-step_x dw 1\n-step_y dw 1\n+motion_origin dw 0\n+motion_phase db 0xff\n %if PAN_STYLE = 0\n vsync_enabled db 0\n+fps_measured db 0\n %endif\n*** End Patch"));
+
+
+====NEXT====
+
+2026-09-26T18:07:21.698Z
+text(await tools.apply_patch("*** Begin Patch\n*** Update File: XGA/xga-demo/xga_dreams.asm\n@@\n     db 0x00,0x00,0x00,0x00,0x00,0x04,0x04\n %if PAN_STYLE = 0\n     times 7 db 0                      ; blank glyph 15\n %endif\n+; Exact 256-step, 0..100 sine curve from PC1-Labs demo5a.asm.\n+sine_table:\n+    db 50, 51, 52, 53, 55, 56, 57, 58, 59, 61, 62, 63, 64, 65, 66, 68\n+    db 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84\n+    db 84, 85, 86, 87, 87, 88, 89, 89, 90, 90, 91, 91, 92, 92, 93, 93\n+    db 94, 94, 94, 95, 95, 95, 96, 96, 96, 96, 97, 97, 97, 97, 97, 97\n+    db 97, 97, 97, 97, 97, 97, 97, 97, 96, 96, 96, 96, 95, 95, 95, 94\n+    db 94, 94, 93, 93, 92, 92, 91, 91, 90, 90, 89, 89, 88, 87, 87, 86\n+    db 85, 84, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71\n+    db 70, 69, 68, 66, 65, 64, 63, 62, 61, 59, 58, 57, 56, 55, 53, 52\n+    db 50, 49, 48, 47, 45, 44, 43, 42, 41, 39, 38, 37, 36, 35, 34, 32\n+    db 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16\n+    db 16, 15, 14, 13, 13, 12, 11, 11, 10, 10,  9,  9,  8,  8,  7,  7\n+    db  6,  6,  6,  5,  5,  5,  4,  4,  4,  4,  3,  3,  3,  3,  3,  3\n+    db  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  5,  5,  5,  6,  6\n+    db  6,  6,  7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 13, 13, 14\n+    db 15, 16, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29\n+    db 30, 31, 32, 34, 35, 36, 37, 38, 39, 41, 42, 43, 44, 45, 47, 48\n hud_saved times 64 * 10 db 0\n*** End Patch"));
+
+
+====NEXT====
+
+2026-09-26T18:07:27.450Z
+const r=await tools.exec_command({cmd:"nasm -f bin xga_dreams.asm -o bin/DREAMS.COM -l bin/DREAMS.lst; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}; nasm -f bin -DPAN_STYLE=0 xga_dreams.asm -o bin/DBLIT.COM -l bin/DBLIT.lst; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}; nasm -f bin -DPAN_STYLE=2 xga_dreams.asm -o bin/DCPU.COM -l bin/DCPU.lst; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}; Get-Item bin/DREAMS.COM,bin/DBLIT.COM,bin/DCPU.COM | Select-Object Name,Length; rg -n 'init_motion:|update_motion:|sine_table:|fps_measured|hud_char_base\\], 3' bin/DBLIT.lst | Select-Object -First 30","shell":"powershell","login":false,"workdir":"C:\\Users\\hages\\OneDrive\\VS Code\\Olivetto Prodest PC1\\XGA\\xga-demo","max_output_tokens":1800});text(r.output)
+
+
+====NEXT====
+
+2026-09-26T18:07:38.991Z
+const r=await tools.exec_command({cmd:"@'\nfrom pathlib import Path\nimport re\nsrc=Path('PC1-Labs/demos/04-Bitmap-stuff/demo5a.asm').read_text()\nout=Path('XGA/xga-demo/xga_dreams.asm').read_text()\ndef table(s):\n body=s.split('sine_table:',1)[1].split('\\n',17)[:16]\n return [int(v) for line in body for v in re.findall(r'\\b\\d+\\b',line.split(';')[0])]\na,b=table(src),table(out)\nassert len(a)==len(b)==256 and a==b\nx=[160+int((v-50)*128/50) for v in b]\ny=[80+int((b[(i*2+64)&255]-50)*64/50) for i in range(256)]\nassert all(0<=v<=320 for v in x) and all(0<=v<=160 for v in y)\nprint('Copied sine table matches demo5a:',len(b),'entries')\nprint('X range:',min(x),max(x),'Y range:',min(y),max(y))\nprint('Largest one-tick step:',max(abs(x[i]-x[i-1]) for i in range(256)),max(abs(y[i]-y[i-1]) for i in range(256)))\n'@ | python -","shell":"powershell","login":false,"max_output_tokens":1100});text(r.output)
+
+
+====NEXT====
+
+2026-09-26T18:07:46.913Z
+const r=await tools.exec_command({cmd:"@'\nfrom pathlib import Path\nimport re\nsrc=Path('PC1-Labs/demos/04-Bitmap-stuff/demo5a.asm').read_text()\nout=Path('XGA/xga-demo/xga_dreams.asm').read_text()\ndef table(s):\n lines=s.split('sine_table:',1)[1].splitlines()\n rows=[line for line in lines if re.match(r'\\s*db\\s+[0-9]',line)][:16]\n return [int(v) for line in rows for v in re.findall(r'\\d+',line.split(';')[0])]\na,b=table(src),table(out)\nprint('counts',len(a),len(b),'equal',a==b)\nassert len(a)==len(b)==256 and a==b\nx=[160+int((v-50)*128/50) for v in b]\ny=[80+int((b[(i*2+64)&255]-50)*64/50) for i in range(256)]\nassert all(0<=v<=320 for v in x) and all(0<=v<=160 for v in y)\nprint('X range:',min(x),max(x),'Y range:',min(y),max(y))\nprint('Largest one-tick step:',max(abs(x[i]-x[i-1]) for i in range(256)),max(abs(y[i]-y[i-1]) for i in range(256)))\n'@ | python -","shell":"powershell","login":false,"max_output_tokens":1100});text(r.output)
+
+
+====NEXT====
+
+2026-09-26T18:07:53.679Z
+const r=await tools.exec_command({cmd:"@'\nfrom pathlib import Path\nimport re\ndef table(p):\n lines=Path(p).read_text().split('sine_table:',1)[1].splitlines(); rows=[line for line in lines if re.match(r'\\s*db\\s+[0-9]',line)][:16]; return [int(v) for line in rows for v in re.findall(r'\\d+',line.split(';')[0])]\na,b=table('PC1-Labs/demos/04-Bitmap-stuff/demo5a.asm'),table('XGA/xga-demo/xga_dreams.asm')\nprint([(i,x,y) for i,(x,y) in enumerate(zip(a,b)) if x!=y][:25])\n'@ | python -","shell":"powershell","login":false,"max_output_tokens":900});text(r.output)
+
+
+====NEXT====
+
+2026-09-26T18:08:01.114Z
+text(await tools.apply_patch("*** Begin Patch\n*** Update File: XGA/xga-demo/xga_dreams.asm\n@@\n-    db  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  5,  5,  5,  6,  6\n+    db  3,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  5,  5,  5,  6\n*** End Patch"));
+
+
+====NEXT====
+
+2026-09-26T18:08:07.301Z
+const r=await tools.exec_command({cmd:"@'\nfrom pathlib import Path\nimport re\ndef table(p):\n lines=Path(p).read_text().split('sine_table:',1)[1].splitlines(); rows=[line for line in lines if re.match(r'\\s*db\\s+[0-9]',line)][:16]; return [int(v) for line in rows for v in re.findall(r'\\d+',line.split(';')[0])]\na,b=table('PC1-Labs/demos/04-Bitmap-stuff/demo5a.asm'),table('XGA/xga-demo/xga_dreams.asm')\nassert len(a)==len(b)==256 and a==b\nx=[160+int((v-50)*128/50) for v in b]\ny=[80+int((b[(i*2+64)&255]-50)*64/50) for i in range(256)]\nassert all(0<=v<=320 for v in x) and all(0<=v<=160 for v in y)\nprint('Sine table matches demo5a:',len(b),'values')\nprint('X range:',min(x),max(x),'Y range:',min(y),max(y))\nprint('Largest step per BIOS tick:',max(abs(x[i]-x[i-1]) for i in range(256)),max(abs(y[i]-y[i-1]) for i in range(256)))\n'@ | python -","shell":"powershell","login":false,"max_output_tokens":1200});text(r.output)
+
+
+====NEXT====
+
+2026-09-26T18:08:22.418Z
+const r=await tools.exec_command({cmd:"@'\nfrom pathlib import Path\nimport re\ns=Path('XGA/xga-demo/xga_dreams.asm').read_text(); lines=s.split('sine_table:',1)[1].splitlines(); rows=[x for x in lines if re.match(r'\\s*db\\s+[0-9]',x)][:16]; t=[int(v) for line in rows for v in re.findall(r'\\d+',line.split(';')[0])]\nfor xa,ya in ((128,64),(96,48),(80,48),(64,40)):\n x=[160+int((v-50)*xa/50) for v in t]; y=[80+int((t[(i*2+64)&255]-50)*ya/50) for i in range(256)]\n print(xa,ya,(min(x),max(x)),(min(y),max(y)),max(abs(x[i]-x[i-1]) for i in range(256)),max(abs(y[i]-y[i-1]) for i in range(256)))\n'@ | python -","shell":"powershell","login":false,"max_output_tokens":800});text(r.output)
+
+
+====NEXT====
+
+2026-09-26T18:08:26.794Z
+text(await tools.apply_patch("*** Begin Patch\n*** Update File: XGA/xga-demo/xga_dreams.asm\n@@\n-PAN_X_AMPLITUDE equ 128\n-PAN_Y_AMPLITUDE equ 64\n+PAN_X_AMPLITUDE equ 96\n+PAN_Y_AMPLITUDE equ 48\n*** End Patch"));
+
+
+====NEXT====
+
+2026-09-26T18:09:07.104Z
+const r=await tools.exec_command({cmd:"nasm -f bin xga_dreams.asm -o bin/DREAMS.COM -l bin/DREAMS.lst; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}; nasm -f bin -DPAN_STYLE=0 xga_dreams.asm -o bin/DBLIT.COM -l bin/DBLIT.lst; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}; nasm -f bin -DPAN_STYLE=2 xga_dreams.asm -o bin/DCPU.COM -l bin/DCPU.lst; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}; python make_dreams_floppy.py --program DBLIT; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}; Get-Item bin/DREAMS.COM,bin/DBLIT.COM,bin/DCPU.COM | Select-Object Name,Length","shell":"powershell","login":false,"workdir":"C:\\Users\\hages\\OneDrive\\VS Code\\Olivetto Prodest PC1\\XGA\\xga-demo","max_output_tokens":2300});text(r.output)
+
+
+====NEXT====
+
+2026-09-26T18:09:17.800Z
+const r=await tools.exec_command({cmd:"@'\nfrom pathlib import Path\nimport re\np=Path('xga_dreams.asm').read_text(); q=Path('../../PC1-Labs/demos/04-Bitmap-stuff/demo5a.asm').read_text()\ndef table(s):\n lines=s.split('sine_table:',1)[1].splitlines(); rows=[x for x in lines if re.match(r'\\s*db\\s+[0-9]',x)][:16]\n return [int(v) for line in rows for v in re.findall(r'\\d+',line.split(';')[0])]\na,b=table(p),table(q); assert len(a)==256 and a==b\nx=[160+int((v-50)*96/50) for v in a]; y=[80+int((a[(i*2+64)&255]-50)*48/50) for i in range(256)]\nassert min(x)>=0 and max(x)<=320 and min(y)>=0 and max(y)<=160\nassert max(abs(x[i]-x[i-1]) for i in range(256))<=4\nassert max(abs(y[i]-y[i-1]) for i in range(256))<=3\nprint('Sine table exact match; X',min(x),max(x),'Y',min(y),max(y),'max step',max(abs(x[i]-x[i-1]) for i in range(256)),max(abs(y[i]-y[i-1]) for i in range(256)))\nassert 'cmp bx, 10' in Path('bin/DBLIT.lst').read_text()\nassert 'hud_char_base], 3' in Path('bin/DBLIT.lst').read_text()\nfor n in ('DREAMS','DBLIT','DCPU'):\n listing=Path('bin/'+n+'.lst').read_text(); assert 'call init_motion' in listing and 'call update_motion' in listing and 'call setup_sprite_hud' in listing\nprint('All three build with sine motion and XGA sprite')\n'@ | python -","shell":"powershell","login":false,"workdir":"C:\\Users\\hages\\OneDrive\\VS Code\\Olivetto Prodest PC1\\XGA\\xga-demo","max_output_tokens":1400});text(r.output)

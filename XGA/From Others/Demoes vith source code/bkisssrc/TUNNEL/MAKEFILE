@@ -1,0 +1,50 @@
+# makefile MAKE V2.0 or higher
+.autodepend
+
+# to enable debugging information, set "DEBUG" to "yes"
+DEBUG = no
+
+# define all object files that make up the executable
+OBJS = tunnel.obj heartpal.obj font17.obj
+
+##############################################################################
+
+!if ($(DEBUG) == yes)
+TLINKDEBUG = /v
+!endif
+
+##############################################################################
+
+.asm.obj:
+    tasm /ml /m /zi $<
+
+##############################################################################
+
+tunnel.exe:     $(OBJS) makefile
+        tlink /x $(TLINKDEBUG) @&&|
+$(OBJS)
+tunnel.exe
+tunnel.map
+
+|
+        !if ($(DEBUG) != yes)
+        pklite tunnel
+        !endif
+
+##############################################################################
+
+heartpal.obj:   heartpal.pal
+                2obj b heartpal.pal Code:Palette
+
+##############################################################################
+
+font17.jlf:     font17.pcx font17.cfg
+                pcx2fnt font17
+
+##############################################################################
+
+font17.obj:     font17.jlf
+                2obj b font17.jlf Code:FontData
+
+##############################################################################
+

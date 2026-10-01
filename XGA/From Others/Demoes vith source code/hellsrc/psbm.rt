@@ -1,0 +1,244 @@
+public  _psbm
+;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+; Put a damn scaled bitmap to modeX screen (with clipping ofcourse). This one
+; still doesn't use RLE... Just a plain old scaled bitblt with 0 checking in
+; 4 MOD(4) bitmap puts.
+; In:
+;   EAX low word - X loc in 320*200 screen to put at
+;   EAX high word - Y loc in 320*200 screen to put at
+;   EBX low word - actual X size of bitmap
+;   EBX high word - actual Y size of bitmap
+;   ECX low word - X size to put
+;   ECX high word - Y size to put
+;   DS:SI -> bitmap
+;   ES:DI -> physical screen buffer (full 320*200 modeX)
+; Notes:
+;   Don't call this routine with any X or Y sizes of 0.
+;   The index on the VGA sequencer reg is assumed to be 2.
+;   This routine is still not the most optimal for the job.
+;   Will work in real mode, just change '$+6' to '$+5' on line 47.
+;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+VS=34
+ysfract         equ word ptr [esp+2]
+ysfractcount    equ word ptr [esp+4]
+ysdivisor       equ word ptr [esp+VS+26]
+ysoneline       equ word ptr [esp+VS+16]
+ylineadd        equ word ptr [esp+16]
+ylinecount      equ word ptr [esp+6]
+srcptr          equ word ptr [esp+8]
+dstptr          equ word ptr [esp+10]
+ysfractcount2   equ word ptr [esp+18]
+ylinecount2     equ word ptr [esp]
+srcptr2         equ word ptr [esp+12]
+dstptr2         equ word ptr [esp+14]
+xsfract         equ word ptr [esp+20]
+xsfractcount    equ word ptr [esp+30]
+xsfractcounthi  equ dword ptr [esp+28]
+xsdivisor       equ word ptr [esp+VS+24]
+xpixeladd       equ word ptr [esp+24]
+xpixelcount     equ word ptr [esp+22]
+xstatword       equ word ptr [esp+26]
+xpixelstat      equ byte ptr [esp+32]
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+rept 320
+temp=$
+        mov al,[si]
+        or al,al
+        jz short $+6
+        mov es:[di],al
+        add edi,ecx
+        adc si,bp
+PSBMPUTCODELEN=$-temp
+endm
+psbmputcode:
+        jmp psbml0c
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+_psbm:
+        pushad
+        sub esp,VS
+
+        cmp ax,140h                     ; out of bounds? (below or right)
+        jge psbmd
+        cmp eax,0c80000h
+        jge psbmd
+        mov edx,eax                     ; out of bounds¨ (above or left)
+        add dx,cx
+        cmp dx,0
+        jle psbmd
+        xor dx,dx
+        add edx,ecx
+        cmp edx,0ffffh
+        jle psbmd
+
+;-----------------------------------------------------------------------------
+        shld eax,ebx,16                 ; figure Y scale stuff (the easy part)
+        rol ecx,16
+        cwd
+        div cx
+        mov ysfract,dx
+        mul bx
+        mov ylineadd,ax
+
+        mov bp,[esp+VS+30]              ; figure Y clip stuff (also easy)
+        add cx,bp
+        xor bx,bx
+        cmp bp,0
+        jge short psbmf0
+        sub bx,bp
+        xor bp,bp
+psbmf0:
+        mov ax,80
+        mul bp
+        add di,ax
+        cmp cx,200
+        jb short psbmf1
+        mov cx,200
+psbmf1:
+        sub bp,cx
+        neg bp
+        mov ylinecount,bp
+        mov ax,ysfract
+        mov bp,ysdivisor
+        mul bx
+        div bp
+        sub dx,bp
+        neg dx
+        mov ysfractcount,dx
+        mov ax,bx
+        mul word ptr [esp+VS+18]
+        div bp
+        mul ysoneline
+        add si,ax
+
+;-----------------------------------------------------------------------------
+        mov ax,[esp+VS+16]
+        shr ecx,16                      ; figure X scale crap (still easy)
+        cwd
+        div cx
+        mov xsfract,dx
+        mov xpixeladd,ax
+
+        movzx ebp,word ptr [esp+VS+28]  ; figure X clip crap (more easy)
+        lea edx,[ecx+ebp]
+        xor bx,bx
+        cmp bp,0
+        jge short psbmf2
+        sub bx,bp
+        xor bp,bp
+psbmf2:
+        mov cx,bp
+        and cl,3
+        mov ax,401h
+        shl al,cl
+        mov xstatword,ax
+        mov ax,bp
+        shr ax,2
+        add di,ax
+        cmp dx,320
+        jb short psbmf3
+        mov dx,320
+psbmf3:
+        sub bp,dx
+        neg bp
+        add bp,3
+        mov ax,bp
+        and al,3
+        mov xpixelstat,al
+        shr bp,2
+        neg bp
+        imul bp,PSBMPUTCODELEN
+        add bp,offset psbmputcode
+        mov xpixelcount,bp
+        mov ax,xsfract
+        mov bp,xsdivisor
+        mul bx
+        div bp
+        mov xsfractcount,dx
+        mov ax,bx
+        mul word ptr [esp+VS+16]
+        div bp
+        add si,ax
+
+;-----------------------------------------------------------------------------
+	mov cx,xsdivisor		; figure other misc stuff
+        mov dx,xsfractcount
+        xor ax,ax
+        div cx
+        shl eax,16
+        mov xsfractcounthi,eax
+	mov dx,xsfract
+        mov eax,10000h
+        div cx
+        mov xsfract,ax
+	mov bx,ax
+        shl bx,2
+        movzx ebp,xpixeladd
+        shl bp,2
+        shr ax,14
+        add ebp,eax
+        shrd ecx,ebx,16
+        mov cx,1
+        mov ax,xstatword
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+psbml1:                                 ; main outer loop
+        mov srcptr,si
+        mov dstptr,di
+        mov xstatword,ax
+        mov dx,3c5h
+        out dx,al
+        mov ax,ysfractcount
+        mov ysfractcount2,ax
+        mov ax,ylinecount
+        mov ylinecount2,ax
+;-----------------------------------------------------------------------------
+psbml0:
+        mov srcptr2,si
+        mov dstptr2,di
+        movzx edi,di
+        or edi,xsfractcounthi
+        jmp xpixelcount
+;-----------------------------------------------------------------------------
+psbml0c:
+        mov si,srcptr2
+        mov ax,ysfractcount2
+        sub ax,ysfract
+        ja short psbml0c2
+        add ax,ysdivisor
+        add si,ysoneline
+psbml0c2:
+        mov ysfractcount2,ax
+        add si,ylineadd
+        mov di,dstptr2
+        add di,80
+        dec ylinecount2
+        jnz psbml0
+;-----------------------------------------------------------------------------
+psbml1c:
+        sub xpixelstat,1
+        jnc short psbml1c2
+        mov ax,xpixelcount
+        add ax,PSBMPUTCODELEN
+        cmp ax,offset psbmputcode
+        je short psbmd
+        mov xpixelcount,ax
+psbml1c2:
+        mov si,srcptr
+        mov ax,xsfractcount
+        add ax,xsfract
+        adc si,0
+        mov xsfractcount,ax
+        add si,xpixeladd
+        mov di,dstptr
+        mov ax,xstatword
+        bt ax,3
+        rcl al,1
+        btr ax,4
+        adc di,0
+        dec ah
+        jnz psbml1
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+psbmd:
+        add esp,VS
+        popad
+        ret
+

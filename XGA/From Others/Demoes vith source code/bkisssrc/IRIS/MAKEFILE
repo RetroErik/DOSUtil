@@ -1,0 +1,52 @@
+# makefile MAKE V2.0 or higher
+.autodepend
+
+# to enable debugging information, set "DEBUG" to "yes"
+DEBUG = no
+
+# define all object files that make up the executable
+OBJS = iris.obj palette.obj datatabl.obj
+
+##############################################################################
+
+!if ($(DEBUG) == yes)
+TLINKDEBUG = /v
+!endif
+
+##############################################################################
+
+.asm.obj:
+    tasm /ml /m /zi $<
+
+##############################################################################
+
+iris.exe:       $(OBJS) makefile
+        tlink /x $(TLINKDEBUG) @&&|
+$(OBJS)
+iris.exe
+iris.map
+
+|
+        !if ($(DEBUG) != yes)
+        pklite iris
+        !endif
+
+##############################################################################
+
+datatabl.bin:   datatabl.bas
+                qb /run datatabl
+
+##############################################################################
+# there appears to be a bug in 2OBJ with it trying to dump files of 65536
+# bytes in length.  this is just a work around.  besides, who'll miss the
+# those 32 bytes? :)
+
+datatabl.obj:   datatabl.bin
+                2obj b /t32 datatabl.bin DataTableSeg:DataTable
+
+##############################################################################
+
+palette.obj:    palette.pal
+                2obj b palette.pal MyData:PaletteData
+
+##############################################################################

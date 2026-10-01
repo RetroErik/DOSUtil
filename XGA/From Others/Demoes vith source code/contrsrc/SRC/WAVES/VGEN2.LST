@@ -1,0 +1,25 @@
+'
+OPEN "o",#1,"vlin.inc"
+'
+FOR y%=29 TO 0 STEP -1
+  ix%=1
+  CLS
+  PRINT #1;" EVEN"
+  PRINT #1;"laby";y%+20;":"
+  FOR jx%=63 TO 0 STEP -1
+    col%=TRUNC(ix%*LOG((y%+1)/8+1)/LOG(2.718281828))
+    col%=MIN(col%,63)
+    INC ix%
+    PRINT #1;" mov BYTE PTR[di+";(jx%+y%-29+50)*80;"],";col%+192
+  NEXT jx%
+  PRINT #1;" ret"
+  PRINT #1;" nop"
+  PRINT #1;" nop"
+  PRINT #1;" nop"
+  PRINT #1;" "
+NEXT y%
+'
+CLOSE #1
+'
+EDIT
+'

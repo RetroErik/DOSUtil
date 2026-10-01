@@ -1,0 +1,87 @@
+ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»
+º                                                                            º
+º        ÛÛÛÛÛÛÜ ÛÛ   ÛÛ ÛÛÛÛÛÛÛ ÜÛÛÛÛÛÛ ÜÛÛÛÛÛÜ             ÛÛ              º
+º        ÛÛÜÜÜÛß ÛÛÜ ÜÛÛ   ŞÛİ   ÛÛÜÜÜÜ  ÛÛÜÜÜÜ            ÜÜÛÛÜÜ            º
+º        ÛÛßßßÛÛ  ßÛÛÛß    ŞÛİ   ÛÛßßßß   ßßßßÛÛ          ÛÛßÛÛßß            º
+º        ÛÛÛÛÛÛß   ŞÛİ     ŞÛİ   ßÛÛÛÛÛÛ ßÛÛÛÛÛß          ßÛÛÛß              º
+º                                                                            º
+º                     ÛÛ  ÜÛÛ ŞÛÛİ ÜÛÛÛÛÛÜ ÜÛÛÛÛÛÜ ÜÛÛÛÛÛÛ ÜÛÛÛÛÛÜ           º
+º                     ÛÛÜÛÛß   ÛÛ  ÛÛÜÜÜÜ  ÛÛÜÜÜÜ  ÛÛÜÜÜÜ  ÛÛÜÜÜÜ            º
+º                     ÛÛßÛÛÜ   ÛÛ   ßßßßÛÛ  ßßßßÛÛ ÛÛßßßß   ßßßßÛÛ           º
+º                     ÛÛ  ßÛÛ ŞÛÛİ ßÛÛÛÛÛß ßÛÛÛÛÛß ßÛÛÛÛÛÛ ßÛÛÛÛÛß           º
+º                                                                            º
+ºÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄº
+º                                                                            º
+º                  _______  /                                                º
+º                     /    /      ÚÄÄÚ¿  ³ÄÂÄÚÄÄÚÄ¿ÚÄ¿ÚÄ¿oÚÄÄÚÄÄÚÄÄ          º
+º                    /    /       ÃÄ ³ÀÄ¿³ ³ ÃÄ ÃÂÙÃÄÙÃÂÙ³ÀÄ¿ÃÄ ÀÄ¿          º
+º              /____/    /_____   ÀÄÄ³  ÀÙ ³ ÀÄÄ³ \³  ³ \³ÄÄÙÀÄÄÄÄÙ          º
+º                                                                            º
+º                                                                            º
+ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼
+
+    Well!  Here's my second demo.  I'm kind of in a rush so I'll try to keep
+this short.  If you just can't wait to see my demo, then what are you waiting
+for?  Go run it!  Otherwise, you can keep reading this text.
+
+    I decided to put out another demo because I got a lot great feedback from
+the release of my last one.  Besides, I did not feel that "the Byte Before
+Christmas" was that much of a challenge.  This time I'm trying to do a more
+'traditional' demo look.  (is this closer to a *real* demo, Patch?)
+
+    I did not implement Demo-VT, as a couple of people had suggested, because
+of a little problem I ran into.  Demo-VT makes you change the music between
+executables and will not let you have the same music running through several
+parts.  I wrote to Jare (right after I put out the BBC) and did not get a
+reply until just a few days ago.  He acknowledged Demo-VT's limitation and
+accepted my suggestion of a different way to parse the scripts so that this
+limitation could be removed.  As I did not have any time at the last moment
+to add in the work-around he suggested (have Demo-VT run another program
+that runs the separate parts), I still am not using it.  When I get the next
+version of Demo-VT, then I'll use it, but until then, I'll use the current
+method.   (Sorry to those who can't get the music to work).
+
+    One other thing you may have noticed is that there is now only a single
+executable.  I developed another version of my JLIB format that permits
+'junk' to be stored before the beginning of the actual library files.  In
+this case the 'junk' is the demo loader which loads the rest of the demo out
+of the main library.  Version 1.3 of JLIB will be available with the source
+code package available a week after the release of this demo.
+
+    I'd also like to thank all of those people responsible for the original
+ideas/code for the parts that I did not completely think of or write myself.
+Draeden's mode X code was especially useful and I used Patch's PCX Utils
+for all of the fonts.  I'd also like to thank Joakim Rosqvist for his
+help in optimization, providing the music, and also showing such an interest
+in my work.  And to Andrew Welch, I'm sorry I couldn't wait for you to
+finish that one part of the demo for me.  Maybe next time!
+
+    Well let's end this right here.  I've got homework to do.  Here's how to
+reach me.  Do not hesitate to contact me if you feel the urge to.
+
+I can reached via Snail-mail at:
+
+        Jeff Lawson
+        1893 Kaweah Drive
+        Pasadena, CA 91105-2174
+        USA
+
+or through E-mail at:
+
+        haroldf@rcf.usc.edu
+
+also via phone at:
+
+        (213) 258-5604
+
+or (if previous line is busy):
+
+        (213) 258-4264
+
+
+Although I'm not asking any money for it, I'm aware that there are people who
+like to send money anyways.  If you happen to be one of these types of people,
+feel free to contact me!  :)
+
+
+Thanks for downloading this!

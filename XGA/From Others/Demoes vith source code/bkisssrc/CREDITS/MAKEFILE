@@ -1,0 +1,59 @@
+# makefile MAKE V2.0 or higher
+.autodepend
+
+# to enable debugging information, set "DEBUG" to "yes"
+DEBUG = no
+
+# define all object files that make up the executable
+OBJS = credits.obj bigheart.obj heartpal.obj fontset2.obj tinyhart.obj
+
+##############################################################################
+
+!if ($(DEBUG) == yes)
+TLINKDEBUG = /v
+!endif
+
+##############################################################################
+
+.asm.obj:
+    tasm /ml /m /zi $<
+
+##############################################################################
+
+credits.exe:    $(OBJS) makefile
+        tlink /x $(TLINKDEBUG) @&&|
+$(OBJS)
+credits.exe
+credits.map
+
+|
+        !if ($(DEBUG) != yes)
+        pklite credits
+        !endif
+
+##############################################################################
+
+bigheart.obj:   bigheart.pcx
+                2obj p /d bigheart.pcx bigheart.obj BitmapSeg:BigHeartData
+
+##############################################################################
+
+heartpal.obj:   bigheart.pcx
+                2obj v /d bigheart.pcx heartpal.obj MyData:PaletteData
+
+##############################################################################
+
+fontset2.jlf:   fontset2.pcx fontset2.cfg
+                pcx2fnt fontset2
+
+##############################################################################
+
+fontset2.obj:   fontset2.jlf
+                2obj b fontset2.jlf MyData:FontData
+
+##############################################################################
+
+tinyhart.obj:   tinyhart.pcx
+                2obj p /d tinyhart.pcx tinyhart.obj MyData:TinyHeartData
+
+##############################################################################

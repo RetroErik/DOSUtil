@@ -1,0 +1,44 @@
+# makefile MAKE V2.0 or higher
+.autodepend
+
+# to enable debugging information, set "DEBUG" to "yes"
+DEBUG = no
+
+# define all object files that make up the executable
+OBJS = sinus.obj heartimg.obj palette.obj
+
+##############################################################################
+
+!if ($(DEBUG) == yes)
+TLINKDEBUG = /v
+!endif
+
+##############################################################################
+
+.asm.obj:
+    tasm /ml /m /zi $<
+
+##############################################################################
+
+sinus.exe:      $(OBJS) makefile
+        tlink /x $(TLINKDEBUG) @&&|
+$(OBJS)
+sinus.exe
+sinus.map
+
+|
+        !if ($(DEBUG) != yes)
+        pklite sinus
+        !endif
+
+##############################################################################
+
+heartimg.obj:   heart.pcx
+                2obj p /d heart.pcx heartimg.obj MyData:HeartImage
+
+##############################################################################
+
+palette.obj:    palette.pal
+                2obj b palette.pal MyData:PaletteData
+
+##############################################################################

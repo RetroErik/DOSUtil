@@ -1,0 +1,56 @@
+BUILD: Computing Include file dependencies:
+BUILD: c:\ddk\src\video\displays\xgasys\sources.(21): last line incomplete
+BUILD: c:\ddk\src\video\displays\xgasys: Ignoring invalid directory prefix in SOURCES= entry: i386\xgahard.asm
+BUILD: Examining c:\ddk\src\video\displays\xgasys directory for files to compile.
+Building generated files in c:\ddk\src\video\displays\xgasys ********************
+'nmake.exe /c BUILDMSG=Stop. -i NTTEST= UMTEST= NOLINK=1 PASS0ONLY=1 386=1'
+
+Stop. 
+BUILD: c:\ddk\src\video\displays\xgasys: Ignoring invalid directory prefix in SOURCES= entry: i386\xgahard.asm
+BUILD: Examining c:\ddk\src\video\displays\xgasys directory for files to compile. (2nd Pass)
+Compiling c:\ddk\src\video\displays\xgasys directory ********************
+'nmake.exe /c BUILDMSG=Stop. -i NTTEST= UMTEST= NOLINK=1 NOPASS0=1 386=1'
+	ml -c -coff -Cx -nologo -Ii386\ -I. -IC:\DDK\src\video\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -Zm  -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDBG=0 -DDEVL=1 -DFPO=1    -FoC:\DDK\src\video\displays\xgasys\obj\i386\\xgahard.obj i386\xgahard.asm
+ Assembling: i386\xgahard.asm
+cl -nologo -Ii386\ -I. -IC:\DDK\src\video\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\xgadata.c
+xgadata.c
+
+Stop. 
+Linking c:\ddk\src\video\displays\xgasys directory ********************
+'nmake.exe /c BUILDMSG=Stop. -i LINKONLY=1 NOPASS0=1 NTTEST= UMTEST= 386=1'
+	link -out:C:\DDK\lib\i386\free\xga3.sys -machine:i386 @C:\DOCUME~1\Ryan\LOCALS~1\Temp\nma03856.
+Microsoft (R) 32-Bit Incremental Linker Version 3.00.5270
+Copyright (C) Microsoft Corp 1992-1995. All rights reserved.
+
+-MERGE:_PAGE=PAGE 
+-MERGE:_TEXT=.text 
+-SECTION:INIT,d 
+-OPT:REF 
+-INCREMENTAL:NO 
+-FORCE:MULTIPLE 
+-RELEASE 
+-FULLBUILD 
+-IGNORE:4001,4037,4039,4065,4070,4078,4087,4089,4096 
+-NODEFAULTLIB 
+-debug:notmapped,MINIMAL 
+-debugtype:coff 
+-version:4.00 
+-osversion:4.00 
+-PDB:NONE 
+-MERGE:.rdata=.text 
+-optidata 
+-driver 
+-align:0x20 
+-subsystem:native,4.00 
+-base:0x10000 
+-entry:DriverEntry@8 
+-out:C:\DDK\lib\i386\free\xga3.sys 
+obj\i386\xga.res 
+obj\i386\\xgahard.obj 
+obj\i386\xga.obj 
+obj\i386\xgadata.obj 
+C:\DDK\lib\i386\free\int64.lib 
+C:\DDK\lib\i386\free\videoprt.lib 
+libc.lib 
+
+Stop. 

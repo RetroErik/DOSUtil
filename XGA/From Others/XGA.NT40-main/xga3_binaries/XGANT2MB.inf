@@ -1,0 +1,119 @@
+; XGA2MBNT.inf
+;
+; Installation file (.inf) for the XGA/XGA2/Double Edge Graphics Adapters.
+;
+; (c) Copyright 2024 Ryan Alswede, Christian Holzapfel
+; 
+;                                                                                                                    
+                                                                                                                       
+[Version]                                                                                                              
+Signature="$Windows NT$"                                                                                             
+Provider=%MSC%                                                                                                        
+ClassGUID={4D36E968-E325-11CE-BFC1-08002BE10318}                                                                       
+Class=Display                                                                                                          
+                                                                                                                       
+[DestinationDirs]                                                                                                      
+DefaultDestDir   = 11                                                                                                  
+xga3.Miniport  = 12  ; drivers                                                                                           
+xga3.Display   = 11  ; system32                                                                                                                                                                                                             
+;                                                                                                                      
+; Driver information                                                                                                   
+;                                                                                                                      
+                                                                                                                       
+[Manufacturer]                                                                                                         
+%MSC% = IBM.Mfg                                                                                                      
+                                                                                                                       
+[IBM.Mfg]                                                                                                               
+%XGA.DeviceDesc%  = xga3
+%XGA2.DeviceDesc% = xga3
+%XGA3.DeviceDesc% = xga3
+                                                                                                              
+;                                                                                                                      
+; General installation section                                                                                         
+;                                                                                                                      
+                                                                                                                       
+[xga3]                                                                                                                   
+CopyFiles=xga3.Miniport, xga3.Display                                                                                      
+                                                                                                                       
+;                                                                                                                      
+; File sections                                                                                                        
+;                                                                                                                      
+                                                                                                                       
+[xga3.Miniport]                                                                                                          
+xga3.sys                                                                                                                 
+                                                                                                                       
+[xga3.Display]                                                                                                           
+xga3.dll          
+vga256.dll                                                                                                           
+                                                                                                                       
+;                                                                                                                      
+; Service Installation                                                                                                 
+;                                                                                                                      
+                                                                                                                       
+[xga3.Services]                                                                                                          
+AddService = xga3, 0x00000002, xga3_Service_Inst, xga3_EventLog_Inst                                                         
+                                                                                                                       
+[xga3_Service_Inst]                                                                                                      
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER                                                            
+StartType      = 1                  ; SERVICE_SYSTEM_START                                                             
+ErrorControl   = 0                  ; SERVICE_ERROR_IGNORE                                                             
+LoadOrderGroup = Video                                                                                                 
+ServiceBinary  = %12%\xga3.sys                                                                                        
+                                                                                                                       
+[xga3_EventLog_Inst]                                                                                                     
+AddReg = xga3_EventLog_AddReg                                                                                            
+                                                                                                                       
+[xga3_EventLog_AddReg]                                                                                                   
+HKR,,EventMessageFile,0x00020000,"%SystemRoot%\System32\IoLogMsg.dll;%SystemRoot%\System32\drivers\xga3.sys"  
+HKR,,TypesSupported,0x00010001,7                                                                                       
+                                                                                                                                                                                                                                      
+;                                                                                                                      
+; Software Installation                                                                                                
+;                                                                                                                      
+                                                                                                                       
+[xga3.SoftwareSettings]                                                                                                  
+AddReg = xga3_SoftwareDeviceSettings                                                                                     
+                                                                                                                       
+[xga3_SoftwareDeviceSettings]                                                                                            
+HKR,, InstalledDisplayDrivers,     %REG_MULTI_SZ%, xga3, vga256                                                                
+HKR,, VgaCompatible,               %REG_DWORD%,    0                                                                
+                                                                                                                       
+                                                                                                                       
+[xga3.OpenGLSoftwareSettings]                                                                                                                                                                                                              
+                                                                                                                       
+;                                                                                                                      
+; Source file information                                                                                              
+;                                                                                                                      
+                                                                                                                       
+[SourceDisksNames.x86]                                                                                                  
+1 = %DiskId%,,,""                                                                                                  
+                                                                                                                       
+[SourceDisksFiles]                                                                                                     
+xga3.sys  = 1                                                                                                            
+xga3.dll = 1
+                                                                                                                       
+                                                                                                                       
+[Strings]                                                                                                              
+                                                                                                                       
+;                                                                                                                      
+; Non-Localizable Strings                                                                                              
+;                                                                                                                      
+                                                                                                                       
+REG_SZ         = 0x00000000                                                                                            
+REG_MULTI_SZ   = 0x00010000                                                                                            
+REG_EXPAND_SZ  = 0x00020000                                                                                            
+REG_BINARY     = 0x00000001                                                                                            
+REG_DWORD      = 0x00010001                                                                                            
+SERVICEROOT    = System\CurrentControlSet\Services                                                                   
+                                                                                                                       
+;                                                                                                                      
+; Localizable Strings                                                                                                  
+;                                                                                                                      
+
+XGA.DeviceDesc  = "IBM XGA MCA"
+XGA2.DeviceDesc = "IBM XGA-2 MCA"                                                                                                                       
+XGA3.DeviceDesc = "Nth Graphics Double Edge MCA"                                                                                                                       
+DiskId  = "XGA/XGA2/Double Edge NT Driver Disk"                                                                        
+GraphAdap = "Graphics Adapter"     
+MSC = "IBM XGA/XGA2 Graphics Adapters"                                                                              
+                                                                                                      

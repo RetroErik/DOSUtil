@@ -1,0 +1,47 @@
+
+  This is the entire protected mode assembly source code to 'HELL' by Tran. It
+can be compiled with TASM and TLINK. But in order to run it, you must have the
+original demo 'HELL.EXE' because all the data is there.
+
+To my fellow competent programmers: (Not too many of whom exist in Redmond)
+  It is not terribly well optimized, but it serves the purpose. It is GUS
+only (the demo requires timing from the muzik), but it would not be too hard
+to write yourself a little SB mixer replacement for GS.ASM if you really felt
+like it. Heres a breakdown of the files:
+
+  PMODE.ASM   - My little protected mode extender thingy.
+  FILE.ASM    - File library.
+  FLIB.ASM    - Handles all files in a single file.
+  KB.ASM      - Low level keyboard interface.
+  VECT3.ASM   - Just a rotation thingy.
+  DECODE0.ASM - Decompression code.
+  GS.ASM      - Low level GUS interface.
+  GSP669.ASM  - 669 player using GS.
+
+  V.ASM       - Main demo file.
+  P0.ASM      - Some parts of the demo.
+  P1.ASM      - Some more parts of the demo.
+  P2.ASM      - Even more parts of the demo.
+  P3.ASM      - Still more parts of the demo.
+
+  VRTIME.M    - Times the vertical retrace period using the system timer.
+  END.M       - Puts up the end piccy.
+
+There are a bunch of misc .RT files also, and ofcourse the .INC include files.
+
+Greets to...
+  All those who make the effort to learn ASM.
+  Also to Arjan Brusse.
+  And all other coders, artists, and muzicians. (But not organizers,
+   organization sucks. It takes away from the phenomenon of the incredible
+   self-modifying deadline.)
+
+Hmm...
+  Have you noticed the weird recent trend toward total global political and
+   economic stability?¨? (Germany, Russia, Mid-East, Ireland, China)
+
+
+                                                Whatever...
+                                                Tran (a.k.a. Thomas Pytel)
+                                                 of nothing.
+

@@ -1,0 +1,93 @@
+;///////////////////////////////////////////////////////////
+;
+; Runstream (R) INF file of XGA208 Windows NT display driver
+; Copyright (C) UnalZ, 2008.                    XGA2NT.INF
+; ----------------------------------------------------------
+; BETA test: April 2008
+;
+; Updated for for use with custom framebuf dll 
+; //////////////////////////////////////////////////////////
+
+[Version]
+;Signature="$CHICAGO$"
+Signature="$Windows NT$"
+Provider=%MCB%
+ClassGUID={4D36E968-E325-11CE-BFC1-08002BE10318}
+Class=Display
+
+[SourceDisksNames]
+1=%XGA206.DiskName%,,1
+
+[SourceDisksFiles]
+xga2.sys = 1
+framebuf.dll = 1
+vga256.dll = 1
+
+[DestinationDirs]
+DefaultDestDir = 11
+XGA2.Miniport = 12  ;drivers
+XGA2.Display = 11  ; system32     
+
+[Manufacturer]
+%MCB% =Mfg.MCB
+
+[Mfg.MCB]
+%XGA.DeviceDesc%  = XGA2
+%XGA2.DeviceDesc% = XGA2
+
+[XGA2]                                                                                                                   
+CopyFiles=XGA2.Miniport
+CopyFiles=XGA2.Display
+
+[XGA2.Miniport]                                                                                                          
+xga2.sys  
+  
+[XGA2.Display]                                                                                                           
+framebuf.dll         
+vga256.dll                                                                                                                
+
+; -----------Miniport Service Installation 
+
+[XGA2.Services]
+AddService = XGA2, 0x00000002, XGA2_Service_Inst, XGA2_EventLog_Inst
+
+[XGA2_Service_Inst]
+ServiceType    = 1           ; SERVICE_KERNEL_DRIVER
+StartType      = 1           ; SERVICE_SYSTEM_START
+ErrorControl   = 0           ; SERVICE_ERROR_IGNORE
+LoadOrderGroup = Video
+ServiceBinary  = %12%\xga2.sys
+
+[XGA2_EventLog_Inst]
+AddReg = XGA2_EventLog_AddReg
+
+[XGA2_EventLog_AddReg]
+HKR,,EventMessageFile,0x00020000,"%SystemRoot%\System32\IoLogMsg.dll;%SystemRoot%\System32\drivers\xga2.sys"
+HKR,,TypesSupported,0x00010001,7
+
+;--------------Miniport Display Driver Installation
+
+[XGA2.SoftwareSettings]
+AddReg = XGA2_SoftwareDeviceSettings
+
+; Not VGA compatible (no VGA emulation in XGA modes)
+; xga.dll and vga256.dll must have been installed by NT
+
+[XGA2_SoftwareDeviceSettings]
+HKR,,InstalledDisplayDrivers, %REG_MULTI_SZ%, framebuf, vga256
+HKR,,VgaCompatible, %REG_DWORD%, 0
+
+
+[Strings]
+REG_SZ        = 0x00000000
+REG_MULTI_SZ  = 0x00010000
+REG_EXPAND_SZ = 0x00020000
+REG_BINARY    = 0x00000001
+REG_DWORD     = 0x00010001
+SERVICEROOT   = System\CurrentControlSet\Services
+
+MCB = "MCABase"
+XGA.DeviceDesc  = "IBM XGA MCA"
+XGA2.DeviceDesc = "IBM XGA-2 MCA"
+XGA206.DiskName = "MCABase XGA208/NT Windows NT Driver Disk"
+

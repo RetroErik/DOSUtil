@@ -1,0 +1,27 @@
+public  _modeX
+;같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같�
+; Init mode 13h and set up for mode X
+;같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같�
+_modeX:
+        push ax dx
+        mov al,10h
+        mov v86r_ax,12h
+        int 33h
+        mov v86r_ax,13h
+        int 33h
+        mov dx,3c4h
+        mov ax,00604h
+        out dx,ax
+        mov al,2
+        out dx,al
+        mov dl,0ceh
+        mov ax,04005h
+        out dx,ax
+        mov dl,0d4h
+        mov ax,00014h
+        out dx,ax
+        mov ax,0e317h
+        out dx,ax
+        pop dx ax
+        ret
+

@@ -1,0 +1,54 @@
+# makefile MAKE V2.0 or higher
+.autodepend
+
+# to enable debugging information, set "DEBUG" to "yes"
+DEBUG = no
+
+# define all object files that make up the executable
+OBJS = bounce.obj heart.obj fontdata.obj heartpal.obj
+
+##############################################################################
+
+!if ($(DEBUG) == yes)
+TLINKDEBUG = /v
+!endif
+
+##############################################################################
+
+.asm.obj:
+    tasm /ml /m /zi $<
+
+##############################################################################
+
+bounce.exe:     $(OBJS) makefile
+        tlink /x $(TLINKDEBUG) @&&|
+$(OBJS)
+bounce.exe
+bounce.map
+
+|
+        !if ($(DEBUG) != yes)
+        pklite bounce
+        !endif
+
+##############################################################################
+
+heart.obj:      heart.pcx
+                2obj p /d heart.pcx MyData:HeartImg
+
+##############################################################################
+
+heartpal.obj:   heart.pcx
+                2obj v /d heart.pcx heartpal.obj MyData:MyPalette
+
+##############################################################################
+
+fontdata.jlf:   fontdata.pcx fontdata.cfg
+                pcx2fnt fontdata
+
+##############################################################################
+
+fontdata.obj:   fontdata.jlf
+                2obj b fontdata.jlf MyData:FontData
+
+##############################################################################

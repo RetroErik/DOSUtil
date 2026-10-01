@@ -1,0 +1,446 @@
+
+******************* CONTRAST / a TFL-TDV production (C)1994 *******************
+
+                             CONGRATULATIONS !!!!! 
+           
+         Dis time TFL-TDV offers MORE than kukoo/kukoo2 source code !!!
+
+       You've got here the SOURCE CODE pack of the first TFL-TDV *demo* !
+
+                     I hope it will be usefull for U ! 
+     Don't blame us, becoz some of our guyz did their first steps in ASM !!!
+
+                         ---------------------------
+
+
+- first shown on 31 october at the Wired Party 1994 - Mons/Belgium
+- 2nd place (wow!)
+
+Warning :
+This demo only works with 600Kb of conventional memory (using QEMM).
+If you're lucky, and you have enough memory, you should have a chance to
+see the final part of our demo : The Star Wars Scroller.
+If not, yeah, you'll see an all new and unique random star generator...
+(300Kb of precalculed tables) We're sorry about that ...
+(Launching the demo without the setup could help, using the batch file
+created by the setup for example).
+
+
+if the demo doesn't look nice with the default config : 
+
+386 SX16-20 : try with NO SOUND or GUS : contrast -w1 -s4 (or - s1 for GUS)
+386 DX33-40 : try with SB 22khz or GUS : contrast -w1 -s5 -m22000
+486 DX33-40 ISA : try with SB 22khz or GUS : contrast -w1 -s5 -m22000
+486 VLB     : the default config should be nice (try -w1 if your VGA accepts it)
+The DEMO needs EMS if you use an SB/PAS or WSS !!!!! (GUS has its own RAM :-) )
+
+type contrast /? for help !!!!
+
+1) TFL-TDV : The FLamoots - The Dark Vision
+--------------------------------------------
+
+There are mainly two philosophies in our crew :
+
+first, we have The Dark Vision partisans... they are active during the night,
+and their favourite places are cemeteries...(You can recognize them by their
+black glasses and black T-shirts) 
+
+Then, there are The FLamoots, partisans of self-derision... Their main rule :
+"Drink a beer as I do, and brush your teeth before going to bed :-) "
+Their favourite places are those where they can express their famous style of
+dancing.... (You can recognize them by the purple flowers on their shorts and
+their "Flamoot Inside" T-shirts)
+
+Fortunately, the 2 species have common interest for coding and moving on 
+HardCore tekkkno !!!!! 
+
+2) History
+-----------
+
+Hi ! Dis is Type One speaking , the main coder of TFL-TDV......
+
+Okay let's go .... CONTRAST is the first common release by TFL-TDV !
+There were before 2 independants crew : TFL (mine) and TDV
+
+All began at The Low Density party where I tested some beta-rotative-zoomers
+routs on Antares's PC .... (I wished to do an only Type One - intro, bigger
+than the kukoos and no specially for a BBS). I went there with some new guyz
+of my university (TDV members) and i told them i wanted to release a big intro
+in the summer hollydays..... Morflame/TDV told me that he was working on a
+powerful Virtual 3D engine and that interested me a lot (coz i never code
+3D yet :-) ). That was the first point ....
+
+Then came the summer hollydays ..... during July and August, i coded like a
+"beast" (hey i had successed in my exams :-) !!!) and in middle august, i've
+heard about a new party in Belgium in end of october... So i took the phone,
+i called Morflame and proposed him to do a fusion between TFL and TDV
+(coz TDV has some excellent gfx men and TFL has a good musician) and to
+participate at the Wired (i had about 6 screens "ready"). And during the
+hollydays, i had dramaticaly optimised my Zoomers and Distorts, i've done
+some research about the VGA registers and set up my 160x100 hardware mode
+and other tricks i should use in a next prod. (ex. kukoo3, Wired95 :-) )
+
+At the same time, i saw Earthquake/IGUANA at Morflame's house, and specially
+the famous waves screen.... I saw it during 5 minutes and thinked first about
+the projection system (i used a similar algorithm in an old PAS proggie i
+wrote 3 years ago....). So 2 days later,i had coded a real time projection map
+working in 160x30 which runned at 70 f/s on my 486 DX40. But the major problem
+was the liquid consistence : i never believed i could get the same effect ...
+I firstly coded some fire routs on the map, just to see how it looks (no really
+great), I adapted my Rot-zoomer on the map (not attractive too)... so i've put
+the screen temporaly in the "trash".
+
+Then i worked on the general demo system... i had to find a decent modplayer: i
+took MIDAS and a datafile maker: i took PDFIK.... i worked on the interrupts
+system (double/triple/no buffering), on the VGA setup lib. I had to duplicate
+the Distort and Zoom algos becoz of incompatibility of some VESA/VLB cards
+with 160x100 (cards which ignore the clock doubling in mode 13h !!!!! :-( )
+
+Well finaly, 2 weeks before the Wired, i saw some equations posted by
+ARM/Iguana talking about the liquid consistence !!!!! WOW great !!!!! I d/l
+the doc and tried to understand .... (ow, the explanations were no really
+easy for a guy who had no idea about fluid mecanic :-( ... hey, i am in
+Computer science not Engineering !!!!  so, the equations had strange syntax
+for me..... but fortunately, ARM put some lines in spanish at the end of the
+doc, and that was clear for me.... So i began to code about 5-6 algos until
+it worked (1 day of full work) and then i phoned crasy to Morflame !!!!!
+I CAN DO IT!!! I CAN DO IT!!!!  then during the week, i played with the effects
+(i just had no time to implement some rotations :-( becoz we had to integrate
+all the parts of the different coders and implement the synchro flags)
+
+Well, so you now know that I didn't debug Earthquake to do the effect :-)
+and I even don't have that demo at home .... (I promise i will copy it :-) )
+
+3) General Infos
+-----------------
+
+- 2 months of hard work (with some routs already operational) !!!
+- about an HALF-MEG of pure ASM source code
+- 21ko C source code (just to call the parts with tune-synchros parameters 
+  and to link with MIDAS)
+- supports GUS, SB/SBPro/SB16, Audio Spectrum, Windoze Sound System
+  (works on SB16 and AWE32 becoz of new midas.32c patch !!!)
+
+- use MIDAS Sound System v32c
+- use PDFIK datafile maker/Psychose
+
+- needs a 386 compatible machine
+
+- needs a 100% VGA compatible card for better performance (VLB better!)
+  (warning TRIDENT 9400CX, S3 and some other VESA/VLB cards are only 99% reg.
+   compatible !!!!!)
+  --> i've put a switch : -w0 by default (works on all cards even on 99% reg
+                           compatible, but my zoomers/distorts are slower :-( )
+                          -w1 for boosting your VGA !!! (use it on ISA boards)
+
+   rem: on 386 SX-20 ISA with -w1 and without muzak (or GUS), my rot-zoomers
+        and distorts are working at 70 f/s !!!!!!!! (no 4x4 pixels !!!!!)
+        (i can even adapt the algo for 286 !)
+
+- there are some magic keys :
+   +/- : enable/disable CPU time (some ugly rasters :-) )
+   Spacebar: skip to the next part !!!
+   Esc: skip the demo :-( !!!!
+   In WolfenStein part, try F10-F11 for low/high detail
+  
+- type /? at the command line to see the differents options when running 
+  the demo (there is a usefull -gxx switch to get into the part of your choice)
+
+
+4) Who has done what ?
+-----------------------
+
+The muzak     : tracked by Fred (with Protracker 2.0/Octalyser - Atari 1040 STe)
+                4 voices - 31 samples - 465Kb
+Main.C +extras: by Type One (BC++ 4.0 + TASM 3.1)
+General SetUp : by SAM (TP7)
+
+We have used BP/TP7 and GFA BASIC 4.00 for creating our tables 
+
+0.  Warning!! Only ASM ....  
+    CODE by Type One   (MASM 6.0)
+    GFX ripped from Ultimate GFA demo/OVR - Atari ST
+
+1.  Shadelines
+    CODE by Bismarck   (MASM 6.11)
+
+2.  Title "CONTRAST"
+    CODE by Type One   (MASM 6.0)
+    GFX by Zoltan      (DP IIe) 
+        and Fred       (Degas Elite - Atari ST)
+
+3.  MultiFire
+    CODE by Type One
+
+4.  Rotative Zoomer
+    CODE by Type One   (MASM 6.0)
+    GFX by Type One    (hey, dis is my head :-) ) (DALI 3.1G AtariST + DP IIe)
+
+5.  Sinus Distorter
+    CODE by Type One   (MASM 6.0)
+    GFX by Zoltan      (Photo Styler)
+
+6.  Double Plasma
+    CODE by Type One   (MASM 6.0)
+
+7.  Unlimited ripped sprites
+    CODE by Sam        (MASM 6.0) 
+    GFX by ID Software :-)
+
+8.  Elephant
+    CODE by Type One   (MASM 6.0)
+    GFX by Fred        (Degas Elite - ST)
+
+9.  Dots morph
+    CODE by GOPI       (MASM 6.1)
+
+10. Waves
+    CODE by Type One   (MASM 6.0)
+    GFX by Zoltan      (Photo Styler)
+
+11. WolfenStein
+    CODE by Morflame   (MASM 6.1)
+    GFX by Zoltan      (DP IIe)
+
+12. Snul Flash - "Ik heb een ovni gezien"
+    CODE by Type One   (MASM 6.0)
+    Scan by Aldo (TFL-TDV's friend :-) )
+
+13. Plasma
+    CODE by Type One   (MASM 6.0)
+    GFX by FractTint :-)
+
+14. Transformer
+    CODE by Type One   (MASM 6.0)
+    GFX by Zoltan      (Photo Styler)
+
+15. Eyes effect
+    CODE by KARMA      (MASM 6.?)
+    Scan in DP IIe pack
+
+16. Snake
+    CODE by Type One   (MASM 6.0)
+    GFX by Fred        (Degas Elite - ST)
+
+17. StarWars scroller
+    CODE by Bismarck   (MASM 6.1)
+    Font from ?????
+
+18. ANSI PA BBS
+    CODE by Type One   (MASM 6.0)
+    ANSI by Green Kawa (TheDraw)
+
+We couldn't put in time the following screens:
+
+- Virtual 3D World engine by Morflame :-( 
+- multi Copper bars/rasters by Type One :-(
+- Members photos zoom by Bismarck :-(
+- "Timeless" look by Type One :-( 
+ 
+Well, by seeing dis, you surely think: hey, Type One has coded 80% of the demo,
+so he's better than the other coders .... but it isn't exact becoz, Morflame
+worked as much as me for his Virtual 3D engine (editor,many routs) but it was
+not enough finished to put in the demo :-( (hey see our next prod :-) ) 
+KARMA, for example, joined the crew only 2 weeks before Wired !!!!! So we could
+put only one part from him !!!  Sam is a DOS utilities expert and he worked on
+the setup and made his part as a bonus !!!  GOPI and Bismarck has done their
+first steps in ASM, and i think they've done a big progress !!!!!
+Finally, Fred and Zoltan have done a really great job !!!! Congratulations guyz!
+
+
+5) Bugs fixed since the projection at Wired94
+----------------------------------------------
+
+The GODS were with us during the projection !!!!!!! :-)
+
+- Wolfenstein part poped the music synchro parameters in a wrong STACK !!!!!
+  (so if it poped 00 00, the part could be skipped immediately !!!!!!)
+- Wolfenstein part didn't wait the signal (music synchro) to begin.
+  I spend half a day during the party to find the bug.... We did'nt find it
+  there.... Back home, i saw that the wait-rout was in COMMENT !!!!!! :-(
+- Shadelines was destroying the StarWars scroller (so we couldn't put it for
+  the projection :-( ) ...That's why the demo was stopping abruptly after the
+  snake :-( !!!!! 
+  In fact, the Shadelines rout used a random number generator which stored
+  some numbers in the CS segment !!!!! (in OUR codes !!!!) Fortunately, it did
+  only alter the Fade routine (you saw some ugly black dots when fading... )
+  Shadelines were also storing vars in a wrong DATA segment .... wich also
+  caused some alterations in the Fade rout :-( !!!
+- Dots morphing forgot to push/pop some registers, causing some imprevisible 
+  crashes..... It forgot also to reset the Fade rout at the end of the part,
+  causing crashes on slower machines :-(
+- I think I've used a wrong version of MIDAS player (GUS and SB16 bugged)
+- I (Type One) forgot to remove old delays counters in my parts, so for example
+  the Waves screen started with all his effects ON :-( (no sync on the 1st
+  wave)
+- nothing to do with the END ANSI becoz Trident 9400 CX does not support 
+  raster bars in Text mode !!!!! (VGA registers incompatility !!!)
+  So, don't buy Trident 9400CX :-) !!!!!!
+
+  Here is Morflame explaining some additional stress :
+
+- One hour before the wired deadline, Type One's compiler didn't want to
+  compile anymore (his old' harddisk was too hot!?).
+  So, we transfered all the engine on my pc ... and we spent half an hour
+  trying to compile the demo.
+  Ten minutes before the 18h00 deadline (we didn't know that it would be
+  reported to 21h00!!!!), nothing wanted to compile !!!!!
+  Then a real MIRACLE's happened! The super michflag (one byte used only for
+  sam's code, Sam = Michel --> MichFlag, understood ?) was the solution (who
+  knows how Sam found that ?!).
+  
+  But that was not sufficient ! Type One was in a despairing coma, and all
+  the crew was in real stress (except karma and zoltan (playing with his 
+  awe-32)). I (Morflame) was trying some hasardous tricks ....
+  Inversing the order of the obj files make the whole thing work !!!
+  If sometimes, somebody will explain me why ???? I think it's related to
+  the Bismarck self-patching code (with his random table in the code segment).
+  The final compilation was nearly unique ... We projected on the demo screen
+  a self-modifying demo ... with random synchronisations .........
+
+So, i hope you didn't get a Projection version of our demo, coz it really sux ! 
+
+- Bug fixed 2 hours before official upload :-) !!!!!
+
+  Hey Morflame !!!!! Don't forget to free your logo next time !!!!!!!
+  You've stolen 64kb of Bismarck's memory !!!! 
+  (Now the demo works even with QEMM + Norton + Setup !!!! :-) )
+
+
+6) Future
+----------
+
+- I've released the source code of my VGA SetUp yet (160x100 hard) :-) 
+  so D/L it on our WHQ/Dists : PA BBS, TetSuo, Genesis(?)
+- You can already find our contributions for Wired94 GFX competitions:
+          - Tarzan / FRED       - Robot / YOUVI (3rd place!)
+- You can also find last_min.mod (tune that Fred should have presented if
+  he had not crashed his HD at the Wired :-) )
+- A spread release of the tune used in CONTRAST demo
+- CONTRAST SOURCE codes will be released in a few weeks (days?) ... we have
+  just to add some coments :-)
+- I (Type One) want to work on kukoo3 intro in February ....
+- A TFL-TDV music disk by Fred/Green Kawa/(Type One)
+- Maybe some other intros/tunes/gfx from our members during the year
+- Another contribution for Wired95 
+
+7) Past
+--------
+
+- anitouni.zip: MOD 4 channels by Type One
+- at_mix.zip  : MOD 4 channels by Type One
+- populair.zip: MOD 4 channels by Type One
+- bboys92.zip : MOD 4 channels by Type One
+- brosseur.zip: MOD 4 channels by Type One
+- autobus.zip : MOD 4 channels by Type One
+- abdelmix.zip: MOD 6 channels by Type One
+- raster9.zip : first try by Type One in Intel ASM + SOURCE
+- intro5.zip  : third try by Type One in Intel ASM + SOURCE
+- kukoo.zip   : kukoo intro by Type One for Pleasure Access BBS with SOURCE
+- kukoo2.zip  : kukoo2 intro by Type One for P.A. BBS 
+- kuk2src.zip : kukoo2 SOURCE
+- flamoot.zip : Flamoot VGA SetUp =SOURCE by Type One (used in CONTRAST/Wired94)
+
+- direxe.zip  : nice util done by Sam + SOURCE
+- time!.zip   : TSR clock + SOURCE by SAM
+- runexe.zip  : direxe + exec by SAM + SOURCE
+- tsr_xmpl.zip: TSR maker + SOURCE by SAM
+
+- glutzen.zip : MOD 4 channels by Fred  BEURK
+- karate.zip  : MOD 4 channels by Fred  BUARK
+- lastmin.zip : MOD 4 channels by Fred (Wired94)
+- tarzan.zip  : Pic by Fred  (Wired94)
+
+- robot.zip   : Pic by Youvi (Wired94)
+
+- zoltaaan.zip: MOD 4 channels by Zoltan
+
+- contrast.zip: TFL-TDV demo for Wired'94
+- contrsrc.zip: TFL-TDV contrast's source code
+
+8) Wanted
+----------
+
+We are looking for dist sites !!!!!!! contact us !!!! 
+(we have enough for Brussels)
+
+We are looking for more GFX men and Muzak makers !!!!!
+
+We don't refuse high level coders (and nice girls, by the way :-) ) !!!!
+
+PS: we all live in Brussels, mostly in Uccle.... so it would be better
+    if you also live there or if you're studiing at the ULB or VUB !!!!
+
+9) Special Greets
+------------------
+
+I greet all guyz i know or i met at the Wired:
+
+specially  Pom,Mesh,Nic,LEM / Split  +  Sinew Shy / TRB
+           Wizard and Darkness / IMPCDA
+           guyz from ANTARES
+           guyz from OUTLAWS PC DEMO SECTION
+
+All my friends and guyz from my section : 
+         
+           Nikopol and NemRod / Channel 38
+           Khi_2, Yvan des patates, William, MrGUN, FLY, GLU, Recu,
+           Greg Seront, Fred Huygens, .......
+
+
+
+
+                                               (text written by Type One)  
+
+  PS: yeah, i know my english suxx as my dutch :-)
+      STOMEKLUUT !!! (Fred said that !)
+
+
+
+
+I'm sure Morflame want to greet some other people, isn't it ????
+
+Yeah, I want to greetz Torlock (I'm sure he's asking if this demo really
+exists ?!) for his great board Hysteria (It was the coolest of Belgium,
+I think, real elite = cool guyz, not fuckin' assuming lamers)
+and specially
+
+           Whitesnake
+           Mephisto (You're welcome in our group!)
+           Shade (The perfect tourist)
+
+and these cools groups :
+           Channel 38
+           NFF
+
+all my ULB friends and the organizer of the wired party (I hope next time
+the prices shall be useful for demo-making ... One paradox for windoz and
+one personal budget software ... huh ... he ... don't kidding!)
+
+           Top Gun / Gordon Sumway / ...I'm sure I forget more
+           cool guyz .... sorry for that, you know who you are!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            The ascii table doesn't contain japenese chars. ZORGLUB.

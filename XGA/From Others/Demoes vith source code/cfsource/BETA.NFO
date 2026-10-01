@@ -1,0 +1,65 @@
+
+General Info:
+
+* WARNING: if you're not an AARDVARK member or an authorized beta-tester, please
+           delete this file immediately. We don't want it to be spread! *
+
+Name: COPPER FAKED - Beta II of 1 Nov 93
+Code: The Faker, Ozymandia, Delph
+Gfx: sand, Orthoman, TaB
+Sound: Alpha or The Faker
+Release Date: Either 31/10/93 (not very likable) or at The Party III if it's
+              enough likely to win something =)
+Length: 5 minutes.
+Size: 100 kb approx. (20k code, 5k adlib music, 75k fonts & pictures). 13 parts.
+Configuration: Needs 386, for speed AND instruction compatibility. Most parts
+               won't run on ANY 386, all parts should run on a 386DX-25 though.
+
+
+To-Do-List of Parts:
+
+Part I:    Shade-Font should be changed, Logo added instead of blue box.
+           Stars have to be much faster.
+Part II:   Same for Logo. Transition of bars to Part III.
+Part III:  There should be something bar-like in the lower half behind logo.
+           The Font for the scroller's also missing. XFONT2 will be used, but
+           there are yet only A-Z characters available.
+Part IV:   Ok.
+Part V:    Some vertical transparent sine bars later maybe.
+Part VI:   Rework the current Font to better
+           shading.
+Part VII:  Plasma should fade in and out.
+Part VIII: Color Morphing of the rendered ball. Also fade-in & out.
+Part IX:   Picture morphing of the rotating globe, [ball->globe]. Fade-in, out.
+Part X:    Ok.
+Part XI:   Ok.
+Part XII:  Ok.
+Part XIII: Bug when running on Tseng cards (!?!). Font is not fixed yet, should
+           be very detailed, white/blue/uniform with holes ...
+
+Between parts: downwards moving, while zooming-in plain text-info about
+               coming-up next part?
+
+Bugs:
+
+- Endpart scroller fucks up on Tseng cards.
+
+Graphics:
+
+- Font in first parts should be wild-looking, monochrome. 32x64 (Y-doubled)
+- Font in bounce-scroller not complete. (Orthoman) 64x64 (Y-doubled)
+- Font for multi-scroller should be changed. (The Faker) 32x64 (Y-doubled)
+- Font for round-scroller. 16x32 (Y-doubled) (sand)
+
+- Logo saying "Aardvark", 180x120 (Y-doubled) (sand)
+
+Code:
+
+- Player (Delph/Ozymandia)
+- MemoryCheck, Detect of VGA, Adlib, 386 (386 necessary???)
+
+--------------------------------------------------------------------------------
+Thank you for your time looking at this beta-version!
+
+Please give any infos regarding machine speed, bugs, suggests, pictures, logos,
+fonts, code, music to faker@140.78.40.25 per e-mail or THEFAKER in IRC.

@@ -1,0 +1,39 @@
+# makefile MAKE V2.0 or higher
+.autodepend
+
+# name of the demo (8 characters or less)
+DEMO = bytekiss
+
+# parts that make up the demo
+README = misc.!!!\$(DEMO).nfo
+FILEID = misc.!!!\file_id.diz
+RUNNER = loader\runner.exe
+PARTS1 = bounce\bounce.exe title\title.exe cancel\cancel.exe iris\iris.exe
+PARTS2 = sinus\sinus.exe stretch\stretch.exe slidetxt\slidetxt.exe
+PARTS3 = tunnel\tunnel.exe credits\credits.exe
+FILES = misc.!!!\musgus.inf loader\loader.exe misc.!!!\never.mod
+
+##############################################################################
+
+$(DEMO).zip:    $(DEMO).exe $(README) $(FILEID) makefile
+                @if exist $(DEMO).zip del $(DEMO).zip
+                pkzip /ex $(DEMO).zip $(DEMO).exe $(README) $(FILEID)
+                banner $(DEMO).zip $(FILEID)
+
+##############################################################################
+
+$(DEMO).exe:    $(RUNNER) $(DEMO).jlb
+                @if exist $(DEMO).exe del $(DEMO).exe
+                copy /b $(RUNNER)+$(DEMO).jlb $(DEMO).exe
+                @if exist $(DEMO).jlb del $(DEMO).jlb
+
+##############################################################################
+
+$(DEMO).jlb:    $(FILES) $(PARTS1) $(PARTS2) $(PARTS3)
+                @if exist $(DEMO).jlb del $(DEMO).jlb
+                jlib /a $(DEMO) $(FILES)
+                jlib /a $(DEMO) $(PARTS1)
+                jlib /a $(DEMO) $(PARTS2)
+                jlib /a $(DEMO) $(PARTS3)
+
+##############################################################################

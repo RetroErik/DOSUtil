@@ -1,0 +1,36 @@
+From rc1.vub.ac.be!idefix.CS.kuleuven.ac.be!ub4b!EU.net!sun4nl!cs.vu.nl!germans Mon Oct  3 13:35:39 1994
+Newsgroups: comp.sys.ibm.pc.demos
+Path: rc1.vub.ac.be!idefix.CS.kuleuven.ac.be!ub4b!EU.net!sun4nl!cs.vu.nl!germans
+From: germans@cs.vu.nl (Germans DM)
+Subject: Re: ARM writes about his WAVES
+Message-ID: <Cx37DH.9Aq@cs.vu.nl>
+Sender: news@cs.vu.nl
+Organization: Fac. Wiskunde & Informatica, VU, Amsterdam
+References: <Cww38J.825@dit.upm.es>
+Date: Mon, 3 Oct 1994 07:56:04 GMT
+Lines: 23
+
+: ; When a²‹t²/h² = ½ last term vanishes, giving:
+: ;                   õ   1   À
+: ;        u(t+1) = ½ þ 1 0 1 þu - u(t-1)
+: ;                   Á   1   ã
+: ;
+: ; This needs only 4 ADD/SUB and one SAR operation per mesh point!
+
+Tough shit!
+
+I never thought of that. Hmm. So you don't keep a speed array at all! That should
+speed up my routine considerably. I did my stuff in machine language this
+weekend and was already stunned by the result... But, it was over 40 instructions
+per mesh point
+
+Thanx for posting this.
+--
+          _  |_  __ |_   _  _   _  |_
+         (_| |_) _) |_, |  (_| (_, |_,  _   _   _   _   _   _  |_  __
+                                       (_, (_) | | (_, (-, |_) |_, _)
+                                                           |
+                      A DVision Software Group division
+====== Simm (germans@cs.vu.nl) - Coder / Musician / Graphician / etc. ======
+          "Whatever you do, continue to F5" - Space Manbow / Konami
+

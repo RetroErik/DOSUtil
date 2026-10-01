@@ -1,0 +1,47 @@
+public  _slidebytes
+
+;같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같�
+; Slide a block of bytes closer to another block in value
+; In:
+;   BL - max value to slide by (usually 1)
+;   ECX - number of bytes to slide
+;   ESI - block to slide towards
+;   EDI - block to slide
+; Out:
+;   CF=1 - no changes made
+;   CF=0 - at least one change made
+;같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같�
+_slidebytes:
+        pushad
+        xor bh,bh
+slidebytesml:
+        mov al,[edi]
+        mov ah,[esi]
+        cmp al,ah
+        je short slidebytesmlc
+        mov bh,1
+        jb short slidebytesmlf0
+        sub ah,al
+        neg ah
+        cmp ah,bl
+        jbe short slidebytesmlf2
+        mov ah,bl
+slidebytesmlf2:
+        neg ah
+        jmp short slidebytesmlf1
+slidebytesmlf0:
+        sub ah,al
+        cmp ah,bl
+        jbe short slidebytesmlf1
+        mov ah,bl
+slidebytesmlf1:
+        add al,ah
+        mov [edi],al
+slidebytesmlc:
+        inc edi
+        inc esi
+        loop slidebytesml
+        sub bh,1
+        popad
+        ret
+

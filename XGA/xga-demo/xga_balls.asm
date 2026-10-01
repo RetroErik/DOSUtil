@@ -1146,6 +1146,7 @@ stress_x0 dw 0
 stress_y0 dw 0
 stress_count dw 16
 visible_balls dw 7
+hud_count_label db 16
 dense_count dw 128
 dense_lanes dw 4
 dense_center dw 60

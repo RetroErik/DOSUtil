@@ -1,0 +1,49 @@
+From rc1.vub.ac.be!idefix.CS.kuleuven.ac.be!ub4b!EU.net!Germany.EU.net!news.dfn.de!scsing.switch.ch!sun.rediris.es!goofy.fi.upm.es!zipi.fi.upm.es!A880104 Mon Oct  3 13:23:40 1994
+Path: rc1.vub.ac.be!idefix.CS.kuleuven.ac.be!ub4b!EU.net!Germany.EU.net!news.dfn.de!scsing.switch.ch!sun.rediris.es!goofy.fi.upm.es!zipi.fi.upm.es!A880104
+Newsgroups: comp.sys.ibm.pc.demos
+Subject: Re: Random # gen
+Message-ID: <1994Sep22.184051.2515@goofy.fi.upm.es>
+From: a880104@zipi.fi.upm.es ((Jare/Iguana))
+Date: 22 Sep 94 18:40:51 +0200
+Reply-To: a880104@zipi.fi.upm.es
+References: <350u46$bio@news.u.washington.edu>
+Distribution: world
+Organization: Facultad de Informatica - UPM, Madrid, Spain
+Nntp-Posting-Host: zipi.fi.upm.es
+Lines: 34
+
+In article <350u46$bio@news.u.washington.edu>, plexus@u.washington.edu (Delmar Larsen) writes:
+
+>	Would anyone here be interested in sharing their random
+>number generator.
+
+Ours can be found in most of our source releases... the last one is incosrc.zip
+
+>Random	Macro
+>	mov	ax,seed
+>	add	ax,9248h	;; 1001001001001000b (visual rep)
+>	ror	ax,1
+>	ror	ax,1
+>	ror	ax,1
+>	mov	seed,ax
+>ENDM
+>
+>Here's the spread:
+
+>This was generated using a little c program with inline asm. The 
+>number of iterations was 1000. 
+
+I think that other info would be needed in order to qualify the algorithm...
+some random number generators can show little patterns (or BIG ones, but :))
+in the data generated. Try generating starfields with them, for example, as
+I don't remember the academical tests right now.
+
+
+Seeyanara
+                                   Jare/Iguana/VangeliSTeam
+
+===================================================================
+VangeliSTeam Internet address: jarevalo@yeti.dit.upm.es (JCAB)
+Iguana       Internet address: a880104@zipi.fi.upm.es   (Jare)
+-------------------------------------------------------------------
+

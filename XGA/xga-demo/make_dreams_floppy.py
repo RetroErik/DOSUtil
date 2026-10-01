@@ -10,7 +10,7 @@ from pathlib import Path
 import struct
 
 parser = ArgumentParser()
-parser.add_argument("--program", choices=("DREAMS", "DBLIT", "DCPU", "XBALLS", "XGADEMO"),
+parser.add_argument("--program", choices=("DREAMS", "DBLIT", "DCPU", "XBALLS", "XVECTOR", "XDEMO", "XDEMO2", "XGADEMO"),
                     default="DREAMS")
 parser.add_argument("--output", help="output filename (default: build timestamp)")
 parser.add_argument("--source", type=Path,
@@ -19,7 +19,10 @@ args = parser.parse_args()
 build_time = datetime.now().astimezone()
 if args.output is None:
     prefix = ("XGADEMO" if args.program == "XGADEMO"
+              else "xdemo2_v2" if args.program == "XDEMO2"
+              else "xdemo_v2" if args.program == "XDEMO"
               else "xga_balls_v2" if args.program == "XBALLS"
+              else "xga_vector_v2" if args.program == "XVECTOR"
               else "dreams_xga_v2")
     args.output = f"{prefix}_{build_time:%Y%m%d_%H%M%S}.img"
 fat_date = ((build_time.year - 1980) << 9) | (build_time.month << 5) | build_time.day
@@ -132,8 +135,13 @@ program_files = [
     (b"DCPU    COM", "DCPU.COM"),
     (b"DREAMS  DAT", "DREAMS.DAT"),
 ]
-if args.program == "XBALLS":
-    program_files.append((b"XBALLS  COM", "XBALLS.COM"))
+program_files.extend([
+    (b"XBALLS  COM", "XBALLS.COM"),
+    (b"XVECTOR COM", "XVECTOR.COM"),
+    (b"XDEMO   COM", "XDEMO.COM"),
+])
+if args.program == "XDEMO2":
+    program_files.append((b"XDEMO2  COM", "XDEMO2.COM"))
 if args.program == "XGADEMO":
     program_files.extend([
         (b"XGADEMO COM", "XGADEMO.COM"),

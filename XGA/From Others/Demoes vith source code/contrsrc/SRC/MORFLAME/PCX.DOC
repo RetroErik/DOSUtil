@@ -1,0 +1,10 @@
+Pcx utils is good enough for sprite grabbing from a 320x200x256 pcx file.
+Thiz generates a binary file if you choose with the mouse (followed by 'b').
+It generates also a palette include file. There are other hidden options...
+I used this old stuff (I programmed this one year ago, with f* pascal)
+to generate my textures (morfloor.bin, morceil.bin).
+
+C'ya,
+                                                       Morflame [TfL/TdV]
+
+

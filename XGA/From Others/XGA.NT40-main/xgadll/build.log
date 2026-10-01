@@ -1,0 +1,78 @@
+BUILD: Computing Include file dependencies:
+BUILD: Examining c:\ddk\src\video\displays\xgadll directory for files to compile.
+Compiling c:\ddk\src\video\displays\xgadll directory ********************
+'nmake.exe /c BUILDMSG=Stop. -i NTTEST= UMTEST= NOLINK=1 NOPASS0=1 386=1'
+	rc -l 409 -z "MS Sans Serif,Helv/MS Shell Dlg"  -r -fo obj\i386\res.tmp -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD  -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc .\res.rc
+cl -nologo -Ii386\ -I. -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\bitblt.c
+bitblt.c
+cl -nologo -Ii386\ -I. -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\color.c
+color.c
+cl -nologo -Ii386\ -I. -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\debug.c
+debug.c
+cl -nologo -Ii386\ -I. -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\enable.c
+enable.c
+cl -nologo -Ii386\ -I. -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\hardware.c
+hardware.c
+cl -nologo -Ii386\ -I. -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\mm.c
+mm.c
+cl -nologo -Ii386\ -I. -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\palette.c
+palette.c
+cl -nologo -Ii386\ -I. -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\paths.c
+paths.c
+cl -nologo -Ii386\ -I. -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\pointer.c
+pointer.c
+cl -nologo -Ii386\ -I. -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\screen.c
+screen.c
+cl -nologo -Ii386\ -I. -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\textout.c
+textout.c
+cl -nologo -Ii386\ -I. -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -IC:\DDK\inc -D_X86_=1 -Di386=1  -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1  -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 -D_WIN32_WINNT=0x0400    -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1    -DNDEBUG -D_IDWBUILD    /c /Zel /Zp8 /Gy -cbstring /W3 /WX /Gz  /QIfdiv- /QIf  /Gi- /Gm- /GX- /GR- /GF   /Oxs /Oy   -FIC:\DDK\inc\warning.h  .\xgasup.c
+xgasup.c
+
+Stop. 
+Linking c:\ddk\src\video\displays\xgadll directory ********************
+'nmake.exe /c BUILDMSG=Stop. -i LINKONLY=1 NOPASS0=1 NTTEST= UMTEST= 386=1'
+	link -out:C:\DDK\lib\i386\free\xga3.dll -machine:i386 @C:\DOCUME~1\Ryan\LOCALS~1\Temp\nma03676.
+Microsoft (R) 32-Bit Incremental Linker Version 3.00.5270
+Copyright (C) Microsoft Corp 1992-1995. All rights reserved.
+
+-MERGE:_PAGE=PAGE 
+-MERGE:_TEXT=.text 
+-SECTION:INIT,d 
+-OPT:REF 
+-INCREMENTAL:NO 
+-FORCE:MULTIPLE 
+-RELEASE 
+-FULLBUILD 
+-IGNORE:4001,4037,4039,4065,4070,4078,4087,4089,4096 
+-NODEFAULTLIB 
+-debug:notmapped,MINIMAL 
+-debugtype:coff 
+-version:4.00 
+-osversion:4.00 
+-PDB:NONE 
+-MERGE:.rdata=.text 
+-dll 
+-optidata 
+-driver 
+-align:0x20 
+-subsystem:native,4.00 
+-base:0x10000 
+-entry:DrvEnableDriver@12 
+-out:C:\DDK\lib\i386\free\xga3.dll 
+obj\i386\res.res 
+obj\i386\bitblt.obj 
+obj\i386\color.obj 
+obj\i386\debug.obj 
+obj\i386\enable.obj 
+obj\i386\hardware.obj 
+obj\i386\mm.obj 
+obj\i386\palette.obj 
+obj\i386\paths.obj 
+obj\i386\pointer.obj 
+obj\i386\screen.obj 
+obj\i386\textout.obj 
+obj\i386\xgasup.obj 
+C:\DDK\lib\i386\free\int64.lib 
+C:\DDK\lib\i386\free\win32k.lib 
+
+Stop. 

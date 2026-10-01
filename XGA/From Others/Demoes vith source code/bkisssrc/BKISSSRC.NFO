@@ -1,0 +1,105 @@
+ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»
+º                                                                            º
+º        ÛÛÛÛÛÛÜ ÛÛ   ÛÛ ÛÛÛÛÛÛÛ ÜÛÛÛÛÛÛ ÜÛÛÛÛÛÜ             ÛÛ              º
+º        ÛÛÜÜÜÛß ÛÛÜ ÜÛÛ   ŞÛİ   ÛÛÜÜÜÜ  ÛÛÜÜÜÜ            ÜÜÛÛÜÜ            º
+º        ÛÛßßßÛÛ  ßÛÛÛß    ŞÛİ   ÛÛßßßß   ßßßßÛÛ          ÛÛßÛÛßß            º
+º        ÛÛÛÛÛÛß   ŞÛİ     ŞÛİ   ßÛÛÛÛÛÛ ßÛÛÛÛÛß          ßÛÛÛß              º
+º                                                                            º
+º                     ÛÛ  ÜÛÛ ŞÛÛİ ÜÛÛÛÛÛÜ ÜÛÛÛÛÛÜ ÜÛÛÛÛÛÛ ÜÛÛÛÛÛÜ           º
+º                     ÛÛÜÛÛß   ÛÛ  ÛÛÜÜÜÜ  ÛÛÜÜÜÜ  ÛÛÜÜÜÜ  ÛÛÜÜÜÜ            º
+º                     ÛÛßÛÛÜ   ÛÛ   ßßßßÛÛ  ßßßßÛÛ ÛÛßßßß   ßßßßÛÛ           º
+º                     ÛÛ  ßÛÛ ŞÛÛİ ßÛÛÛÛÛß ßÛÛÛÛÛß ßÛÛÛÛÛÛ ßÛÛÛÛÛß           º
+º                                                                            º
+º                               the source!                                  º
+º                                                                            º
+ºÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄº
+º                                                                            º
+º                  _______  /                                                º
+º                     /    /      ÚÄÄÚ¿  ³ÄÂÄÚÄÄÚÄ¿ÚÄ¿ÚÄ¿oÚÄÄÚÄÄÚÄÄ          º
+º                    /    /       ÃÄ ³ÀÄ¿³ ³ ÃÄ ÃÂÙÃÄÙÃÂÙ³ÀÄ¿ÃÄ ÀÄ¿          º
+º              /____/    /_____   ÀÄÄ³  ÀÙ ³ ÀÄÄ³ \³  ³ \³ÄÄÙÀÄÄÄÄÙ          º
+º                                                                            º
+º                                                                            º
+ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼
+
+    Okay.  Here is the source that I promised.  During the week that had
+passed since the original release of the demo, I have made a few minor
+changes:
+
+    First of all, I fixed a somewhat minor bug in JLIBHOST (opens up a
+JLIB and then executes a program that can be contained in the JLIB while
+running under a handler that allows transparent access of all files in the
+JLIB).  The bug modified the flags accidently after returning from the
+execute function.  This meant that if there was an error trying to spawn to
+the program, there would be no signal that an error had happened at all.
+For some people, this meant that if there was insufficient memory (or some
+other problem) trying to start the demo, they would be returned to DOS
+with no error message at all!
+
+    Second, I fixed a couple of tiny typos in the readme file that goes
+with the demo.
+
+    Third, I modified the credits section to list one of the people credited
+as "Gavin Scarman" instead of simply "Gavin" (Sorry!)  I have also heard
+of a case where this part of the demo does not do page flipping correcly
+(page 0 is shown all the time?) and so that part seems very jerky.  I do
+not know what is causing it at this moment because it uses the same method
+of doing page flipping in other parts and there are no problems with those
+parts on that system.
+
+    Note:  I have had reports from two people that they could not get the
+demo to start when EMM386 was loaded.  (the execute inside JLIBHOST would
+fail and they would be returned to DOS without an error message because of
+the first bug I mentioned)  I don't think the conflict with EMM386 has been
+solved yet, but at least an error message will be displayed now.
+
+    Also, in the sinus bobs parts--I had to borrow the major calculation
+parts from the Fake Demo because I somehow screwed up my version of it while
+I was trying to 'optimize' it at the last moment.  I didn't keep a backup
+of that part before I started modifying it either.  Oh well!
+
+    If you want to try compiling the demo, make sure that the programs in
+the 'MISC.!!!' directory are in your path.  You'll also need PKZIP, PKLITE,
+TASM, and TLINK.  After you have that all ready, you can just change into
+each directory and type 'MAKE' to compile that part.  Then when all the
+sections are done, type 'MAKE' from the main directory and the demo will be
+all bound together and the zip file will be created.
+
+    Don't forget that each section will remain in graphics mode after it is
+finished, so if you're running each part separately from the DOS prompt and
+you're left with a blank screen, don't panic, just reset your monitor back
+to text mode.  This can be accomplished by typing "MODE CO80" or by changing
+the texmode variable located at the beginning of each module to a non-zero
+value and then recompiling.
+
+    Remember, you can use the JLIB file system in your own productions if
+you like.  I think it's fairly bug-free right now, but if you do happen to
+find anything, please tell me.  If you have any problems at all, please
+feel free to write me.
+
+I can reached via Snail-mail at:
+
+        Jeff Lawson
+        1893 Kaweah Drive
+        Pasadena, CA 91105-2174
+        USA
+
+or through E-mail at:
+
+        haroldf@rcf.usc.edu
+
+also via phone at:
+
+        (213) 258-5604
+
+or (if previous line is busy):
+
+        (213) 258-4264
+
+
+Although I'm not asking any money for it, I'm aware that there are people who
+like to send money anyways.  If you happen to be one of these types of people,
+feel free to contact me!  :)
+
+
+Thanks for downloading this!

@@ -3,7 +3,8 @@
 A bootable DOS graphics demo for an IBM PS/2 Model 55 SX with MCA XGA-1. The
 panorama programs display `assets/Dreams.bmp` at 640 × 480 in 256 colors and
 compare three ways to move a viewport. `XBALLS.COM` adds seven animation and
-BitBLT stress effects.
+BitBLT stress effects. `XVECTOR.COM` adds XGA line drawing, Area Fill tests,
+and masked mesh filling.
 
 **By Dag Erik Hagesæter / Retro Erik using Codex in VS Code** ·
 [Retro Erik on YouTube](https://www.youtube.com/@RetroErik)
@@ -27,6 +28,7 @@ Norwegian flag, and copy-count stress tests.
 | `DBLIT.COM` | V1, V2 | XGA BitBLT copies 640 × 480 pixels within VRAM | Compares hardware copying speed |
 | `DCPU.COM` | V1, V2 | CPU moves banked VRAM through a RAM row buffer | Comparison without BitBLT |
 | `XBALLS.COM` | V2 | XGA fills and masked copies of 7–2048 objects | Animation effects and stress testing |
+| `XVECTOR.COM` | V2 | CPU projection plus XGA line drawing, Area Fill, and masked BitBlt | Rotating cube, octahedron, torus, Boing Ball, crystal, and polygon stress |
 | `XGADEMO.COM` | V2 | XGA solid fills and masked BitBlt | CGADEMO5 logo, raster waves, scroller, and PC-speaker score |
 
 **Version 1** is preserved in [`versions/v1/`](versions/v1/), including
@@ -47,6 +49,8 @@ to boot DOS and run `DBLIT` in 86Box.
 - `DBLIT` can wait for vertical sync.
 - `XBALLS` provides seven effects, speed and density controls, a gradient, and
   FPS, CPU time, and wait time in an XGA hardware sprite.
+- `XVECTOR` rotates a wireframe cube, filled octahedron, filled torus, and
+  faceted crystal, renders an XGA Boing Ball, and stresses Area Fill with moving triangles.
 
 ## Quick Start
 
@@ -59,6 +63,23 @@ and an enabled 1 MiB or 4 MiB memory aperture in POS.
 Mount a bootable image as drive A:. The latest `XBALLS` image is
 [`bin/v2/xga_balls_v2_20260928_214224.img`](bin/v2/xga_balls_v2_20260928_214224.img).
 It starts `XBALLS` from `AUTOEXEC.BAT`. Press `Esc` to return to DOS.
+
+The current vector image is
+[`bin/v2/xga_vector_v2_20261001_110105.img`](bin/v2/xga_vector_v2_20261001_110105.img).
+It starts `XVECTOR` from `AUTOEXEC.BAT` and also contains `XBALLS.COM`.
+Press `Esc` to return to DOS.
+
+The `XDEMO2` boot image is
+[`bin/v2/xdemo2_v2_20261001_135212.img`](bin/v2/xdemo2_v2_20261001_135212.img).
+Mount it as drive A: in 86Box; `AUTOEXEC.BAT` starts `XDEMO2` automatically.
+It uses the XGA coprocessor for the waving three-color `XGA` BOB title, an
+outward-accelerating star field, the tumbling filled octahedron, and the
+bottom `Retro Erik - 2026` scroller. `1` toggles stars, `2` the title,
+`3` the scroller, `V` vertical sync, and `Esc` returns to DOS. The octahedron
+uses XGA masked copies from a 13 KB DOS-memory mask instead of Area Fill.
+The bottom scroller uses one clipped masked copy per frame.
+Its original thin strokes remain intact; XDEMO2 scales palette entries to
+the XGA's 8-bit range for brighter title, solid, stars, and text.
 
 The CGA port is [`bin/v2/XGADEMO_20261001_133618.img`](bin/v2/XGADEMO_20261001_133618.img).
 Mount it as drive A:; DOS starts `XGADEMO` automatically. It needs an XGA
@@ -86,6 +107,8 @@ A:\>DREAMS
 A:\>DBLIT
 A:\>DCPU
 A:\>XBALLS
+A:\>XVECTOR
+A:\>XDEMO2
 A:\>XGADEMO
 ```
 
@@ -134,6 +157,30 @@ python make_balls_assets.py
 python make_morph_assets.py
 nasm -f bin xga_balls.asm -o bin/v2/XBALLS.COM -l bin/v2/XBALLS.lst
 python make_dreams_floppy.py --program XBALLS
+python make_vector_torus.py
+python make_vector_boing.py
+python make_vector_crystal.py
+python make_vector_area_safety.py
+nasm -f bin xga_vector.asm -o bin/v2/XVECTOR.COM -l bin/v2/XVECTOR.lst
+python make_dreams_floppy.py --program XVECTOR
+```
+
+Build the combined `XDEMO` scene and a DOS 6.22 floppy that runs it on boot:
+
+```text
+python make_xdemo_art.py
+nasm -f bin xdemo.asm -o bin/v2/XDEMO.COM
+python make_dreams_floppy.py --program XDEMO
+```
+
+`XDEMO` shows three separately colored dot-BOB letters spelling `XGA`,
+animated as a wave above a rotating filled octahedron and a bottom scroller.
+Build `XDEMO2` with the additional fast star field and mixed-case scroller:
+
+```text
+python make_xdemo_art.py
+nasm -f bin xdemo2.asm -o bin/v2/XDEMO2.COM -l bin/v2/XDEMO2.lst
+python make_dreams_floppy.py --program XDEMO2
 ```
 
 Build the CGA port from `CGADEMO.COM` and `CGADEMO5-NASM.asm` and create a
@@ -157,6 +204,43 @@ all copied files byte for byte. Visual output still needs testing in 86Box.
 `XBALLS.COM` can also be copied to a DOS disk and run on a PS/2 with MCA
 XGA-1 or XGA-2 and 1 MiB VRAM. The disk builder reads the FAT files back and
 checks that they match the built files byte for byte.
+
+## XGA Vector Controls
+
+| Key | Effect | Behavior |
+| --- | --- | --- |
+| `1` | Rotating wireframe cube | Eight CPU-projected vertices and twelve XGA-drawn edges; full 3D rotation |
+| `2` | Solid octahedron | Eight CPU-rotated, depth-sorted triangle faces, each with its own XGA Area Fill |
+| `3` | Moving polygon stress | 64 filled triangles initially; `+`/`-` doubles or halves the count from 8 to 512 |
+| `4` | Filled torus | 128 mesh quads, depth sorted; about 60–67 front-facing quads filled per frame |
+| `5` | XGA Boing Ball | Rotating checker sphere, bouncing motion, speaker chirp, surface shading, cached room grid, and floor shadow |
+| `6` | Faceted crystal | 100 colored facets; approximately 40–50 face the camera at a time |
+| `M` | Mesh fill method | In modes 4–6, switches between hybrid XGA Area Fill (default) and the proven RAM mask |
+| `Space` | Next demo | Cycles through modes 1–6 |
+| `V` | Vertical sync | Toggles bounded retrace waiting; enabled at startup |
+| `Esc` | Exit | Returns to DOS |
+
+The vector HUD uses the same XGA hardware sprite and FPS, CPU, and WAIT
+fields as `XBALLS`. `P` shows the selected triangle count in mode 3 and the number of quads actually
+filled in modes 4 and 5. Use `V`
+to disable vertical sync when measuring the maximum rate. These timings
+include CPU command setup and XGA work in the selected environment.
+An `A` after the polygon count means the hybrid Area Fill mode is selected;
+without it, every mesh facet uses the RAM mask.
+
+The Boing Ball adapts the separate `CGA Boing/CGABoing.asm` demo to XGA:
+there are no CGA bank offsets, packed CGA pixels, or CPU frame-buffer copies.
+The CPU transforms a checkered sphere and culls its back faces; depth sorting
+is unnecessary for this convex ball. The XGA coprocessor fills its visible
+quads with darker colors on the lower hemisphere, draws the floor shadow,
+and copies the completed hidden page to the visible page with XGA BitBlt.
+The room grid is drawn once into spare VRAM and restored with one XGA BitBlt
+per frame. The ball uses a bounce lookup table and the PC speaker. The sound
+routine preserves the position register so a left-wall impact cannot reverse
+the ball a second time. Adjacent checker colors alternate at every longitude
+segment. In hybrid mode, a precomputed table selects XGA Area Fill for quads
+with a clean area boundary and the RAM mask with XGA masked BitBlt for the
+others. Press `M` to use the confirmed RAM-mask path for every quad.
 
 ## XGA Balls Controls
 
@@ -307,6 +391,135 @@ and `WAIT` with `V` enabled and disabled.
 
 ![Preview of the five 96-ball morph figures](assets/xga_morph_shapes_preview.png)
 
+## How XVECTOR Works
+
+In mode 1, the 386SX rotates eight cube vertices around the X and Y axes
+using a 256-step integer sine table, projects them, and selects the twelve
+edge endpoints. The XGA coprocessor receives each endpoint pair and draws
+the 2D line. Both axes complete a full turn without the position reset of
+the earlier offset-square version. XGA also clears the hidden 640 × 480 page
+and presents it with a VRAM-to-VRAM BitBLT. The CPU does not rasterize edges.
+
+Mode 2 draws eight triangular faces of an octahedron.
+Each frame the CPU rotates six vertices around one axis with the integer
+sine table, projects them orthographically (no perspective divide yet), sums
+the three rotated Z values per face, and bubble-sorts the eight faces
+farthest-first. The XGA then draws each face's three edges into the 1-bit
+boundary map and fills it with its own palette color, one Area Fill per
+face. The XGA has no z-buffer, so this CPU-side painter's-algorithm sort is
+what keeps nearer faces drawn over farther ones. Earlier builds showed
+horizontal stripes. Boundary drawing now uses XOR with mask-map scissoring
+disabled, as required by the
+[XGA Software Programmer's Guide](https://www.transputer.net/ibooks/72-oek-258-00/xgaprog.pdf).
+The equatorial vertices share a scan line, and edge-on faces narrower than
+two pixels are skipped. The author confirmed that the resulting solid has
+no remaining stripes.
+
+Mode 3 starts with 64 filled triangles and can be adjusted from 8 to 512.
+Two triangles form each colored diamond. The diamonds move independently
+using offset phases from the integer sine table. For every triangle, the XGA
+coprocessor clears only its 30 × 22 area in the 1-bit boundary map, draws
+three boundary lines with XOR, then performs an Area Fill PxBlt into the
+hidden 8-bit page. Thus `P` counts separate hardware polygon fills per frame,
+while FPS includes CPU setup, the final page copy, and optional VSYNC waiting.
+
+Mode 4 is a filled 3D torus. `make_vector_torus.py` generates 128 vertices
+and 128 quads. The 386SX rotates the vertices, projects them, sorts quads by
+depth, and skips back-facing or twisted quads. The default hybrid renderer
+looks up the 512-phase area-boundary table by rotation and quad index. XGA
+clears a small area of the 1-bit VRAM map, draws four XOR area-boundary lines,
+and fills the bounded rectangle for a clean quad. Quads whose simulated
+boundary has an odd scanline or a larger shape mismatch use the established
+system-RAM mask and XGA masked BitBlt. `M` selects the RAM mask for all quads.
+The Area Fill command uses octant 0, as IBM requires increasing X for this
+operation. The four boundary lines may each run in either direction.
+`P` shows the quads actually filled in that frame. Integer geometry checks
+found 60–67 visible quads across a full rotation. Modes 4–6 render into the
+hidden 307,200-byte page and present it with one XGA BitBlt. An attempted
+display-start page flip showed only a small fragment of the torus in 86Box
+and was removed.
+
+In the author's preceding 86Box capture, mode 5 showed about 34.3 FPS,
+29.0 ms CPU, and 0.0 ms WAIT; mode 4 showed about 31.3 FPS, 31.8 ms CPU,
+and 0.0 ms WAIT. `WAIT` measures explicit coprocessor and retrace stalls;
+it does not isolate all emulated XGA work from the HUD's `CPU` figure. The cached
+Boing grid replaces 51 line commands per frame with one XGA BitBlt, and
+sphere depth sorting has been removed. CPU-generated quad masks replace
+boundary lines and Area Fill with one masked BitBlt per visible quad. The
+user confirmed that the VRAM mask removed the stripes but reduced speed
+from about 26 to 6.0 FPS. With fixed-point edge stepping, the user's 64-quad
+capture still showed 154.4 ms CPU and 9.3 ms WAIT per frame. This indicates
+that edge division was not the main cost. The RAM-mask version reached
+8.5 FPS, 106.9 ms CPU, and 9.4 ms WAIT for 56 Boing quads, without stripes.
+In 86Box, a write to the XGA command register executes the operation in the
+same emulator call. An experimental timing HUD showed a much larger mask
+cost than fill cost, but its `MASK` value exceeded the entire frame time;
+those stage milliseconds were not reliable and have been removed. The
+hybrid uses Area Fill for roughly half of the visible torus quads at many
+rotation phases. Its table is generated by `make_vector_area_safety.py` from
+the mesh and 86Box's area-boundary line rules. The user confirmed that the
+full-page present and RAM mask in the preceding build show the complete torus
+and ball. In the first hybrid test, the torus measured 12.7 FPS in Area Fill
+mode and 9.3 FPS in pure mask mode, but Area Fill produced malformed quads.
+The fourth Area Fill edge had used a stale endpoint from an earlier mask quad;
+the current build explicitly closes every quad before drawing its boundary.
+The author confirmed the corrected torus is visually complete at about
+14.1 FPS, 67.6 ms CPU, and 0.0 ms WAIT in 86Box.
+
+Mode 6 is a convex faceted crystal. `make_vector_crystal.py` generates 120
+vertices over six profile rings and 100 colored facets. The pointed end
+facets use a repeated vertex; their zero-length edge is skipped. Backface
+culling removes hidden facets, so this mesh needs no depth sort. A third
+512-phase safety table selects direct XGA Area Fill for clean outlines and
+the RAM-mask/XGA BitBlt path for the rest. Static geometry checks found
+40–50 visible facets at representative rotation phases, with 25–50 using
+Area Fill. `M` can force every facet through the mask for comparison.
+
+### Moving Polygon Stress Results
+
+The author measured these values with the XGA setup shown in the screenshots.
+`P` counts filled triangles per frame; FPS measures the entire frame.
+
+| Filled triangles | FPS | CPU (ms) | WAIT (ms) |
+| ---: | ---: | ---: | ---: |
+| 64 | 74.3 | 13.4 | 0.0 |
+| 128 | 37.4 | 26.7 | 0.0 |
+| 256 | 18.7 | 53.4 | 0.0 |
+| 512 | 9.3 | 106.9 | 0.0 |
+
+The rate is approximately 4,800 filled triangles per second across these
+settings. Doubling `P` almost doubles frame time. The reported `WAIT` stayed
+at 0.0 ms, so the measurements show little or no time waiting for XGA to
+finish commands; CPU geometry and command setup remain part of the FPS cost.
+In 86Box, synchronous command emulation can also contribute to `CPU`.
+This is end-to-end demo throughput, not a standalone coprocessor benchmark.
+
+`XVECTOR.COM` is 42,893 bytes in the current build. Its VRAM layout uses the
+visible page at offset 0, hidden page at offset 307,200, 1-bit pattern map
+at offset 614,400, and cached Boing room at offset 652,800. The torus, Boing,
+and crystal modes temporarily remap the 1-bit pattern map to a 2,048-byte buffer
+inside the COM program's conventional RAM when a mask fallback is used.
+Three 8,192-byte phase tables select the fill method. No vector artwork is
+loaded. The shared
+runtime waits for the coprocessor before map or command changes, and `Esc`
+restores the previous DOS video mode.
+
+## XVECTOR Test Status
+
+| Check | Status |
+| --- | --- |
+| NASM assembly and COM-size check | Passed; 42,893-byte `XVECTOR.COM` |
+| Disk FAT read-back | Passed for `xga_vector_v2_20261001_110105.img` |
+| Area safety table generation | Passed for 512 rotation phases and all three meshes |
+| Static mode/register review | Passed for hidden-page setup, present BitBLT, bounded waits, and boundary XOR/mask settings |
+| Rotating cube | Full-cycle geometry checked; visual test pending |
+| Solid octahedron | User confirmed the corrected build has no remaining stripes |
+| Moving polygon stress, mode 3 | User measured 64-512 filled triangles; see table above |
+| Filled torus, mode 4 | User confirmed the corrected hybrid renders the whole torus at about 14.1 FPS |
+| Boing Ball, mode 5 | User confirmed the preceding RAM-mask build shows the full ball; hybrid build awaits visual and FPS test |
+| Faceted crystal, mode 6 | Build and static rotation checks passed; 86Box visual and FPS test pending |
+| Physical IBM PS/2/XGA-1, corrected build | Not tested |
+
 ## How the Panorama Programs Work
 
 `DREAMS.DAT` contains a 768-byte RGB palette followed by 614,400 indexed
@@ -340,11 +553,16 @@ performance on a 386SX-16 must be measured before choosing an approach.
 | --- | --- |
 | `versions/v1/` | Preserved V1 source, data, disks, and `SHA256SUMS.txt` |
 | `xga_dreams.asm` | Shared V2 source for the three panorama programs |
+| `xga_vector.asm`, `xga_torus_mesh.inc`, `xga_boing_mesh.inc`, `xga_crystal_mesh.inc` | XVECTOR rotating solids, polygon stress, and generated meshes |
 | `xga_balls.asm`, `xga_balls_runtime.inc`, `xga_balls_hud.inc` | Ball animation, XGA setup, and timing sprite |
 | `make_balls_assets.py`, `make_morph_assets.py`, `xga_balls_sine.inc`, `xga_dense_palette.inc`, `xga_orbit_palette.inc`, `xga_orbit3d_frames.inc`, `xga_flag_palette.inc`, `xga_flag_colors.inc`, `xga_morph_shapes.inc`, `xga_morph_palette.inc` | Generators and lookup tables |
 | `assets/xga_ball*.bin`, `assets/xga_orbit_masks.bin`, `assets/xga_flag*.bin`, `assets/xga_morph_masks.bin`, `preview_new_balls.py` | Bitmap art, masks, and static preview generator |
 | `bin/v2/` | V2 executables, listings, data, and bootable disk images |
 | `make_dreams_floppy.py` | Bootable V2 disk builder |
+| `make_vector_torus.py` | Rebuilds the torus geometry include file |
+| `make_vector_boing.py` | Rebuilds the Boing Ball geometry include file |
+| `make_vector_crystal.py` | Rebuilds the crystal geometry include file |
+| `make_vector_area_safety.py`, `xga_area_safety.inc` | Generate and store the 512-phase Area Fill fallback table |
 
 `xga_panorama.asm` and `make_test_floppy.py` are older development tests.
 `versions/v1/` can be rebuilt, but new experiments belong in V2 files.
@@ -359,6 +577,16 @@ independent scrollers:
 [Watch XGADEMO running in 86Box](Screenshorts/XGADEMO.mp4).
 
 ![Preview of the Dreams artwork](assets/Dreams-XGA-preview.png)
+
+The following software preview shows four torus orientations. It is a
+geometry check, not an XGA capture.
+
+![Software preview of four filled torus orientations](assets/xga_torus_preview.png)
+
+The crystal preview shows four projected orientations. It checks mesh shape
+and backface culling; it is not an XGA capture.
+
+![Software preview of four faceted crystal orientations](assets/xga_crystal_preview.png)
 
 ## Testing, Credits, and License
 

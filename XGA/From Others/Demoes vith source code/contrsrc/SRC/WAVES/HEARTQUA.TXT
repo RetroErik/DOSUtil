@@ -1,0 +1,41 @@
+From rc1.vub.ac.be!idefix.CS.kuleuven.ac.be!ub4b!EU.net!howland.reston.ans.net!news.sprintlink.net!demon!espr.demon.co.uk!pc Mon Oct  3 13:33:26 1994
+Newsgroups: comp.sys.ibm.pc.demos
+From: pc@espr.demon.co.uk (Phil Carlisle)
+Path: rc1.vub.ac.be!idefix.CS.kuleuven.ac.be!ub4b!EU.net!howland.reston.ans.net!news.sprintlink.net!demon!espr.demon.co.uk!pc
+Subject: Re: Heartquake programming question?!? 
+Distribution: world
+References: <CvnAxo.DEA@cs.vu.nl>
+Organization: Independant Graphics Research
+Reply-To: pc@espr.demon.co.uk
+X-Newsreader: Simple NEWS 1.90 (ka9q DIS 1.21)
+Lines: 25
+Date: Wed, 28 Sep 1994 16:39:26 +0000
+Message-ID: <779328859snz@espr.demon.co.uk>
+Sender: usenet@demon.co.uk
+
+>What I do know is that they used the same algorithm for the water at 
+>the end AND for the 'IGUANA PRESENTS' at the beginning.
+
+is it??
+
+>Anyways, take a look at the group names not being projected in real
+>3D perspective when they pop up and down. Also take note that there is
+>some sort of distortion at the tail of the 'shark' that floats between
+>the group names. I think they used some sort of modified fire routine,
+>but that wouldn't be so fast on a 386-25.
+
+yep, looks to me like a combination of the fire (where pixels get thier value
+from adjacent pixel values, like an averaging filter), and a simple height
+map, all they are doing is peturbing the surface, and using the natural
+'radiance' of the fire effect to bring the height field to a default value.
+
+
+-- 
+
+Phil.  (aka zoombapup // CodeX)
+
+/----------------------------------------------------------------------\
+| Phil Carlisle - pc@espr.demon.co.uk  Hull,England......              |
+| aka zoombapup // codex   espr development, third eye productions...  |
+\----------------------------------------------------------------------/
+

@@ -1,0 +1,22 @@
+public  _putdosmsg
+;같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같�
+; Put '$' terminated message to DOS
+; In:
+;   EDX -> message in low mem
+;같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같같�
+_putdosmsg:
+        push ax
+        push edx
+        add edx,_code32a
+        mov al,dl
+        and ax,0fh
+        shr edx,4
+        mov v86r_ds,dx
+        mov v86r_dx,ax
+        mov v86r_ah,9
+        mov al,21h
+        int 33h
+        pop edx
+        pop ax
+        ret
+

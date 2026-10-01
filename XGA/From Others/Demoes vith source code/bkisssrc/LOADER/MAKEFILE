@@ -1,0 +1,48 @@
+# makefile MAKE V2.0 or higher
+.autodepend
+
+# to enable debugging information, set "DEBUG" to "yes"
+DEBUG = no
+
+##############################################################################
+
+all:            loader.exe runner.exe
+
+##############################################################################
+
+!if ($(DEBUG) == yes)
+TLINKDEBUG = /v
+!endif
+
+##############################################################################
+
+.asm.obj:
+    tasm /zi /m /ml $<
+
+#############################################################################
+
+loader.exe:     loader.obj farewell.obj broadway.obj goldplay.obj makefile
+                tlink /x $(TLINKDEBUG) loader+farewell+broadway+goldplay
+                !if ($(DEBUG) != yes)
+                pklite loader
+                !endif
+
+#############################################################################
+
+farewell.obj:   farewell.bin
+                2obj b farewell.bin MyCode:Farewell
+
+#############################################################################
+
+broadway.obj:   broadway.fnt
+                2obj b broadway.fnt MyCode:LoaderFont
+
+#############################################################################
+
+runner.exe:     runner.obj makefile
+                tlink /x $(TLINKDEBUG) runner
+                !if ($(DEBUG) != yes)
+                pklite runner
+                !endif
+
+#############################################################################

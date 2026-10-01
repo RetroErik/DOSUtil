@@ -1,0 +1,60 @@
+
+
+
+  PASCAL/ASM sources for Copper Faked from AARDVARK
+
+
+
+Hey look what a mess this is! =)
+
+I've decided to release this, a year after I coded it.
+After all some dudes are still interested in how to do Copper effects (well I'm
+not any longer, but who cares :) and this intro contains alot of them.
+Some are quite easy while some are combinations and quite difficult to guess
+how I did them coz I don't comment non-commercial code... If you have problems,
+check out a VGA manual what all those regs do.
+There's a vga.txt with a brief explanation available on internet - I found it
+in Robert Schmidt's tweak110.zip or whatever the current version is.
+If you dont have access to this file, look it up in the Ferraro EGA/VGA book,
+any version.
+
+DO NOT EVER BUG ME ABOUT THIS :-)
+
+Some of the procedures must really suck, they're out of the 80's - in fact I
+don't use any of the source still, nor will I in the future - and this was the
+only reason to release them.
+If you make anything nice and/or valuable with it, don't feel like you MUST
+credit me ;)
+
+Some closing words concerning Copper Faked:
+
+You'll find it hard to do design and music with copper effects, since you'll
+have to have access every rasterline, that's approx. 30.000 per second.
+No time to execute a player (except maybe GUS but I didn't have one then),
+no time to do alot of memory movements :(
+
+Thanks go to the (surprisingly many) dudes who voted for this at The Party '93
+although the (amiga? pc?) organizers broke it almost after the beginning with
+hitting ESCAPE for next part which ended it - a mistake I realize ... no one of
+my future demos will check for ANY keyboard input.
+This could of course have been avoided if the organizers had run it before AND
+noticed. Well, Lord Cyrix had nothing to say against it ("I was not there"), so
+fuck him and lame excuse for lacking responsibility.
+
+I hope The Party it will be better this year!
+Meet me, I'm the guy with the long hair at the Surprise! Productions table.
+
+
+E-mail:
+You can't - I have no account, nowhere, due to some denunciating subjects
+            at my university :(
+
+Snail-mail: Stefan Ohrhallinger
+            St. laurenz 54
+            4950 ALTHEIM
+            AUSTRIA, EUROPE
+
+...and don't believe all those rumours they set up about me :D
+
+The Faker/ S!P         ; Note that this is NOT a S!P release, nor an AARDVARK
+                         release. The group AARDVARK has ceased to exist.

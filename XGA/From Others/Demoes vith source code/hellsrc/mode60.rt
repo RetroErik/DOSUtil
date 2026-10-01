@@ -1,0 +1,102 @@
+public  _mode60
+;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+; Set 60Hz VGA refresh tweaked mode
+;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+Horizontal_Total                        = 00095
+Horizontal_Display_End                  = 00079
+Start_Horizontal_Blanking               = 00080
+End_Horizontal_Blanking                 = 00000
+Start_Horizontal_Retrace                = 00084
+End_Horizontal_Retrace                  = 00000
+
+Vertical_Total                          = 00540;00541;00447;00541
+Vertical_Display_End                    = 00399;00399;00399;00431
+Start_Vertical_Blanking                 = 00443;00400;00406;00439
+End_Vertical_Blanking                   = 00021;00001;00185;00029
+Start_Vertical_Retrace                  = 00461;00454;00412;00482
+End_Vertical_Retrace                    = 00014;00000;00014;00014
+
+Line_Compare                            = 01023
+Display_Enable_Skew                     = 00000
+Horizontal_Retrace_Delay                = 00000
+
+Byte_Panning                            = 00000
+Preset_Row_Scan                         = 00000
+Maximum_Scan_Line                       = 00001
+Start_Address                           = 00000
+Offset_Register                         = 00040
+
+Two_2_Four                              = 00000
+Bandwidth                               = 00000
+Count_By_Four                           = 00000
+Double_Word_Mode                        = 00000
+Hardware_Reset                          = 00001
+Word_Byte_Mode                          = 00001
+Address_Wrap                            = 00001
+Count_By_Two                            = 00000
+Horizontal_Retrace_Select               = 00000
+Select_Row_Scan_Counter                 = 00001
+Compatibility_Mode_Support              = 00001
+
+mode60regs:
+temp = (End_Vertical_Retrace AND 1111b)
+temp = temp + ((Bandwidth AND 1) SHL 6)
+                db      11h, temp
+                db      00h, Horizontal_Total
+                db      01h, Horizontal_Display_End
+                db      02h, Start_Horizontal_Blanking
+temp = End_Horizontal_Blanking AND 11111b
+temp = temp + ((Display_Enable_Skew AND 11b) SHL 5)
+temp = temp + 128
+                db      03h, temp
+                db      04h, Start_Horizontal_Retrace
+temp = End_Horizontal_Retrace AND 11111b
+temp = temp + ((Horizontal_Retrace_Delay AND 11b) SHL 5)
+temp = temp + ((End_Horizontal_Blanking AND 100000b) SHL 2)
+                db      05h, temp
+                db      06h, (Vertical_Total AND 255)
+temp = ((Start_Vertical_Retrace AND 512) SHR 2) + ((Start_Vertical_Retrace AND 256) SHR 6)
+temp = temp + ((Vertical_Display_End AND 512) SHR 3) + ((Vertical_Display_End AND 256) SHR 7)
+temp = temp + ((Vertical_Total AND 512) SHR 4) + ((Vertical_Total AND 256) SHR 8)
+temp = temp + ((Line_Compare AND 256) SHR 4)
+temp = temp + ((Start_Vertical_Blanking AND 256) SHR 5)
+                db      07h, temp
+temp = (Preset_Row_Scan AND 11111b)
+temp = temp + ((Byte_Panning) SHL 5)
+                db      08h, temp
+temp = (Maximum_Scan_Line AND 11111b)
+temp = temp + ((Start_Vertical_Blanking AND 512) SHR 4)
+temp = temp + ((Line_Compare AND 512) SHR 3)
+temp = temp + ((Two_2_Four AND 1) SHL 7)
+                db      09h, temp
+                db      0Ch, (Start_Address SHR 8)
+                db      0Dh, (Start_Address AND 255)
+                db      10h, (Start_Vertical_Retrace AND 255)
+                db      12h, (Vertical_Display_End AND 255)
+                db      13h, Offset_Register
+temp = ((Count_By_Four AND 1) SHL 5)
+temp = temp + ((Double_Word_Mode AND 1) SHL 6)
+                db      14h, temp
+                db      15h, (Start_Vertical_Blanking AND 255)
+                db      16h, (End_Vertical_Blanking AND 255)
+temp = ((Hardware_Reset AND 1) SHL 7)
+temp = temp + ((Word_Byte_Mode AND 1) SHL 6)
+temp = temp + ((Address_Wrap AND 1) SHL 5)
+temp = temp + ((Count_By_Two AND 1) SHL 3)
+temp = temp + ((Horizontal_Retrace_Select AND 1) SHL 2)
+temp = temp + ((Select_Row_Scan_Counter AND 1) SHL 1)
+temp = temp + (Compatibility_Mode_Support AND 1)
+                db      17h, temp
+                db      18h, (Line_Compare AND 255)
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+_mode60:
+        call _modeX
+        push ecx esi dx
+        mov dx,3d4h
+        mov esi,offset mode60regs
+        mov ecx,21
+        rep outsw
+        pop dx esi ecx
+        ret
+
