@@ -27,6 +27,7 @@ Norwegian flag, and copy-count stress tests.
 | `DBLIT.COM` | V1, V2 | XGA BitBLT copies 640 × 480 pixels within VRAM | Compares hardware copying speed |
 | `DCPU.COM` | V1, V2 | CPU moves banked VRAM through a RAM row buffer | Comparison without BitBLT |
 | `XBALLS.COM` | V2 | XGA fills and masked copies of 7–2048 objects | Animation effects and stress testing |
+| `XGADEMO.COM` | V2 | XGA solid fills and masked BitBlt | CGADEMO5 logo, raster waves, scroller, and PC-speaker score |
 
 **Version 1** is preserved in [`versions/v1/`](versions/v1/), including
 source, artwork, COM files, `DREAMS.DAT`, build scripts, and the disk images
@@ -59,6 +60,25 @@ Mount a bootable image as drive A:. The latest `XBALLS` image is
 [`bin/v2/xga_balls_v2_20260928_214224.img`](bin/v2/xga_balls_v2_20260928_214224.img).
 It starts `XBALLS` from `AUTOEXEC.BAT`. Press `Esc` to return to DOS.
 
+The CGA port is [`bin/v2/XGADEMO_20261001_133618.img`](bin/v2/XGADEMO_20261001_133618.img).
+Mount it as drive A:; DOS starts `XGADEMO` automatically. It needs an XGA
+card with 1 MiB VRAM, uses `XGAMASK.DAT` on the disk, and exits with `Esc`.
+It uses XGA 640 x 480 in 256 colors, not a VGA graphics mode. The upper
+scroller keeps the original CGA ROM font and text; a cyan scroller below it
+recounts XGA's VGA-compatible coprocessor and hardware-filled raster bars,
+then credits the port to GPT6-Sol. Both scrollers advance every frame for
+consistent motion. Behind the raster bars and logo, 64 perspective stars fly
+outward from the screen center as XGA-filled points and short streaks. The
+completed frame is copied from a hidden VRAM page to the display at vertical
+sync, so the stars do not draw directly into the visible scanout page.
+The static footer is redrawn with
+`Ported to XGA by Retro Erik in 2026!` underneath.
+The image has passed build and disk read-back checks; Retro Erik confirmed
+the starfield in 86Box. Performance on physical XGA hardware is untested.
+
+For comparison, see the original [CGA Demo in 16 Colours running on an EuroPC -
+CGA capture, using CGA2SCART Pro with a VGA 15Khz mod](https://www.youtube.com/watch?v=j8ChJX5PfVA).
+
 To run the panorama programs from a DOS prompt:
 
 ```text
@@ -66,6 +86,7 @@ A:\>DREAMS
 A:\>DBLIT
 A:\>DCPU
 A:\>XBALLS
+A:\>XGADEMO
 ```
 
 In `DBLIT`, `S` toggles vertical sync waiting. Waiting starts off; an `S`
@@ -114,6 +135,24 @@ python make_morph_assets.py
 nasm -f bin xga_balls.asm -o bin/v2/XBALLS.COM -l bin/v2/XBALLS.lst
 python make_dreams_floppy.py --program XBALLS
 ```
+
+Build the CGA port from `CGADEMO.COM` and `CGADEMO5-NASM.asm` and create a
+new timestamped `XGADEMO_YYYYMMDD_HHMMSS.img` boot disk:
+
+```text
+python make_cgademo_assets.py
+nasm -f bin xgademo.asm -o bin/v2/XGADEMO.COM
+python make_dreams_floppy.py --program XGADEMO
+```
+
+The generator extracts the TCB logo pixels from `CGADEMO.COM` and the scroller
+text, music, and 252-frame raster sequence from `CGADEMO5-NASM.asm`. It also
+creates the 1-bit XGA mask included on the disk. Both CGA files and NASM on
+`PATH` are required to rebuild the assets.
+
+The CPU generates positions and the title's one-bit masks; the XGA draws the
+scene. The disk builder leaves the archived boot floppy untouched and checks
+all copied files byte for byte. Visual output still needs testing in 86Box.
 
 `XBALLS.COM` can also be copied to a DOS disk and run on a PS/2 with MCA
 XGA-1 or XGA-2 and 1 MiB VRAM. The disk builder reads the FAT files back and
@@ -311,6 +350,13 @@ performance on a 386SX-16 must be measured before choosing an approach.
 `versions/v1/` can be rebuilt, but new experiments belong in V2 files.
 
 ## Screenshots
+
+XGADEMO running in 86Box with the TCB logo, raster bars, starfield, and two
+independent scrollers:
+
+![XGADEMO running in 86Box](Screenshorts/XGADEMO.png)
+
+[Watch XGADEMO running in 86Box](Screenshorts/XGADEMO.mp4).
 
 ![Preview of the Dreams artwork](assets/Dreams-XGA-preview.png)
 

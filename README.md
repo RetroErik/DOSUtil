@@ -18,7 +18,7 @@ So far, this repository contains DOS directory tools, a modern Windows descripti
 | [`Description Edit for Windows/`](Description%20Edit%20for%20Windows/) | A WinUI 3 editor and file browser for `DESCRIPT.ION` files on Windows 11 x64 |
 | [`QUITKEY/`](QUITKEY/) | QuitKey, a TSR that force-quits DOS games with no exit option via a hotkey |
 | [`PicoMEM/`](PicoMEM/) | `AUTOEXEC.BAT`, `CONFIG.SYS`, and documentation for selectable PicoMEM DOS startup profiles |
-| [`XGA/xga-demo/`](XGA/xga-demo/) | Bootable DOS graphics demos for IBM PS/2 systems with MCA XGA, including panorama, BitBLT, CPU-copy, and animated-ball tests |
+| [`XGA/xga-demo/`](XGA/xga-demo/) | Bootable MCA XGA graphics demos, including XGADEMO's CGA port, perspective starfield, raster bars, panorama, and animated-ball tests |
 
 See the [DES README](DES/README.md) for build instructions, usage, features, and testing information.
 
@@ -35,6 +35,11 @@ IBM PS/2 systems with MCA XGA. It compares hardware panning, BitBLT, and CPU
 copying, and includes animated-ball effects and a graphics load test. See the
 [XGA demo README](XGA/xga-demo/README.md) for build instructions, controls, and
 86Box setup notes.
+
+**XGADEMO** ports the CGA TCB demo to XGA with moving raster bars, a perspective
+starfield, two scrollers, and PC-speaker music. See the [86Box screenshot](XGA/xga-demo/Screenshorts/XGADEMO.png)
+and [video](XGA/xga-demo/Screenshorts/XGADEMO.mp4), plus the
+[XGADEMO build and disk instructions](XGA/xga-demo/README.md).
 
 ## DES
 
