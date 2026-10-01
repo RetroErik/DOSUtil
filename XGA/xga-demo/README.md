@@ -368,6 +368,8 @@ at 256/1024/2048 large-ball copies.
 
 ## Builds and Test Status
 
+These historical test images remain in Git history, not in `bin/v2/`.
+
 | Disk image | Result |
 | --- | --- |
 | `xga_balls_v2_20260928_145845.img` | Corrected the early `T` mask bug; no extended stress test |
@@ -383,7 +385,7 @@ at 256/1024/2048 large-ball copies.
 The user also confirmed that `Space` changed effects in an earlier build and
 that `G` and `T` worked after the mask correction. The transition from mode
 4 to 5 with `Space` and operation on physical XGA remain unverified in the
-latest image. Static previews below show the intended
+last tested XBALLS build. Static previews below show the intended
 source art, not photos of physical hardware.
 
 For the new image, press `7` and watch the complete Tree → Giraffe → Bird →
@@ -402,7 +404,7 @@ and `WAIT` with `V` enabled and disabled.
 ## How XVECTOR Works
 
 XVECTOR scales its 0-63 palette channels to the XGA's 8-bit range for brighter
-vector and solid colors. The brightness change awaits a visual check in 86Box.
+vector and solid colors. Retro Erik confirmed the corrected brightness.
 
 In mode 1, the 386SX rotates eight cube vertices around the X and Y axes
 using a 256-step integer sine table, projects them, and selects the twelve
@@ -520,7 +522,8 @@ restores the previous DOS video mode.
 | Check | Status |
 | --- | --- |
 | NASM assembly and COM-size check | Passed; 42,897-byte `XVECTOR.COM` |
-| Disk FAT read-back | Passed for `xga_vector_v2_20261001_110105.img` |
+| Disk FAT read-back | Passed for the current `XGA-Demos_2026-10-01.img` |
+| Palette brightness | Retro Erik confirmed the corrected colors |
 | Area safety table generation | Passed for 512 rotation phases and all three meshes |
 | Static mode/register review | Passed for hidden-page setup, present BitBLT, bounded waits, and boundary XOR/mask settings |
 | Rotating cube | Full-cycle geometry checked; visual test pending |
@@ -568,7 +571,7 @@ performance on a 386SX-16 must be measured before choosing an approach.
 | `xga_balls.asm`, `xga_balls_runtime.inc`, `xga_balls_hud.inc` | Ball animation, XGA setup, and timing sprite |
 | `make_balls_assets.py`, `make_morph_assets.py`, `xga_balls_sine.inc`, `xga_dense_palette.inc`, `xga_orbit_palette.inc`, `xga_orbit3d_frames.inc`, `xga_flag_palette.inc`, `xga_flag_colors.inc`, `xga_morph_shapes.inc`, `xga_morph_palette.inc` | Generators and lookup tables |
 | `assets/xga_ball*.bin`, `assets/xga_orbit_masks.bin`, `assets/xga_flag*.bin`, `assets/xga_morph_masks.bin`, `preview_new_balls.py` | Bitmap art, masks, and static preview generator |
-| `bin/v2/` | V2 executables, listings, data, and bootable disk images |
+| `bin/v2/` | V2 executables, listings, data, and the current bootable disk image |
 | `make_dreams_floppy.py` | Bootable V2 disk builder |
 | `make_vector_torus.py` | Rebuilds the torus geometry include file |
 | `make_vector_boing.py` | Rebuilds the Boing Ball geometry include file |
@@ -612,7 +615,7 @@ At the start of V2 development, the three panorama COM files and
 `DREAMS.DAT` matched V1 byte for byte. The disk builder verifies new FAT
 contents by reading them back. The user confirmed that the V2 panorama disk
 boots `DBLIT` in 86Box. `DREAMS` and `DCPU` have not been retested from that
-V2 disk. The latest `XBALLS` image passed build and disk read-back checks,
+V2 disk. An earlier `XBALLS` image passed build and disk read-back checks,
 and the user reports that it now works in 86Box. The exact regression key
 sequence was not separately recorded.
 
