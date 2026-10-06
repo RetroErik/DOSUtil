@@ -1,5 +1,6 @@
-DES 1.1 - Description Enhanced System
+DES 1.3 - Description Enhanced System
 Copyright (C) 2026 Dag Erik Hages‘ter / Retro Erik
+By Dag Erik Hages‘ter / Retro Erik using Codex in VS Code
 
 Lists files and directories with descriptions from DESCRIPT.ION.
 Uses ColorDir colors when COLORDIR is set in AUTOEXEC.BAT.
@@ -13,8 +14,11 @@ DESCRIPT.ION has one description per file, for example:
 DES reads DESCRIPT.ION and COLORDIR itself; 4DOS is not required.
 
 To list one screen at a time use /P (just like DIR).
-In this mode, DES scrolls descriptions longer than 57 characters.
+In this mode, DES scrolls descriptions too long for the screen.
 To pause horizontal scrolling, use the PAUSE key on the keyboard.
 
-Usage: DES [path\pattern] [/P]
+Usage: DES [drive:][path\pattern] [/P] [/A] [/I]
+       DES D: or DES D:\GAMES  List a drive or directory
+       DES /A           Include hidden (H) and system (S) entries
+       DES /I           Show drive kind and file system
        DES /? or DES /H   Show this help

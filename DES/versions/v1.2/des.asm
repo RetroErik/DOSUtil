@@ -1,6 +1,6 @@
 ; ============================================================================
 ; DES.COM  --  Enkel DIR-erstatning for DOS/4DOS med DESCRIPT.ION-stotte
-; Version: 1.3
+; Version: 1.2
 ; By Dag Erik Hagesæter / Retro Erik using Codex in VS Code
 ; ============================================================================
 ;
@@ -22,9 +22,6 @@
 ;   DES              -> lister *.* i gjeldende katalog
 ;   DES *.EXE        -> lister kun *.EXE i gjeldende katalog
 ;   DES D:           -> lists *.* in the current directory on drive D:
-;   DES D:\GAMES     -> lists *.* in D:\GAMES
-;   DES /A           -> includes hidden and system entries
-;   DES /I           -> shows the selected drive kind and DOS-visible FAT type
 ;   DES C:\SPILL\*.* -> lister *.* i C:\SPILL, og leser C:\SPILL\DESCRIPT.ION
 ;   DES /P           -> som over, men med sidevis utskrift
 ;   DES *.EXE /P     -> svitsjen kan sta for eller etter monsteret
@@ -142,21 +139,15 @@ desc_len        dw      0
 
 ; --- Variabler for /P (sidevis utskrift) ---
 pause_flag      dw      0               ; 1 hvis /P ble funnet pa kommandolinjen
-all_entries_flag dw     0               ; 1 when /A includes hidden and system entries
-info_flag       dw      0               ; 1 when /I requests drive information
-entries_omitted dw     0               ; 1 when matching entries exceed MAX_ENTRIES
 help_flag       dw      0               ; 1 hvis /? eller /H ble funnet pa kommandolinjen
 lines_printed   dw      0               ; antall linjer skrevet siden forrige pause
                                         ; (tok_buf - ett "ord" fra kommandolinjen - er definert nederst i filen)
 switch_p        db      '/P', 0         ; svitsjen vi ser etter (sammenlignes case-insensitivt)
-switch_a        db      '/A', 0
-switch_i        db      '/I', 0
 switch_h        db      '/H', 0
 switch_question db      '/?', 0
 press_key_msg   db      'Press any key to continue . . .', 0
-entry_limit_msg db      'Warning: more than 400 entries match; remaining entries omitted.', 0
 
-help_brand_msg  db      'DES 1.3 - Description Enhanced System', 0
+help_brand_msg  db      'DES 1.2 - Description Enhanced System', 0
 help_copyright_msg db   'Copyright (C) 2026 Dag Erik Hages', 091h, 'ter / Retro Erik', 0
 help_codex_msg db       'By Dag Erik Hages', 091h, 'ter / Retro Erik using Codex in VS Code', 0
 help_summary_msg db     'Lists files and directories with descriptions from DESCRIPT.ION.', 0
@@ -167,12 +158,10 @@ help_colordir_msg db    '4DOS ColorDir uses COLORDIR to select colors by directo
 help_colordir_example_msg db '  SET ColorDir=dirs:bri mag; zip arj:bri blu; com exe:bri gre; bat: bri red; gif  jpg png:yel; txt me now:gre', 0
 help_standalone_msg db  'DES reads DESCRIPT.ION and COLORDIR itself; 4DOS is not required.', 0
 help_paging_msg db      'To list one screen at a time use /P (just like DIR).', 0
-help_scroll_msg db      'In this mode, DES scrolls descriptions too long for the screen.', 0
+help_scroll_msg db      'In this mode, DES scrolls descriptions longer than 57 characters.', 0
 help_pause_msg db       'To pause horizontal scrolling, use the PAUSE key on the keyboard.', 0
-help_usage_msg  db      'Usage: DES [drive:][path\pattern] [/P] [/A] [/I]', 0
-help_drive_msg  db      '       DES D: or DES D:\GAMES  List a drive or directory', 0
-help_all_msg    db      '       DES /A           Include hidden (H) and system (S) entries', 0
-help_info_msg   db      '       DES /I           Show drive kind and file system', 0
+help_usage_msg  db      'Usage: DES [drive:][path\pattern] [/P]', 0
+help_drive_msg  db      '       DES D:           List the current directory on drive D:', 0
 help_switches_msg db    '       DES /? or DES /H   Show this help', 0
 
 ; --- Variabler for header ("Volume in drive..." / "Directory of...") ---
@@ -184,20 +173,6 @@ vol_drive_letter db     0               ; stasjonsbokstaven vi viser i headeren
 vol_in_drive_msg db     ' Volume in drive ', 0
 vol_is_msg      db      ' is ', 0
 vol_nolabel_msg db      ' has no label', 0
-info_kind_msg   db      ' Drive kind: ', 0
-info_fs_msg     db      ' File system: ', 0
-kind_unknown    db      'Unknown', 0
-kind_fixed      db      'Fixed disk', 0
-kind_removable  db      'Removable disk', 0
-kind_cdrom      db      'CD-ROM', 0
-kind_network    db      'Network drive', 0
-kind_subst      db      'SUBST drive', 0
-fs_unknown      db      'Unknown', 0
-fs_fat12        db      'FAT12', 0
-fs_fat16        db      'FAT16', 0
-fs_fat32        db      'FAT32', 0
-info_drive_num  db      0               ; DOS drive number: 1=A:, 2=B:, etc.
-info_kind       db      0               ; 0=unknown, 1=fixed, 2=removable, 3=CD, 4=network, 5=SUBST
 dir_of_msg      db      ' Directory of  ', 0
 
 ; The full author name is right-aligned on the volume line. Retro Erik keeps
@@ -320,7 +295,7 @@ main:
                 jmp     .main_exit
 
 .main_run:
-                call    normalize_search_pattern ; expand drive and directory arguments
+                call    expand_drive_only_pattern ; make D: search D:*.* like DIR
                 call    build_desc_path         ; regn ut hvilken katalog DESCRIPT.ION ligger i -> desc_path
                 call    load_descript_ion       ; les HELE DESCRIPT.ION inn i minnet EN gang (fart!)
                 call    setup_colors            ; les ambient skjermfarge + evt. COLORDIR-miljovariabel
@@ -328,13 +303,6 @@ main:
                 call    collect_entries         ; finn alle filer/kataloger som matcher search_pattern
                 call    sort_entries            ; sorter: kataloger forst, deretter filer, alfabetisk
                 call    print_entries           ; skriv ut listen med beskrivelser (med /P-sidevisning)
-                cmp     word [entries_omitted], 0
-                je      .main_exit
-                mov     si, entry_limit_msg
-                call    print_string_asciz
-                call    print_crlf
-                mov     ax, 4C01h               ; incomplete listing: report failure to batch files
-                int     21h
 
 .main_exit:
                 mov     ax, 4C00h               ; avslutt ryddig med exit-kode 0 (suksess)
@@ -343,10 +311,11 @@ main:
 
 ; ============================================================================
 ; parse_cmdline
-;   Split the DOS command tail into space-delimited tokens. /P enables
-;   pagination, /A includes hidden and system entries, /I shows drive details,
-;   and /H or /? shows help. The first other token is the search path or pattern. With no path,
-;   use *.* in the current directory.
+;   Leser DOS-kommandolinjen (PSP:80h = lengde, PSP:81h.. = tekst) og deler
+;   den opp i mellomromseparerte "ord" (tokens). Svitsjen /P (uansett hvor
+;   den star, og uavhengig av store/sma bokstaver) setter pause_flag=1.
+;   Det forste tokenet som IKKE er /P blir brukt som sok-/stimonster.
+;   Hvis intet slikt token finnes, brukes standardverdien "*.*".
 ; ============================================================================
 parse_cmdline:
                 push    ax
@@ -355,8 +324,6 @@ parse_cmdline:
                 push    di
 
                 mov     word [pause_flag], 0
-                mov     word [all_entries_flag], 0
-                mov     word [info_flag], 0
                 mov     word [help_flag], 0
                 mov     byte [search_pattern], 0   ; tom streng = "intet monster funnet ennaa"
 
@@ -403,24 +370,6 @@ parse_cmdline:
 .pc_not_pause:
                 push    si
                 mov     si, tok_buf
-                mov     di, switch_a
-                call    str_ieq
-                pop     si
-                jne     .pc_not_all
-                mov     word [all_entries_flag], 1
-                jmp     .pc_skip_spaces
-.pc_not_all:
-                push    si
-                mov     si, tok_buf
-                mov     di, switch_i
-                call    str_ieq
-                pop     si
-                jne     .pc_not_info
-                mov     word [info_flag], 1
-                jmp     .pc_skip_spaces
-.pc_not_info:
-                push    si
-                mov     si, tok_buf
                 mov     di, switch_h
                 call    str_ieq
                 pop     si
@@ -459,68 +408,36 @@ parse_cmdline:
 
 
 ; ============================================================================
-; normalize_search_pattern
-;   DOS Find First needs a filename pattern. A bare drive (D:) is relative to
-;   that drive's current directory. A directory path gets \*.* or, when it
-;   already ends in a backslash, *.*. Existing file and wildcard patterns stay
-;   unchanged. Keep all appended data inside the 128-byte search buffer.
+; expand_drive_only_pattern
+;   DOS Find First needs a filename pattern. A bare drive (such as D:) means
+;   that drive's current directory, so append *.* without adding a backslash.
+;   D:\*.* would instead search the root directory.
 ; ============================================================================
-normalize_search_pattern:
+expand_drive_only_pattern:
                 push    ax
-                push    bx
-                push    cx
-                push    dx
-                push    si
 
-                mov     si, search_pattern
-                call    strlen
-                mov     bx, ax
-                cmp     bx, 2
-                jne     .nsp_check_trailing_slash
                 mov     al, [search_pattern]
-                call    to_upper
                 cmp     al, 'A'
-                jb      .nsp_check_trailing_slash
+                jb      .edop_check_lower
                 cmp     al, 'Z'
-                ja      .nsp_check_trailing_slash
+                jbe     .edop_check_colon
+.edop_check_lower:
+                cmp     al, 'a'
+                jb      .edop_done
+                cmp     al, 'z'
+                ja      .edop_done
+.edop_check_colon:
                 cmp     byte [search_pattern + 1], ':'
-                je      .nsp_append_pattern
+                jne     .edop_done
+                cmp     byte [search_pattern + 2], 0
+                jne     .edop_done
 
-.nsp_check_trailing_slash:
-                cmp     bx, 0
-                je      .nsp_done
-                mov     al, [search_pattern + bx - 1]
-                cmp     al, '\'
-                jne     .nsp_check_directory
-                cmp     bx, 124
-                jbe     .nsp_append_pattern
-                jmp     .nsp_done
+                mov     byte [search_pattern + 2], '*'
+                mov     byte [search_pattern + 3], '.'
+                mov     byte [search_pattern + 4], '*'
+                mov     byte [search_pattern + 5], 0
 
-.nsp_check_directory:
-                mov     ax, 4300h               ; DOS Get File Attributes
-                mov     dx, search_pattern
-                push    bx
-                int     21h                     ; CX = attributes on success
-                pop     bx
-                jc      .nsp_done
-                test    cx, 10h                 ; directory attribute
-                jz      .nsp_done
-                cmp     bx, 123
-                ja      .nsp_done
-                mov     byte [search_pattern + bx], '\'
-                inc     bx
-
-.nsp_append_pattern:
-                mov     byte [search_pattern + bx], '*'
-                mov     byte [search_pattern + bx + 1], '.'
-                mov     byte [search_pattern + bx + 2], '*'
-                mov     byte [search_pattern + bx + 3], 0
-
-.nsp_done:
-                pop     si
-                pop     dx
-                pop     cx
-                pop     bx
+.edop_done:
                 pop     ax
                 ret
 
@@ -2138,213 +2055,16 @@ print_header:
                 mov     byte [current_color], CREDIT_COLOR
                 call    flush_colored_line      ; (faller tilbake til vanlig tekst hvis usikkert a fargelegge)
                 call    print_crlf
-                mov     word [lines_printed], 3  ; original two header lines and blank separator
-                cmp     word [info_flag], 0
-                je      .ph_no_info
-                call    print_drive_info
-                add     word [lines_printed], 2
-.ph_no_info:
                 call    print_crlf              ; blank linje mellom header og fillisten
 
+                mov     word [lines_printed], 3  ; header(2)+blank teller med i /P-sidevisningen
+
 
                 pop     di
                 pop     si
                 pop     dx
                 pop     cx
                 pop     ax
-                ret
-
-
-; ============================================================================
-; print_drive_info / detect_drive_kind / detect_file_system
-;   /I reports the drive selected by the listing path. Unsupported DOS calls,
-;   network file systems, and CD-ROM file systems are reported as Unknown.
-;   FAT type comes from the DOS DPB cluster count, never from a boot-sector
-;   text label. The FAT32 extended DPB is tried before the legacy DPB.
-; ============================================================================
-print_drive_info:
-                push    ax
-                push    bx
-                push    cx
-                push    dx
-                push    si
-                push    di
-                push    es
-
-                mov     al, [vol_drive_letter]
-                call    to_upper
-                cmp     al, 'A'
-                jb      .pdi_bad_drive
-                cmp     al, 'Z'
-                ja      .pdi_bad_drive
-                sub     al, 'A' - 1
-                mov     [info_drive_num], al
-                jmp     .pdi_print
-.pdi_bad_drive:
-                mov     byte [info_drive_num], 0
-.pdi_print:
-                mov     si, info_kind_msg
-                call    print_string_asciz
-                call    detect_drive_kind       ; SI -> kind label
-                call    print_string_asciz
-                call    print_crlf
-
-                mov     si, info_fs_msg
-                call    print_string_asciz
-                call    detect_file_system      ; SI -> FAT type or Unknown
-                call    print_string_asciz
-                call    print_crlf
-
-                pop     es
-                pop     di
-                pop     si
-                pop     dx
-                pop     cx
-                pop     bx
-                pop     ax
-                ret
-
-detect_drive_kind:
-                mov     byte [info_kind], 0
-                mov     si, kind_unknown
-                cmp     byte [info_drive_num], 1
-                jb      .ddk_done
-                cmp     byte [info_drive_num], 26
-                ja      .ddk_done
-
-                ; MSCDEX uses a zero-based drive number and identifies CDs.
-                xor     cx, cx
-                mov     cl, [info_drive_num]
-                dec     cx
-                mov     ax, 150Bh
-                push    ds
-                int     2Fh
-                pop     ds
-                cmp     bx, 0ADADh
-                jne     .ddk_remote
-                or      ax, ax
-                jz      .ddk_remote
-                mov     byte [info_kind], 3
-                mov     si, kind_cdrom
-                ret
-
-.ddk_remote:
-                ; DOS IOCTL 4409h distinguishes network and SUBST drives.
-                xor     bh, bh
-                mov     bl, [info_drive_num]
-                mov     ax, 4409h
-                push    ds
-                int     21h
-                pop     ds
-                jc      .ddk_removable
-                test    dx, 1000h
-                jnz     .ddk_network
-                test    dx, 8000h
-                jnz     .ddk_subst
-
-.ddk_removable:
-                ; DOS IOCTL 4408h reports whether the medium is removable.
-                xor     bh, bh
-                mov     bl, [info_drive_num]
-                mov     ax, 4408h
-                push    ds
-                int     21h
-                pop     ds
-                jc      .ddk_done
-                cmp     ax, 0
-                je      .ddk_is_removable
-                cmp     ax, 1
-                jne     .ddk_done
-                mov     byte [info_kind], 1
-                mov     si, kind_fixed
-                ret
-.ddk_is_removable:
-                mov     byte [info_kind], 2
-                mov     si, kind_removable
-                ret
-.ddk_network:
-                mov     byte [info_kind], 4
-                mov     si, kind_network
-                ret
-.ddk_subst:
-                mov     byte [info_kind], 5
-                mov     si, kind_subst
-                ret
-.ddk_done:
-                mov     si, kind_unknown
-                ret
-
-detect_file_system:
-                mov     si, fs_unknown
-                cmp     byte [info_drive_num], 1
-                jb      .dfs_done
-                cmp     byte [info_drive_num], 26
-                ja      .dfs_done
-                cmp     byte [info_kind], 3     ; CD-ROM is not necessarily ISO 9660
-                je      .dfs_done
-                cmp     byte [info_kind], 4     ; network file system is not exposed by DOS
-                je      .dfs_done
-
-                ; Extended DPB can report a 32-bit cluster count on FAT32.
-                mov     ax, ds
-                mov     es, ax
-                mov     di, ext_dpb
-                mov     word [di], 003Dh
-                mov     byte [di + 2], 0FFh     ; unchanged if AH=73h is unsupported
-                mov     dl, [info_drive_num]
-                mov     cx, 003Fh
-                xor     si, si
-                mov     ax, 7302h
-                push    ds
-                int     21h
-                pop     ds
-                jc      .dfs_legacy
-                cmp     byte [ext_dpb + 2], 0FFh
-                je      .dfs_legacy
-                mov     ax, [ext_dpb + 2 + 2Dh] ; maximum cluster number, low word
-                mov     dx, [ext_dpb + 2 + 2Fh] ; high word
-                or      dx, dx
-                jnz     .dfs_fat32
-                cmp     ax, 2
-                jae     .dfs_classify
-
-.dfs_legacy:
-                ; Legacy DPB works for FAT12/16. DOS returns DS:BX, so restore
-                ; the program's DS after reading the maximum cluster number.
-                mov     dl, [info_drive_num]
-                mov     ah, 32h
-                push    ds
-                int     21h
-                cmp     al, 0
-                jne     .dfs_legacy_fail
-                mov     ax, [bx + 0Dh]
-                pop     ds
-                cmp     ax, 2
-                jb      .dfs_unknown
-                cmp     ax, 0FFF6h             ; FAT32 needs the extended DPB
-                jae     .dfs_unknown
-                jmp     .dfs_classify
-.dfs_legacy_fail:
-                pop     ds
-.dfs_unknown:
-                mov     si, fs_unknown
-                ret
-
-.dfs_classify:
-                ; DPB maximum cluster number = data cluster count + 1.
-                cmp     ax, 0FF6h              ; 4085 data clusters starts FAT16
-                jb      .dfs_fat12
-                cmp     ax, 0FFF6h             ; 65525 data clusters starts FAT32
-                jb      .dfs_fat16
-.dfs_fat32:
-                mov     si, fs_fat32
-                ret
-.dfs_fat12:
-                mov     si, fs_fat12
-                ret
-.dfs_fat16:
-                mov     si, fs_fat16
-.dfs_done:
                 ret
 
 
@@ -2364,7 +2084,6 @@ collect_entries:
                 push    di
 
                 mov     word [entry_count], 0
-                mov     word [entries_omitted], 0
 
                 ; Sett DTA til vart eget buffer (kommandolinjeargumentet er
                 ; allerede kopiert ut, sa PSP:80h trengs ikke lenger).
@@ -2372,14 +2091,10 @@ collect_entries:
                 mov     ah, 1Ah
                 int     21h
 
-                ; Include directories in normal searches. /A also asks DOS
-                ; for hidden and system entries. Volume labels and DESCRIPT
-                ; metadata are still filtered below.
+                ; Sok-attributt 10h = ta ogsa med kataloger (vanlige filer
+                ; tas alltid med av DOS uansett attributtmaske). Vi filtrerer
+                ; bort volumetiketter manuelt uansett, som ekstra sikkerhet.
                 mov     cx, 10h
-                cmp     word [all_entries_flag], 0
-                je      .ce_find_first
-                or      cx, 06h                 ; hidden (02h) + system (04h)
-.ce_find_first:
                 mov     dx, search_pattern
                 mov     ah, 4Eh
                 int     21h
@@ -2389,12 +2104,7 @@ collect_entries:
                 mov     al, [our_dta + 15h]     ; attributtbyte for gjeldende treff
                 test    al, 08h                 ; bit 3 = volumetikett
                 jnz     .ce_next
-                cmp     word [all_entries_flag], 0
-                jne     .ce_check_metadata
-                test    al, 06h                 ; hide hidden and system entries by default
-                jnz     .ce_next
 
-.ce_check_metadata:
                 mov     si, our_dta + 1Eh
                 mov     di, descript_name
                 call    str_ieq
@@ -2410,7 +2120,7 @@ collect_entries:
 
                 mov     bx, [entry_count]       ; er tabellen full? da hopper vi bare over resten
                 cmp     bx, MAX_ENTRIES
-                jae     .ce_overflow
+                jae     .ce_next
 
                 mov     ax, bx                  ; regn ut destinasjonspeker: entries + entry_count*ENTRY_SIZE
                 mov     cx, ENTRY_SIZE
@@ -2441,10 +2151,6 @@ collect_entries:
                 mov     [di + SIZE_FIELD_OFS + 2], ax
 
                 inc     word [entry_count]
-                jmp     .ce_next
-
-.ce_overflow:
-                mov     word [entries_omitted], 1
 
 .ce_next:
                 mov     ah, 4Fh
@@ -2549,7 +2255,6 @@ sort_entries:
 ; print_entries
 ;   Gar gjennom den sorterte "entries"-tabellen og skriver ut hver oppforing:
 ;     <filnavn venstrejustert, NAME_COL_WIDTH kolonner>
-;     <space, H if hidden, S if system>
 ;     <"<DIR>" eller filstorrelse i KB (opprundet), host-justert i INFO_COL_WIDTH>
 ;     <ett mellomrom> <beskrivelse (kuttet ved kolonne SCREEN_WIDTH)> <CRLF>
 ; ============================================================================
@@ -2604,29 +2309,6 @@ print_entries:
                 call    append_render_char
                 jmp     .pe_pad_name
 .pe_name_padded:
-                cmp     word [all_entries_flag], 0
-                je      .pe_no_attr_marks
-                mov     al, ' '
-                call    append_render_char
-                mov     al, [si + NAME_FIELD_LEN]
-                test    al, 02h                 ; hidden attribute
-                jz      .pe_no_hidden
-                mov     al, 'H'
-                jmp     .pe_hidden_done
-.pe_no_hidden:
-                mov     al, ' '
-.pe_hidden_done:
-                call    append_render_char
-                mov     al, [si + NAME_FIELD_LEN]
-                test    al, 04h                 ; system attribute
-                jz      .pe_no_system
-                mov     al, 'S'
-                jmp     .pe_system_done
-.pe_no_system:
-                mov     al, ' '
-.pe_system_done:
-                call    append_render_char
-.pe_no_attr_marks:
 
                 call    append_size_or_dir      ; "<DIR>" eller filstorrelse i KB, host-justert (SI bevares)
 
@@ -3146,12 +2828,6 @@ print_help:
                 mov     si, help_drive_msg
                 call    print_string_asciz
                 call    print_crlf
-                mov     si, help_all_msg
-                call    print_string_asciz
-                call    print_crlf
-                mov     si, help_info_msg
-                call    print_string_asciz
-                call    print_crlf
                 mov     si, help_switches_msg
                 call    print_string_asciz
                 call    print_crlf
@@ -3196,4 +2872,3 @@ render_buf      equ     ext_tok + EXT_NAME_LEN               ; hele skjermlinja 
 size_digit_buf  equ     render_buf + RENDER_BUF_LEN          ; "NNNN KB"-strengen bygges bakfra her
 scroll_slots    equ     size_digit_buf + SIZE_DIGIT_BUF_LEN  ; registrerte /P-rulle-linjer for gjeldende side
 descript_data   equ     scroll_slots + (MAX_SCROLL_SLOTS * SCROLL_SLOT_SIZE) ; hele DESCRIPT.ION i minnet
-ext_dpb         equ     descript_data + DESCRIPT_DATA_LEN   ; 63-byte FAT32 extended DPB response
