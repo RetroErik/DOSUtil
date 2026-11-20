@@ -68,7 +68,7 @@ Description Edit for Windows opens a directory together with its `DESCRIPT.ION`.
 
 The release ZIP is self-contained for Windows 11 x64. The user does not need Visual Studio, the .NET SDK, or a separate Windows App Runtime installation.
 
-1. Download `DescriptionEditForWindows-1.0.5-win-x64.zip`.
+1. Download `DescriptionEditForWindows-1.0.6-win-x64.zip`.
 2. Extract the entire ZIP to a normal folder. Do not run the program from inside the ZIP viewer.
 3. Double-click `Install.cmd`.
 4. Start **Description Edit for Windows** from the Start Menu.
@@ -120,7 +120,7 @@ powershell -ExecutionPolicy Bypass -File .\package.ps1
 This publishes a self-contained x64 application and creates:
 
 ```text
-artifacts\DescriptionEditForWindows-1.0.5-win-x64.zip
+artifacts\DescriptionEditForWindows-1.0.6-win-x64.zip
 ```
 
 ### Install a source build for the current user

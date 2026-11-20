@@ -147,7 +147,8 @@ diagnosis; they are not counted as passing runs. No release ZIP was replaced.
 
 ## Review and rollback
 
-The original app version is 1.0.5. Existing release ZIPs are preserved.
+The current app version is 1.0.6. The original app version was 1.0.5;
+existing release ZIPs are preserved.
 Before this review, all existing untracked XGA work was preserved in commit
 `1651a2e`, tagged `checkpoint/before-winui-review-2026-11-20`.
 The improvements are isolated on `improve/description-edit-winui`.
