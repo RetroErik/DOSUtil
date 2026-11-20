@@ -1,5 +1,8 @@
 ﻿[CmdletBinding()]
-param([ValidateSet('local')][string] $Target = 'local')
+param(
+    [ValidateSet('local')][string] $Target = 'local',
+    [string] $ApplicationPath
+)
 
 # By Dag Erik Hagesæter / Retro Erik using Codex in VS Code
 # Local UI regression checks. All writes are confined to a new disposable fixture.
@@ -90,10 +93,17 @@ try {
     New-Item -ItemType Directory -Path (Join-Path $fixture 'Games') -Force | Out-Null
     [IO.File]::WriteAllText((Join-Path $fixture 'demo.txt'), 'Disposable UI test file.')
     [IO.File]::WriteAllText($sidecar, "demo.txt Original description`r`nGONE.ZIP Stale description`r`n", [Text.UTF8Encoding]::new($true))
-    $project = Join-Path $projectRoot 'src\DescriptionEditForWindows\DescriptionEditForWindows.csproj'
-    $launch = Invoke-WinAppChecked @('run', $project, '-c', 'Debug', '--arch', 'x64', '-p', 'Platform=x64', '--detach', '--devtools', 'off', '--json', '--', $fixture) | ConvertFrom-Json
-    Assert-True ([int]$launch.ProcessId -gt 0) 'No application process returned.'
-    $appPid = [int]$launch.ProcessId
+    if ($ApplicationPath) {
+        $executable = (Resolve-Path -LiteralPath $ApplicationPath).Path
+        Assert-True ([IO.Path]::GetFileName($executable) -eq 'DescriptionEditForWindows.exe') 'Expected the Description Edit executable.'
+        $launchedProcess = Start-Process -FilePath $executable -ArgumentList ('"' + $fixture + '"') -PassThru -WindowStyle Hidden
+        $appPid = $launchedProcess.Id
+    } else {
+        $project = Join-Path $projectRoot 'src\DescriptionEditForWindows\DescriptionEditForWindows.csproj'
+        $launch = Invoke-WinAppChecked @('run', $project, '-c', 'Debug', '--arch', 'x64', '-p', 'Platform=x64', '--detach', '--devtools', 'off', '--json', '--', $fixture) | ConvertFrom-Json
+        Assert-True ([int]$launch.ProcessId -gt 0) 'No application process returned.'
+        $appPid = [int]$launch.ProcessId
+    }
     Invoke-Ui @('wait-for', 'demo.txt', '--type', 'Edit', '-t', '10000') | Out-Null
     $windows = @(Invoke-Ui @('list-windows', '--json') | ConvertFrom-Json)
     $hwnd = ($windows | Where-Object { $_.title -ne 'PopupHost' } | Select-Object -First 1).hwnd
@@ -203,7 +213,7 @@ try {
 $failed = @($results | Where-Object { $_.status -eq 'FAIL' }).Count
 $reportPath = Join-Path $runRoot 'results.json'
 [ordered]@{
-    target = $Target; appPid = $appPid; fixture = $fixture
+    target = $Target; appPid = $appPid; fixture = $fixture; applicationPath = $ApplicationPath
     passed = $results.Count - $failed; failed = $failed
     results = @($results.ToArray()); screenshots = @($screenshots.ToArray())
 } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $reportPath -Encoding UTF8

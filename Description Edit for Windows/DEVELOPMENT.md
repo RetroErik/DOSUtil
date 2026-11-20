@@ -147,6 +147,10 @@ diagnosis; they are not counted as passing runs. No release ZIP was replaced.
 
 ## Review and rollback
 
+For the opt-in component-based packaging experiment and measured size reduction,
+see [Self-contained package size investigation](SLIM_PACKAGE_INVESTIGATION.md).
+The published 1.0.6 ZIP and normal build settings remain the reference baseline.
+
 The current app version is 1.0.6. The original app version was 1.0.5;
 existing release ZIPs are preserved.
 Before this review, all existing untracked XGA work was preserved in commit
