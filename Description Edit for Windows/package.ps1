@@ -7,7 +7,7 @@ Set-StrictMode -Version Latest
 $projectRoot = $PSScriptRoot
 $projectFile = Join-Path $projectRoot 'src\DescriptionEditForWindows\DescriptionEditForWindows.csproj'
 [xml] $projectXml = Get-Content -LiteralPath $projectFile
-$version = $projectXml.Project.PropertyGroup.Version | Select-Object -First 1
+$version = $projectXml.SelectSingleNode('/Project/PropertyGroup/Version').InnerText
 $releaseName = "DescriptionEditForWindows-$version-win-x64"
 $artifactsDirectory = Join-Path $projectRoot 'artifacts'
 $releaseDirectory = Join-Path $artifactsDirectory $releaseName
@@ -32,8 +32,9 @@ if (Test-Path -LiteralPath $zipPath) {
 }
 
 New-Item -ItemType Directory -Path $appDirectory -Force | Out-Null
-& dotnet publish $projectFile -c Release -r win-x64 --self-contained true `
-    -p:Platform=x64 -p:WindowsAppSDKSelfContained=true -o $appDirectory
+$publishArguments = @('publish', $projectFile, '-c', 'Release', '-r', 'win-x64',
+    '--self-contained', 'true', '-p:Platform=x64', '-p:WindowsAppSDKSelfContained=true', '-o', $appDirectory)
+& dotnet @publishArguments
 if ($LASTEXITCODE -ne 0) { throw "Publish failed with exit code $LASTEXITCODE" }
 
 Copy-Item -LiteralPath (Join-Path $projectRoot 'tools\Install.ps1') -Destination $releaseDirectory
@@ -43,6 +44,7 @@ Copy-Item -LiteralPath (Join-Path $projectRoot 'tools\Uninstall.cmd') -Destinati
 Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md') -Destination $releaseDirectory
 Copy-Item -LiteralPath (Join-Path $projectRoot 'DEVELOPMENT.md') -Destination $releaseDirectory
 Copy-Item -LiteralPath (Join-Path $projectRoot 'AGENTS.md') -Destination $releaseDirectory
+Copy-Item -LiteralPath (Join-Path $projectRoot 'SLIM_PACKAGE_INVESTIGATION.md') -Destination $releaseDirectory
 Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE') -Destination $releaseDirectory
 
 Compress-Archive -LiteralPath $releaseDirectory -DestinationPath $zipPath -CompressionLevel Optimal

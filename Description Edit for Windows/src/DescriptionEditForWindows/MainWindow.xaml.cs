@@ -568,7 +568,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private async void AboutButton_Click(object sender, RoutedEventArgs e)
     {
         await ShowMessageAsync("Description Edit for Windows",
-            "Version 1.0.6\nModern WinUI 3 editor for Norton/4DOS DESCRIPT.ION files." +
+            "Version 1.0.7\nModern WinUI 3 editor for Norton/4DOS DESCRIPT.ION files." +
             "\n\nBy Dag Erik Hagesæter / Retro Erik using Codex in VS Code\nhttps://www.youtube.com/@RetroErik");
     }
 

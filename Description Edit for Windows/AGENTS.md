@@ -6,7 +6,8 @@ https://www.youtube.com/@RetroErik
 ## Scope and architecture
 
 - This is a Windows 11 x64 desktop application using C#, .NET 10, WinUI 3,
-  and Microsoft.WindowsAppSDK 2.4.0. Keep its existing unpackaged deployment.
+  and the pinned WinUI/Foundation/Runtime components from Windows App SDK 2.4.0.
+  Keep its existing unpackaged deployment and component-based package selection.
 - Use `Microsoft.UI.Xaml` APIs. Do not introduce WPF, WinForms, or UWP UI types.
 - Keep parsing, file models, and safe-save behavior in the platform-neutral
   `DescriptionEditForWindows.Core` project. Code-behind coordinates UI events,
