@@ -307,6 +307,7 @@ Before release, also test manually with:
 
 - **Author:** Dag Erik Hagesæter / Retro Erik
 - **Development:** By Dag Erik Hagesæter / Retro Erik using Codex in VS Code
+- **AI contributor:** Codex (OpenAI) — assisted with implementation, WinUI 3 code review, bug fixes, testing, documentation, and release packaging.
 - **DOS inspiration:** [DEDIT 1.0](../DEDIT/README.md)
 - **Related directory utility:** [DES 1.1](../DES/README.md)
 
