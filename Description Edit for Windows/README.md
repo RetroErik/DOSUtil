@@ -68,7 +68,7 @@ Description Edit for Windows opens a directory together with its `DESCRIPT.ION`.
 
 The release ZIP is self-contained for Windows 11 x64. The user does not need Visual Studio, the .NET SDK, or a separate Windows App Runtime installation.
 
-1. Download [DescriptionEditForWindows-1.0.6-win-x64.zip](https://github.com/RetroErik/DOSUtil/releases/download/description-edit-v1.0.6/DescriptionEditForWindows-1.0.6-win-x64.zip) from the [1.0.6 release](https://github.com/RetroErik/DOSUtil/releases/tag/description-edit-v1.0.6).
+1. Download [DescriptionEditForWindows-1.0.7-win-x64.zip](https://github.com/RetroErik/DOSUtil/releases/download/description-edit-v1.0.7/DescriptionEditForWindows-1.0.7-win-x64.zip) from the [1.0.7 release](https://github.com/RetroErik/DOSUtil/releases/tag/description-edit-v1.0.7).
 2. Extract the entire ZIP to a normal folder. Do not run the program from inside the ZIP viewer.
 3. Double-click `Install.cmd`.
 4. Start **Description Edit for Windows** from the Start Menu.
@@ -81,7 +81,7 @@ For portable use, skip installation and run `app\DescriptionEditForWindows.exe` 
 
 - Windows 11 x64.
 - .NET 10 SDK.
-- Internet access for the initial restore of the official `Microsoft.WindowsAppSDK` 2.4.0 NuGet package.
+- Internet access for the initial restore of the pinned Windows App SDK component packages (WinUI, Foundation, Runtime, graphics, and supporting dependencies).
 
 ### Build and test
 
@@ -120,7 +120,7 @@ powershell -ExecutionPolicy Bypass -File .\package.ps1
 This publishes a self-contained x64 application and creates:
 
 ```text
-artifacts\DescriptionEditForWindows-1.0.6-win-x64.zip
+artifacts\DescriptionEditForWindows-1.0.7-win-x64.zip
 ```
 
 Existing release ZIPs are preserved. The packaging script refuses to overwrite an
@@ -249,6 +249,7 @@ For another `.ion` filename, the editor uses `<filename>.tmp` and `<filename>.ba
 - The sidecar timestamp and length are recorded to detect external modification.
 - Per-user association is stored under `HKCU\Software\Classes`.
 - The project uses the supported Windows App SDK 2.4.0 stable channel, not a preview or experimental build.
+- Version 1.0.7 uses the matching component packages to omit unused AI/ML, Search, and Widgets dependencies. The self-contained download is approximately 72 MB instead of 94 MB; see [package size measurements](SLIM_PACKAGE_INVESTIGATION.md).
 
 ## Known Issue
 

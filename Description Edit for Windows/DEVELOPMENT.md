@@ -147,11 +147,11 @@ diagnosis; they are not counted as passing runs. No release ZIP was replaced.
 
 ## Review and rollback
 
-For the opt-in component-based packaging experiment and measured size reduction,
+For the component-based packaging investigation and measured size reduction,
 see [Self-contained package size investigation](SLIM_PACKAGE_INVESTIGATION.md).
-The published 1.0.6 ZIP and normal build settings remain the reference baseline.
+The published 1.0.6 ZIP remains the historical baseline. Version 1.0.7 adopts the smaller component selection by default. Additional testing, including the clean-machine check, was explicitly waived by the author after the successful investigation.
 
-The current app version is 1.0.6. The original app version was 1.0.5;
+The current app version is 1.0.7. The original app version was 1.0.5;
 existing release ZIPs are preserved.
 Before this review, all existing untracked XGA work was preserved in commit
 `1651a2e`, tagged `checkpoint/before-winui-review-2026-11-20`.

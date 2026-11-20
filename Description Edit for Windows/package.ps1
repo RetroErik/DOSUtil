@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([switch] $SlimPreview)
+param()
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -8,8 +8,7 @@ $projectRoot = $PSScriptRoot
 $projectFile = Join-Path $projectRoot 'src\DescriptionEditForWindows\DescriptionEditForWindows.csproj'
 [xml] $projectXml = Get-Content -LiteralPath $projectFile
 $version = $projectXml.SelectSingleNode('/Project/PropertyGroup/Version').InnerText
-$variant = if ($SlimPreview) { '-slim-preview' } else { '' }
-$releaseName = "DescriptionEditForWindows-$version$variant-win-x64"
+$releaseName = "DescriptionEditForWindows-$version-win-x64"
 $artifactsDirectory = Join-Path $projectRoot 'artifacts'
 $releaseDirectory = Join-Path $artifactsDirectory $releaseName
 $appDirectory = Join-Path $releaseDirectory 'app'
@@ -35,7 +34,6 @@ if (Test-Path -LiteralPath $zipPath) {
 New-Item -ItemType Directory -Path $appDirectory -Force | Out-Null
 $publishArguments = @('publish', $projectFile, '-c', 'Release', '-r', 'win-x64',
     '--self-contained', 'true', '-p:Platform=x64', '-p:WindowsAppSDKSelfContained=true', '-o', $appDirectory)
-if ($SlimPreview) { $publishArguments += '-p:UseSlimWinUI=true' }
 & dotnet @publishArguments
 if ($LASTEXITCODE -ne 0) { throw "Publish failed with exit code $LASTEXITCODE" }
 
@@ -46,16 +44,8 @@ Copy-Item -LiteralPath (Join-Path $projectRoot 'tools\Uninstall.cmd') -Destinati
 Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md') -Destination $releaseDirectory
 Copy-Item -LiteralPath (Join-Path $projectRoot 'DEVELOPMENT.md') -Destination $releaseDirectory
 Copy-Item -LiteralPath (Join-Path $projectRoot 'AGENTS.md') -Destination $releaseDirectory
+Copy-Item -LiteralPath (Join-Path $projectRoot 'SLIM_PACKAGE_INVESTIGATION.md') -Destination $releaseDirectory
 Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE') -Destination $releaseDirectory
-if ($SlimPreview) {
-    @'
-EXPERIMENTAL SLIM PACKAGE - NOT THE PUBLISHED 1.0.6 RELEASE
-This trial uses selected Windows App SDK components instead of the full package.
-Both .NET and the Windows App Runtime remain bundled. Keep the app folder intact.
-It has not been validated on a clean Windows installation without shared runtimes.
-By Dag Erik Hagesæter / Retro Erik using Codex in VS Code
-'@ | Set-Content -LiteralPath (Join-Path $releaseDirectory 'EXPERIMENTAL.txt') -Encoding UTF8
-}
 
 Compress-Archive -LiteralPath $releaseDirectory -DestinationPath $zipPath -CompressionLevel Optimal
 Remove-Item -LiteralPath $releaseDirectory -Recurse -Force

@@ -3,6 +3,15 @@
 By Dag Erik Hagesæter / Retro Erik using Codex in VS Code
 https://www.youtube.com/@RetroErik
 
+## Promotion to 1.0.7
+
+The component selection investigated below is the default from version 1.0.7.
+The author accepted the completed local checks and explicitly waived additional
+testing, including a clean-machine test. Version 1.0.7 is built and published
+without rerunning the UI/core suites. The measurements and commands below record
+the historical opt-in experiment at commit `d4327b3`; the current packaging entry
+point is simply `package.ps1`. The previous 1.0.6 release remains preserved.
+
 ## Result — 2026-11-20
 
 A component-based Windows App SDK trial reduced the ZIP download by **23.73%**,

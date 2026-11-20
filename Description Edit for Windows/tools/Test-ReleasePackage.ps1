@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string] $ZipPath,
-    [string] $ExpectedVersion = '1.0.6.0',
+    [string] $ExpectedVersion = '1.0.7.0',
     [switch] $SlimPreview
 )
 

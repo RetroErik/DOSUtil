@@ -16,24 +16,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <Authors>Dag Erik Hagesæter / Retro Erik</Authors>
-    <Version>1.0.6</Version>
-    <AssemblyVersion>1.0.6.0</AssemblyVersion>
-    <FileVersion>1.0.6.0</FileVersion>
+    <Version>1.0.7</Version>
+    <AssemblyVersion>1.0.7.0</AssemblyVersion>
+    <FileVersion>1.0.7.0</FileVersion>
     <Description>Description Edit for Windows — a WinUI 3 editor for Norton/4DOS DESCRIPT.ION files.</Description>
-  </PropertyGroup>
-  <!-- Opt-in size investigation; normal builds keep the released SDK package. -->
-  <PropertyGroup Condition="'$(UseSlimWinUI)' == 'true'">
-    <OutputPath>bin\slim\$(Configuration)\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools.WinUIAnalyzer" Version="0.8.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.4.0" Condition="'$(UseSlimWinUI)' != 'true'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseSlimWinUI)' == 'true'">
-    <!-- Match the component versions resolved by Microsoft.WindowsAppSDK 2.4.0. -->
+  <ItemGroup>
+    <!-- Component versions match Microsoft.WindowsAppSDK 2.4.0; omit unused AI/ML, Search, and Widgets. -->
     <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.6" />
     <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.6" />
     <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.1.0" />
