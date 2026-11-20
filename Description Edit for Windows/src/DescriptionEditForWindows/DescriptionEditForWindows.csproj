@@ -44,8 +44,9 @@
        See https://github.com/microsoft/WindowsAppSDK/issues/6720. -->
   <Target Name="IncludeUnpackagedXamlResources" AfterTargets="ComputeFilesToPublish">
     <ItemGroup>
-      <ResolvedFileToPublish Include="$(TargetDir)**\*.xbf;$(TargetDir)$(AssemblyName).pri">
-        <RelativePath>%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+      <_UnpackagedXamlResource Include="$(TargetDir)**\*.xbf;$(TargetDir)$(AssemblyName).pri" />
+      <ResolvedFileToPublish Include="@(_UnpackagedXamlResource)">
+        <RelativePath>%(_UnpackagedXamlResource.RecursiveDir)%(_UnpackagedXamlResource.Filename)%(_UnpackagedXamlResource.Extension)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
     </ItemGroup>
