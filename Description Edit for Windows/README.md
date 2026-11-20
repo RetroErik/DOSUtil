@@ -72,7 +72,7 @@ The WinUI 3 editor browsing a network share, with DES/4DOS colors applied to fol
 
 The release ZIP is self-contained for Windows 11 x64. The user does not need Visual Studio, the .NET SDK, or a separate Windows App Runtime installation.
 
-1. Download `DescriptionEditForWindows-1.0.5-win-x64.zip`.
+1. Download [DescriptionEditForWindows-1.0.6-win-x64.zip](https://github.com/RetroErik/DOSUtil/releases/download/description-edit-v1.0.6/DescriptionEditForWindows-1.0.6-win-x64.zip) from the [1.0.6 release](https://github.com/RetroErik/DOSUtil/releases/tag/description-edit-v1.0.6).
 2. Extract the entire ZIP to a normal folder. Do not run the program from inside the ZIP viewer.
 3. Double-click `Install.cmd`.
 4. Start **Description Edit for Windows** from the Start Menu.
