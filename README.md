@@ -16,7 +16,7 @@ tools are needed to run these releases.
 |---------|---------|----------|----------|---------------|
 | DES | 1.3 | DOS, 8086/8088 or later | [DES-1.3-DOS.zip](https://github.com/RetroErik/DOSUtil/releases/download/des-v1.3/DES-1.3-DOS.zip) | [DES 1.3](https://github.com/RetroErik/DOSUtil/releases/tag/des-v1.3) |
 | DEDIT | 1.0 | DOS 2.0+, 8086/8088, 80-column text | [DEDIT-1.0-DOS.zip](https://github.com/RetroErik/DOSUtil/releases/download/dedit-v1.0/DEDIT-1.0-DOS.zip) | [DEDIT 1.0](https://github.com/RetroErik/DOSUtil/releases/tag/dedit-v1.0) |
-| Description Edit for Windows | 1.0.6 | Windows 11 x64 | [DescriptionEditForWindows-1.0.6-win-x64.zip](https://github.com/RetroErik/DOSUtil/releases/download/description-edit-v1.0.6/DescriptionEditForWindows-1.0.6-win-x64.zip) | [Windows editor 1.0.6](https://github.com/RetroErik/DOSUtil/releases/tag/description-edit-v1.0.6) |
+| Description Edit for Windows | 1.0.7 | Windows 11 x64 | [DescriptionEditForWindows-1.0.7-win-x64.zip](https://github.com/RetroErik/DOSUtil/releases/download/description-edit-v1.0.7/DescriptionEditForWindows-1.0.7-win-x64.zip) | [Windows editor 1.0.7](https://github.com/RetroErik/DOSUtil/releases/tag/description-edit-v1.0.7) |
 
 The DOS ZIPs contain the program, `README.TXT`, and `LICENSE.TXT`. Extract them
 before running. The text files use DOS code page 437. GitHub's separate
