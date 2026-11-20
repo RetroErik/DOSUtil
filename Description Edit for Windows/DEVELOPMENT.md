@@ -151,7 +151,10 @@ The current app version is 1.0.6. The original app version was 1.0.5;
 existing release ZIPs are preserved.
 Before this review, all existing untracked XGA work was preserved in commit
 `1651a2e`, tagged `checkpoint/before-winui-review-2026-11-20`.
-The improvements are isolated on `improve/description-edit-winui`.
+The improvements were developed on `improve/description-edit-winui` and are
+integrated into `main` through a pull request. The completed feature branch can
+be deleted after merging; its commits remain in the history. The release tag
+`description-edit-v1.0.6` preserves the source used to build the published ZIP.
 
 Inspect changes from the repository root:
 
@@ -161,7 +164,14 @@ git log --oneline checkpoint/before-winui-review-2026-11-20..HEAD
 git diff checkpoint/before-winui-review-2026-11-20..HEAD -- "Description Edit for Windows"
 ```
 
-With a clean working tree, switch back to the preserved baseline on `main`:
+With a clean working tree, temporarily inspect the preserved baseline in detached
+HEAD mode (do not make new development commits there):
+
+```text
+git switch --detach checkpoint/before-winui-review-2026-11-20
+```
+
+Return to the current version afterward:
 
 ```text
 git switch main
@@ -176,5 +186,6 @@ git worktree add --detach "../DOS-Utils-before-winui" checkpoint/before-winui-re
 
 Rebuild after switching revisions. For changes already merged into shared
 history, use `git revert <commit>` rather than rewriting history. Tool
-installations are per-user and are independent of Git rollback. No push or
-publication is part of this review.
+installations are per-user and are independent of Git rollback. Start subsequent
+changes on a new feature branch, validate them, merge through a pull request,
+and delete the completed feature branch. Keep release and checkpoint tags.
