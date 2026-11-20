@@ -34,6 +34,7 @@ archives. Choose the named **win-x64 ZIP** above for the ready-to-run app.
 - Improve accessible names and automation identifiers.
 - Include WinUI analysis, VS Code build/debug tasks, and regression guidance.
 - Preserve asset and runtime subdirectories during installation.
+- Include compiled app XAML resources in the self-contained publish output.
 - Protect existing release ZIPs from accidental overwrites.
 
 ## Validation and remaining checks

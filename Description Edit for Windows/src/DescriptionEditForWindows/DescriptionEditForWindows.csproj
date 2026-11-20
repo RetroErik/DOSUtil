@@ -39,4 +39,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <!-- The unpackaged SDK publish pipeline omits app-owned PRI/XBF files.
+       Keep compiled XAML resources beside the published executable.
+       See https://github.com/microsoft/WindowsAppSDK/issues/6720. -->
+  <Target Name="IncludeUnpackagedXamlResources" AfterTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(TargetDir)**\*.xbf;$(TargetDir)$(AssemblyName).pri">
+        <RelativePath>%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 </Project>
