@@ -7,6 +7,25 @@ A collection of DOS programs, Windows companion tools, and startup configuration
 ![Platform](https://img.shields.io/badge/Platform-MS--DOS-blue)
 ![Language](https://img.shields.io/badge/Environment-DOS-orange)
 
+## Downloads
+
+Download a ready-to-run package for your platform. No assembler or development
+tools are needed to run these releases.
+
+| Program | Version | Platform | Download | Release notes |
+|---------|---------|----------|----------|---------------|
+| DES | 1.3 | DOS, 8086/8088 or later | [DES-1.3-DOS.zip](https://github.com/RetroErik/DOSUtil/releases/download/des-v1.3/DES-1.3-DOS.zip) | [DES 1.3](https://github.com/RetroErik/DOSUtil/releases/tag/des-v1.3) |
+| DEDIT | 1.0 | DOS 2.0+, 8086/8088, 80-column text | [DEDIT-1.0-DOS.zip](https://github.com/RetroErik/DOSUtil/releases/download/dedit-v1.0/DEDIT-1.0-DOS.zip) | [DEDIT 1.0](https://github.com/RetroErik/DOSUtil/releases/tag/dedit-v1.0) |
+| Description Edit for Windows | 1.0.6 | Windows 11 x64 | [DescriptionEditForWindows-1.0.6-win-x64.zip](https://github.com/RetroErik/DOSUtil/releases/download/description-edit-v1.0.6/DescriptionEditForWindows-1.0.6-win-x64.zip) | [Windows editor 1.0.6](https://github.com/RetroErik/DOSUtil/releases/tag/description-edit-v1.0.6) |
+
+The DOS ZIPs contain the program, `README.TXT`, and `LICENSE.TXT`. Extract them
+before running. The text files use DOS code page 437. GitHub's separate
+**Source code** downloads contain the repository sources.
+
+Browse [all releases](https://github.com/RetroErik/DOSUtil/releases) for older
+versions. QuitKey, XGA demos, and PicoMEM configurations are documented below;
+they are not included in the DES or DEDIT packages.
+
 ## Contents
 
 So far, this repository contains DOS directory tools, a modern Windows description editor, a hotkey force-quit TSR, XGA graphics demos, and the startup files for a PicoMEM-based DOS system:

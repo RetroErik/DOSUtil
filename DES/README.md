@@ -48,6 +48,13 @@ The program is designed for small, real-mode DOS systems:
 
 ## Quick Start
 
+### Download
+
+Download [DES-1.3-DOS.zip](https://github.com/RetroErik/DOSUtil/releases/download/des-v1.3/DES-1.3-DOS.zip)
+from the [DES 1.3 release](https://github.com/RetroErik/DOSUtil/releases/tag/des-v1.3).
+Extract the ZIP and copy `DES.COM` to your DOS machine. No assembler is needed.
+`README.TXT` and `LICENSE.TXT` in the ZIP use DOS code page 437.
+
 ### Requirements
 
 - NASM, if you want to rebuild the program.

@@ -52,6 +52,13 @@ The program is designed for small, real-mode DOS systems:
 
 ## Quick Start
 
+### Download
+
+Download [DEDIT-1.0-DOS.zip](https://github.com/RetroErik/DOSUtil/releases/download/dedit-v1.0/DEDIT-1.0-DOS.zip)
+from the [DEDIT 1.0 release](https://github.com/RetroErik/DOSUtil/releases/tag/dedit-v1.0).
+Extract the ZIP and copy `DEDIT.COM` to your DOS machine. No assembler is needed.
+`README.TXT` and `LICENSE.TXT` in the ZIP use DOS code page 437.
+
 ### Requirements
 
 - NASM, if you want to rebuild the program.
