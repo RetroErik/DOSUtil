@@ -19,12 +19,16 @@ $resolvedArtifacts = [IO.Path]::GetFullPath($artifactsDirectory)
 if (-not $resolvedArtifacts.StartsWith($resolvedRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
     throw 'Refusing to create release files outside the project directory.'
 }
+$resolvedRelease = [IO.Path]::GetFullPath($releaseDirectory)
+if (-not $resolvedRelease.StartsWith($resolvedArtifacts + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'Refusing to stage release files outside the artifacts directory.'
+}
 
 if (Test-Path -LiteralPath $releaseDirectory) {
-    Remove-Item -LiteralPath $releaseDirectory -Recurse -Force
+    throw "Release staging directory already exists: '$releaseDirectory'. Preserve or inspect it before packaging again."
 }
 if (Test-Path -LiteralPath $zipPath) {
-    Remove-Item -LiteralPath $zipPath -Force
+    throw "Release ZIP already exists: '$zipPath'. Existing releases must be preserved."
 }
 
 New-Item -ItemType Directory -Path $appDirectory -Force | Out-Null
@@ -37,6 +41,8 @@ Copy-Item -LiteralPath (Join-Path $projectRoot 'tools\Install.cmd') -Destination
 Copy-Item -LiteralPath (Join-Path $projectRoot 'tools\Uninstall.ps1') -Destination $releaseDirectory
 Copy-Item -LiteralPath (Join-Path $projectRoot 'tools\Uninstall.cmd') -Destination $releaseDirectory
 Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md') -Destination $releaseDirectory
+Copy-Item -LiteralPath (Join-Path $projectRoot 'DEVELOPMENT.md') -Destination $releaseDirectory
+Copy-Item -LiteralPath (Join-Path $projectRoot 'AGENTS.md') -Destination $releaseDirectory
 Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE') -Destination $releaseDirectory
 
 Compress-Archive -LiteralPath $releaseDirectory -DestinationPath $zipPath -CompressionLevel Optimal
