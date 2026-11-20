@@ -103,6 +103,18 @@ src\DescriptionEditForWindows\bin\x64\Release\net10.0-windows10.0.19041.0\win-x6
 
 The build script also runs the dependency-free core tests.
 
+### VS Code and Codex
+
+Open this application directory in VS Code. The recommended extensions provide
+C# support, WinApp tooling, and Codex. **Ctrl+Shift+B** builds Debug and runs the
+core tests; **F5** runs those checks and starts the unpackaged x64 app under the
+debugger. A separate Release build task is available. The project includes
+Microsoft's WinUI analyzer as a private development dependency.
+
+See [Development workflow](DEVELOPMENT.md) for Microsoft's WinUI agent plugins,
+API verification, UI regression scenarios, and Git rollback instructions.
+Project-specific Codex rules are recorded in [AGENTS.md](AGENTS.md).
+
 ### Create the release ZIP
 
 ```text

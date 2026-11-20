@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Description Edit (unpackaged x64)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "Build and test (Debug)",
+      "program": "${workspaceFolder}/src/DescriptionEditForWindows/bin/x64/Debug/net10.0-windows10.0.19041.0/win-x64/DescriptionEditForWindows.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    }
+  ]
+}
