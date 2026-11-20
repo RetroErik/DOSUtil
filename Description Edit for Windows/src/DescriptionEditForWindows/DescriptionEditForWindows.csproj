@@ -16,12 +16,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <Authors>Dag Erik Hagesæter / Retro Erik</Authors>
-    <Version>1.0.5</Version>
-    <AssemblyVersion>1.0.5.0</AssemblyVersion>
-    <FileVersion>1.0.5.0</FileVersion>
+    <Version>1.0.6</Version>
+    <AssemblyVersion>1.0.6.0</AssemblyVersion>
+    <FileVersion>1.0.6.0</FileVersion>
     <Description>Description Edit for Windows — a WinUI 3 editor for Norton/4DOS DESCRIPT.ION files.</Description>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.WinUIAnalyzer" Version="0.8.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
   </ItemGroup>
   <ItemGroup>
@@ -35,4 +39,16 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <!-- The unpackaged SDK publish pipeline omits app-owned PRI/XBF files.
+       Keep compiled XAML resources beside the published executable.
+       See https://github.com/microsoft/WindowsAppSDK/issues/6720. -->
+  <Target Name="IncludeUnpackagedXamlResources" AfterTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <_UnpackagedXamlResource Include="$(TargetDir)**\*.xbf;$(TargetDir)$(AssemblyName).pri" />
+      <ResolvedFileToPublish Include="@(_UnpackagedXamlResource)">
+        <RelativePath>%(_UnpackagedXamlResource.RecursiveDir)%(_UnpackagedXamlResource.Filename)%(_UnpackagedXamlResource.Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 </Project>

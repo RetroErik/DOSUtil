@@ -2,6 +2,7 @@ using DescriptionEditForWindows.Core;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
@@ -22,6 +23,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private DescriptionDocument document;
     private bool dirty;
     private bool isLoading;
+    private bool isSaving;
+    private bool isNavigating;
+    private bool isShowingDialog;
+    private readonly SemaphoreSlim dialogQueue = new(1, 1);
     private bool allowClose;
     private int loadGeneration;
     private string sortProperty = "Name";
@@ -64,12 +69,15 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             isLoading = value;
             if (LoadingOverlay != null) LoadingOverlay.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
             if (LoadingRing != null) LoadingRing.IsActive = value;
+            UpdateInteractionState();
             OnPropertyChanged(nameof(IsLoading));
             OnPropertyChanged(nameof(IsLoadingVisibility));
         }
     }
 
     public Visibility IsLoadingVisibility => IsLoading ? Visibility.Visible : Visibility.Collapsed;
+
+    private bool IsBusy => IsLoading || isSaving || isNavigating || isShowingDialog;
 
     public event PropertyChangedEventHandler PropertyChanged;
 
@@ -89,14 +97,29 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async Task<bool> LoadDirectoryAsync(string path, bool addHistory, bool confirmLeave = true)
     {
-        if (confirmLeave && !await CanLeaveDocumentAsync()) return false;
-        return await LoadAsync(() => DescriptionDocument.LoadDirectory(path.Trim()), addHistory);
+        return await LoadDocumentAsync(() => DescriptionDocument.LoadDirectory(path.Trim()), addHistory, confirmLeave);
     }
 
     private async Task<bool> LoadFileAsync(string path, bool addHistory, bool confirmLeave = true)
     {
-        if (confirmLeave && !await CanLeaveDocumentAsync()) return false;
-        return await LoadAsync(() => DescriptionDocument.LoadFile(path.Trim()), addHistory);
+        return await LoadDocumentAsync(() => DescriptionDocument.LoadFile(path.Trim()), addHistory, confirmLeave);
+    }
+
+    private async Task<bool> LoadDocumentAsync(Func<DescriptionDocument> loader, bool addHistory, bool confirmLeave)
+    {
+        if (IsBusy) return false;
+        isNavigating = true;
+        UpdateInteractionState();
+        try
+        {
+            if (confirmLeave && !await CanLeaveDocumentAsync()) return false;
+            return await LoadAsync(loader, addHistory);
+        }
+        finally
+        {
+            isNavigating = false;
+            UpdateInteractionState();
+        }
     }
 
     private async Task<bool> LoadAsync(Func<DescriptionDocument> loader, bool addHistory)
@@ -136,6 +159,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         foreach (FileEntry oldEntry in entries)
             oldEntry.PropertyChanged -= Entry_PropertyChanged;
         document = loaded;
+        EndDescriptionEdit();
         foreach (FileEntry entry in loaded.Entries)
             entry.PropertyChanged += Entry_PropertyChanged;
         entries.ReplaceAll(loaded.Entries);
@@ -160,26 +184,37 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             "Unsaved descriptions",
             "Do you want to save the changes to " + document.FilePath + "?",
             "Save", "Discard", "Cancel");
-        ContentDialogResult result = await dialog.ShowAsync();
+        ContentDialogResult result = await ShowDialogAsync(dialog);
         if (result == ContentDialogResult.Primary) return await SaveDocumentAsync();
         return result == ContentDialogResult.Secondary;
     }
 
     private async Task<bool> SaveDocumentAsync()
     {
-        if (document == null) return false;
+        if (document == null || isSaving || IsLoading) return false;
+        isSaving = true;
+        EndDescriptionEdit();
+        UpdateInteractionState();
         try
         {
-            if (document.HasChangedOnDisk())
+            // Copy values on the UI thread; worker tasks must never enumerate
+            // the observable UI collection or read entries that can be edited.
+            DescriptionDocument savingDocument = document;
+            List<FileEntry> snapshot = entries.Select(entry => new FileEntry
+            {
+                Name = entry.Name,
+                Description = entry.Description
+            }).ToList();
+            if (await Task.Run(savingDocument.HasChangedOnDisk))
             {
                 ContentDialog conflict = CreateDialog(
                     "File changed",
                     "DESCRIPT.ION changed after it was opened. Overwrite it and keep the current file as a backup?",
                     "Overwrite", null, "Cancel");
-                if (await conflict.ShowAsync() != ContentDialogResult.Primary) return false;
+                if (await ShowDialogAsync(conflict) != ContentDialogResult.Primary) return false;
             }
 
-            await Task.Run(() => document.Save(entries.ToList()));
+            await Task.Run(() => savingDocument.Save(snapshot));
             dirty = false;
             UpdateTitle();
             StatusText.Text = "Saved safely. The previous file was kept as " + BackupName() + ".";
@@ -189,6 +224,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             await ShowErrorAsync("Could not save. The original file was preserved when possible.", ex);
             return false;
+        }
+        finally
+        {
+            isSaving = false;
+            UpdateInteractionState();
         }
     }
 
@@ -206,7 +246,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async Task NavigateBackAsync()
     {
-        if (backHistory.Count == 0) return;
+        if (IsBusy || backHistory.Count == 0) return;
         string target = backHistory.Peek();
         if (await LoadDirectoryAsync(target, false)) backHistory.Pop();
         UpdateNavigationButtons();
@@ -262,7 +302,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         if (document != null) await LoadFileAsync(document.FilePath, false);
     }
 
-    private async void SaveButton_Click(object sender, RoutedEventArgs e) => await SaveDocumentAsync();
+    private async void SaveButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!IsBusy) await SaveDocumentAsync();
+    }
 
     private async void GoButton_Click(object sender, RoutedEventArgs e) => await NavigateFromPathBoxAsync();
 
@@ -354,6 +397,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void RemoveMissingEntries(IEnumerable<FileEntry> items)
     {
+        if (IsBusy) return;
         List<FileEntry> removable = items.Where(entry => entry.IsMissing).Distinct().ToList();
         if (removable.Count == 0)
         {
@@ -374,6 +418,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void SortButton_Click(object sender, RoutedEventArgs e)
     {
+        if (IsBusy) return;
         if (sender is not Button { Tag: string property }) return;
         if (sortProperty == property) sortAscending = !sortAscending;
         else
@@ -486,7 +531,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         ContentDialog dialog = CreateDialog(
             "Colors", content, "Apply", "Defaults", "Cancel");
-        ContentDialogResult result = await dialog.ShowAsync();
+        ContentDialogResult result = await ShowDialogAsync(dialog);
         if (result == ContentDialogResult.None) return;
 
         ColorPreferences.Current.SetRules(result == ContentDialogResult.Secondary
@@ -523,15 +568,34 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private async void AboutButton_Click(object sender, RoutedEventArgs e)
     {
         await ShowMessageAsync("Description Edit for Windows",
-            "Version 1.0.5\nModern WinUI 3 editor for Norton/4DOS DESCRIPT.ION files." +
+            "Version 1.0.6\nModern WinUI 3 editor for Norton/4DOS DESCRIPT.ION files." +
             "\n\nBy Dag Erik Hagesæter / Retro Erik using Codex in VS Code\nhttps://www.youtube.com/@RetroErik");
     }
 
     private async void AppWindow_Closing(AppWindow sender, AppWindowClosingEventArgs args)
     {
+        // Closing while an operation is pending could discard edits or let a
+        // continuation touch controls belonging to a closed window.
+        if (IsBusy)
+        {
+            args.Cancel = true;
+            return;
+        }
         if (allowClose || !dirty) return;
         args.Cancel = true;
-        if (await CanLeaveDocumentAsync())
+        isNavigating = true;
+        UpdateInteractionState();
+        bool canClose;
+        try
+        {
+            canClose = await CanLeaveDocumentAsync();
+        }
+        finally
+        {
+            isNavigating = false;
+            UpdateInteractionState();
+        }
+        if (canClose)
         {
             allowClose = true;
             Close();
@@ -540,7 +604,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private ContentDialog CreateDialog(string title, object content, string primary, string secondary, string close)
     {
-        return new ContentDialog
+        ContentDialog dialog = new()
         {
             XamlRoot = RootGrid.XamlRoot,
             Title = title,
@@ -550,12 +614,28 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             CloseButtonText = close ?? String.Empty,
             DefaultButton = ContentDialogButton.Primary
         };
+        AutomationProperties.SetAutomationId(dialog, "DocumentDialog");
+        return dialog;
     }
 
     private async Task ShowMessageAsync(string title, string message)
     {
         ContentDialog dialog = CreateDialog(title, message, "OK", null, null);
-        await dialog.ShowAsync();
+        await ShowDialogAsync(dialog);
+    }
+
+    private async Task<ContentDialogResult> ShowDialogAsync(ContentDialog dialog)
+    {
+        await dialogQueue.WaitAsync();
+        isShowingDialog = true;
+        UpdateInteractionState();
+        try { return await dialog.ShowAsync(); }
+        finally
+        {
+            isShowingDialog = false;
+            UpdateInteractionState();
+            dialogQueue.Release();
+        }
     }
 
     private async Task ShowErrorAsync(string message, Exception exception)
@@ -580,8 +660,20 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void UpdateNavigationButtons()
     {
-        BackButton.IsEnabled = backHistory.Count > 0;
-        UpButton.IsEnabled = document != null && Directory.GetParent(document.DirectoryPath) != null;
+        BackButton.IsEnabled = !IsBusy && backHistory.Count > 0;
+        UpButton.IsEnabled = !IsBusy && document != null && Directory.GetParent(document.DirectoryPath) != null;
+    }
+
+    private void UpdateInteractionState()
+    {
+        bool enabled = !IsBusy;
+        MainCommands.IsEnabled = enabled;
+        foreach (Control control in new Control[] { PathBox, GoButton, EntriesList,
+            NameHeader, TypeHeader, SizeHeader, ModifiedHeader, DescriptionHeader, StatusHeader })
+            control.IsEnabled = enabled;
+        SaveButton.IsEnabled = enabled && document != null;
+        RefreshButton.IsEnabled = enabled && document != null;
+        UpdateNavigationButtons();
     }
 
     private static T FindAncestor<T>(DependencyObject current) where T : DependencyObject

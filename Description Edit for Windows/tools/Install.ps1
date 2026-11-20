@@ -35,7 +35,7 @@ if (-not (Test-Path -LiteralPath $sourceExe)) {
 if (-not $PSCmdlet.ShouldProcess($installDirectory, 'Install Description Edit for Windows for the current user')) { return }
 
 New-Item -ItemType Directory -Path $installDirectory -Force | Out-Null
-Get-ChildItem -LiteralPath $sourceDirectory -File | Copy-Item -Destination $installDirectory -Force
+Get-ChildItem -LiteralPath $sourceDirectory -Force | Copy-Item -Destination $installDirectory -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Uninstall.ps1') -Destination $installDirectory -Force
 
 if (-not $SkipFileAssociation) {

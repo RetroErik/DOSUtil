@@ -1,0 +1,4 @@
+{
+  "dotnet.defaultSolution": "DescriptionEditForWindows.sln",
+  "winapp.appDirectories": ["src/DescriptionEditForWindows"]
+}

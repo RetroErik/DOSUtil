@@ -20,43 +20,44 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <CommandBar Grid.Row="0" DefaultLabelPosition="Right" IsOpen="False">
-            <AppBarButton x:Name="BackButton" Icon="Back" Label="Back" Click="BackButton_Click" />
-            <AppBarButton x:Name="UpButton" Icon="Up" Label="Up" Click="UpButton_Click" />
+        <CommandBar x:Name="MainCommands" Grid.Row="0" DefaultLabelPosition="Right" IsOpen="False">
+            <AppBarButton x:Name="BackButton" AutomationProperties.AutomationId="BackButton" Icon="Back" Label="Back" Click="BackButton_Click" />
+            <AppBarButton x:Name="UpButton" AutomationProperties.AutomationId="UpButton" Icon="Up" Label="Up" Click="UpButton_Click" />
             <AppBarSeparator />
-            <AppBarButton x:Name="BrowseFolderButton" Icon="Folder" Label="Choose folder" Click="BrowseFolderButton_Click" />
-            <AppBarButton x:Name="RefreshButton" Icon="Refresh" Label="Refresh" Click="RefreshButton_Click" />
-            <AppBarButton x:Name="SaveButton" Icon="Save" Label="Save" Click="SaveButton_Click" KeyboardAcceleratorPlacementMode="Hidden">
+            <AppBarButton x:Name="BrowseFolderButton" AutomationProperties.AutomationId="BrowseFolderButton" Icon="Folder" Label="Choose folder" Click="BrowseFolderButton_Click" />
+            <AppBarButton x:Name="RefreshButton" AutomationProperties.AutomationId="RefreshButton" Icon="Refresh" Label="Refresh" Click="RefreshButton_Click" />
+            <AppBarButton x:Name="SaveButton" AutomationProperties.AutomationId="SaveButton" Icon="Save" Label="Save" Click="SaveButton_Click" KeyboardAcceleratorPlacementMode="Hidden">
                 <AppBarButton.KeyboardAccelerators>
                     <KeyboardAccelerator Key="S" Modifiers="Control" />
                 </AppBarButton.KeyboardAccelerators>
             </AppBarButton>
             <AppBarSeparator />
-            <AppBarButton x:Name="DeleteSelectedButton" Icon="Delete" Label="Delete selected MISSING" Click="DeleteSelectedMissingButton_Click" />
+            <AppBarButton x:Name="DeleteSelectedButton" AutomationProperties.AutomationId="DeleteSelectedButton" Icon="Delete" Label="Delete selected MISSING" Click="DeleteSelectedMissingButton_Click" />
             <CommandBar.SecondaryCommands>
-                <AppBarButton x:Name="OpenDescriptionFileButton" Label="Open DESCRIPT.ION file…" Click="OpenFileButton_Click" />
-                <AppBarButton x:Name="ColorSettingsButton" Label="Colors…" Click="ColorSettingsButton_Click" />
-                <AppBarButton x:Name="AssociateButton" Label="Associate .ION files" Click="AssociateButton_Click" />
-                <AppBarButton x:Name="UnassociateButton" Label="Remove .ION association" Click="UnassociateButton_Click" />
-                <AppBarButton x:Name="AboutButton" Label="About Description Edit for Windows" Click="AboutButton_Click" />
+                <AppBarButton x:Name="OpenDescriptionFileButton" AutomationProperties.AutomationId="OpenDescriptionFileButton" Label="Open DESCRIPT.ION file…" Click="OpenFileButton_Click" />
+                <AppBarButton x:Name="ColorSettingsButton" AutomationProperties.AutomationId="ColorSettingsButton" Label="Colors…" Click="ColorSettingsButton_Click" />
+                <AppBarButton x:Name="AssociateButton" AutomationProperties.AutomationId="AssociateButton" Label="Associate .ION files" Click="AssociateButton_Click" />
+                <AppBarButton x:Name="UnassociateButton" AutomationProperties.AutomationId="UnassociateButton" Label="Remove .ION association" Click="UnassociateButton_Click" />
+                <AppBarButton x:Name="AboutButton" AutomationProperties.AutomationId="AboutButton" Label="About Description Edit for Windows" Click="AboutButton_Click" />
             </CommandBar.SecondaryCommands>
         </CommandBar>
 
-        <Grid Grid.Row="1" Margin="16,8,16,12" ColumnSpacing="8">
+        <Grid x:Name="PathControls" Grid.Row="1" Margin="16,8,16,12" ColumnSpacing="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock x:Name="PathLabel" VerticalAlignment="Center" Text="Path" FontWeight="SemiBold" />
-            <TextBox x:Name="PathBox"
+            <TextBox x:Name="PathBox" AutomationProperties.AutomationId="PathBox"
                      Grid.Column="1"
                      PlaceholderText="C:\GAMES or \\server\share\games"
+                     AutomationProperties.LabeledBy="{x:Bind PathLabel, Mode=OneTime}"
                      KeyDown="PathBox_KeyDown" />
-            <Button x:Name="GoButton" Grid.Column="2" Content="Go" Click="GoButton_Click" />
+            <Button x:Name="GoButton" AutomationProperties.AutomationId="GoButton" Grid.Column="2" Content="Go" Click="GoButton_Click" />
         </Grid>
 
-        <Grid Grid.Row="2" Margin="16,0,16,0">
+        <Grid x:Name="EntriesPanel" Grid.Row="2" Margin="16,0,16,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -79,17 +80,18 @@
                         <ColumnDefinition Width="90" />
                         <ColumnDefinition Width="70" />
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="NameHeader" Grid.Column="0" Content="Name" Tag="Name" Click="SortButton_Click" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Left" />
-                    <Button x:Name="TypeHeader" Grid.Column="1" Content="Type" Tag="Type" Click="SortButton_Click" HorizontalAlignment="Left" />
-                    <Button x:Name="SizeHeader" Grid.Column="2" Content="Size" Tag="Size" Click="SortButton_Click" HorizontalAlignment="Left" />
-                    <Button x:Name="ModifiedHeader" Grid.Column="3" Content="Modified" Tag="Modified" Click="SortButton_Click" HorizontalAlignment="Left" />
+                    <Button x:Name="NameHeader" AutomationProperties.AutomationId="NameHeader" Grid.Column="0" Content="Name" Tag="Name" Click="SortButton_Click" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Left" />
+                    <Button x:Name="TypeHeader" AutomationProperties.AutomationId="TypeHeader" Grid.Column="1" Content="Type" Tag="Type" Click="SortButton_Click" HorizontalAlignment="Left" />
+                    <Button x:Name="SizeHeader" AutomationProperties.AutomationId="SizeHeader" Grid.Column="2" Content="Size" Tag="Size" Click="SortButton_Click" HorizontalAlignment="Left" />
+                    <Button x:Name="ModifiedHeader" AutomationProperties.AutomationId="ModifiedHeader" Grid.Column="3" Content="Modified" Tag="Modified" Click="SortButton_Click" HorizontalAlignment="Left" />
                     <TextBlock Grid.Column="4" Text="Attr." VerticalAlignment="Center" FontWeight="SemiBold" />
-                    <Button x:Name="DescriptionHeader" Grid.Column="5" Content="Description" Tag="Description" Click="SortButton_Click" HorizontalAlignment="Left" />
-                    <Button x:Name="StatusHeader" Grid.Column="6" Content="Status" Tag="Status" Click="SortButton_Click" HorizontalAlignment="Left" />
+                    <Button x:Name="DescriptionHeader" AutomationProperties.AutomationId="DescriptionHeader" Grid.Column="5" Content="Description" Tag="Description" Click="SortButton_Click" HorizontalAlignment="Left" />
+                    <Button x:Name="StatusHeader" AutomationProperties.AutomationId="StatusHeader" Grid.Column="6" Content="Status" Tag="Status" Click="SortButton_Click" HorizontalAlignment="Left" />
                 </Grid>
             </Border>
 
-            <ListView x:Name="EntriesList"
+            <ListView x:Name="EntriesList" AutomationProperties.AutomationId="EntriesList"
+                      AutomationProperties.Name="Files, folders, and descriptions"
                       Grid.Row="1"
                       SelectionMode="Extended"
                       DoubleTapped="EntriesList_DoubleTapped"
@@ -118,12 +120,14 @@
                                     <ColumnDefinition Width="90" />
                                     <ColumnDefinition Width="70" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{x:Bind Name}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Grid.Column="1" Text="{x:Bind Type}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Grid.Column="2" Text="{x:Bind SizeDisplay}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" HorizontalAlignment="Right" />
-                                <TextBlock Grid.Column="3" Text="{x:Bind ModifiedDisplay}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="4" Text="{x:Bind Attributes}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="0" Text="{x:Bind Name, Mode=OneTime}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="1" Text="{x:Bind Type, Mode=OneTime}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="2" Text="{x:Bind SizeDisplay, Mode=OneTime}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Column="3" Text="{x:Bind ModifiedDisplay, Mode=OneTime}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="4" Text="{x:Bind Attributes, Mode=OneTime}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" />
                                 <TextBox Grid.Column="5"
+                                         AutomationProperties.AutomationId="EntryDescription"
+                                         AutomationProperties.Name="{x:Bind Name, Mode=OneTime}"
                                          Tag="{x:Bind}"
                                          Text="{x:Bind Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                          Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}"
@@ -137,12 +141,14 @@
                                          MinHeight="28"
                                          Padding="7,2"
                                          VerticalContentAlignment="Center" />
-                                <TextBlock Grid.Column="6" Text="{x:Bind Status}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="6" AutomationProperties.AutomationId="EntryStatus" Text="{x:Bind Status, Mode=OneWay}" Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}" VerticalAlignment="Center" />
                                 <Button Grid.Column="7"
+                                        AutomationProperties.AutomationId="DeleteMissingEntry"
+                                        AutomationProperties.Name="{x:Bind Name, Mode=OneTime}"
                                         Content="Delete"
                                         Tag="{x:Bind}"
                                         Click="DeleteMissingRowButton_Click"
-                                        IsEnabled="{x:Bind IsMissing}"
+                                        IsEnabled="{x:Bind IsMissing, Mode=OneTime}"
                                         Foreground="{Binding Converter={StaticResource EntryForegroundConverter}}"
                                         Height="28"
                                         MinHeight="28"

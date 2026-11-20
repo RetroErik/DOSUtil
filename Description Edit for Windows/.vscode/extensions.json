@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "openai.chatgpt",
+    "ms-dotnettools.csdevkit",
+    "Microsoft-WinAppCLI.winapp",
+    "ms-vscode.powershell"
+  ]
+}

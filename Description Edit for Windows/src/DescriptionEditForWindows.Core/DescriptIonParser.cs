@@ -143,9 +143,12 @@ namespace DescriptionEditForWindows.Core
             }
             catch (DecoderFallbackException)
             {
-                // Keeps classic DOS/Windows DESCRIPT.ION files usable. On .NET
-                // Framework, Encoding.Default is the active Windows ANSI code page.
-                return Encoding.Default.GetString(bytes);
+                // Encoding.Default is UTF-8 on modern .NET. Code page zero from
+                // this provider resolves the active Windows ANSI code page.
+                Encoding ansi = CodePagesEncodingProvider.Instance.GetEncoding(0);
+                if (ansi == null)
+                    throw new InvalidDataException("The active Windows ANSI code page is unavailable.");
+                return ansi.GetString(bytes);
             }
         }
     }
