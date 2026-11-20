@@ -31,12 +31,6 @@ Description Edit for Windows opens a directory together with its `DESCRIPT.ION`.
 | **Encoding** | UTF-8, UTF-16 LE/BE, and legacy Windows ANSI input; UTF-8 BOM output |
 | **Backup behavior** | Safe temporary write plus `DESCRIPT.BAK` |
 
-## Screenshots
-
-![Description Edit for Windows showing a DESCRIPT.ION file on a network share](<Screenshots/Description Edit for Windows.png>)
-
-The WinUI 3 editor browsing a network share, with DES/4DOS colors applied to folders and files and descriptions editable directly in the list.
-
 ## Features
 
 - Modern Fluent/WinUI 3 appearance with light and dark theme support.
@@ -57,6 +51,8 @@ The WinUI 3 editor browsing a network share, with DES/4DOS colors applied to fol
 - Refreshes the current folder with the toolbar button or `F5`.
 - Accepts UNC paths such as `\\server\share\games` in the path field.
 - Enumerates directories on a worker thread so network access does not block the UI thread.
+- Saves a snapshot captured on the UI thread and blocks overlapping document operations.
+- Updates the Status column immediately when a description is changed or cleared.
 - Warns before discarding unsaved edits.
 - Restores the current row's original description when `Esc` is pressed.
 - Finishes the current row edit in memory when `Enter` is pressed; nothing is written until Save.
@@ -271,9 +267,27 @@ On some systems, the physical mouse wheel does not scroll the list while the poi
 
 The magenta-folder icon is the default executable and title-bar icon. A blue folder/editor alternative is also kept in `src/DescriptionEditForWindows/Assets` for future use.
 
+## Screenshots
+
+![Description Edit for Windows showing a DESCRIPT.ION file on a network share](<Screenshots/Description Edit for Windows.png>)
+
+The WinUI 3 editor browsing a network share, with DES/4DOS colors applied to folders and files and descriptions editable directly in the list.
+
 ## Testing
 
-Automated tests cover parsing, Unicode serialization, folders, files, missing entries, deletion of stale lines, ordering, safe backup creation, external-change detection, and UNC syntax.
+Automated core tests cover parsing, UTF-8/UTF-16/Windows ANSI input, Unicode serialization, status notifications, folders, files, missing entries, deletion of stale lines, ordering, safe backup creation, external-change detection, and UNC syntax.
+
+The local UI regression script creates its own disposable fixture, checks editing,
+status, keyboard save/refresh, navigation prompts, external-change cancellation,
+stale-row deletion, and closing, and writes JSON results and screenshots under
+`artifacts/ui-tests/`. It brings the test window to the foreground for keyboard
+checks; leave the keyboard and test window alone while it runs.
+
+```text
+powershell -ExecutionPolicy Bypass -File .\tools\Test-UI.ps1 -Target local
+```
+
+See [Development workflow](DEVELOPMENT.md) for review results and remaining checks.
 
 Before release, also test manually with:
 

@@ -19,6 +19,8 @@ namespace DescriptionEditForWindows.Tests
             ParseCtrlDMetadata();
             MatchWithoutCase();
             SerializeQuotedUnicodeName();
+            ParseFileEncodings();
+            DescriptionNotifiesStatus();
             MergeFoldersFilesAndMissingEntries();
             SaveCreatesBackupAndUtf8File();
             RemovingMissingEntryDeletesSavedLine();
@@ -65,6 +67,55 @@ namespace DescriptionEditForWindows.Tests
                 new KeyValuePair<string, string>("Blå mappe", "Norsk beskrivelse")
             });
             Equal("\"Blå mappe\" Norsk beskrivelse\r\n", text, "quoted serialization");
+        }
+
+        private static void ParseFileEncodings()
+        {
+            WithTemporaryDirectory(root =>
+            {
+                string path = Path.Combine(root, "DESCRIPT.ION");
+                const string name = "Blå mappe";
+                const string description = "Ærlig beskrivelse med æ, ø og å";
+                string content = "\"" + name + "\" " + description + "\r\n";
+                Encoding[] unicodeEncodings = {
+                    new UTF8Encoding(true), new UTF8Encoding(false),
+                    new UnicodeEncoding(false, true), new UnicodeEncoding(true, true)
+                };
+                foreach (Encoding encoding in unicodeEncodings)
+                {
+                    File.WriteAllText(path, content, encoding);
+                    Equal(description, DescriptIonParser.ParseFile(path)[name],
+                        "Unicode input " + encoding.WebName + " BOM=" + encoding.GetPreamble().Length);
+                }
+
+                Encoding ansi = CodePagesEncodingProvider.Instance.GetEncoding(0);
+                if (ansi == null) throw new InvalidOperationException("Windows ANSI encoding unavailable.");
+                // Use characters representable in the machine's active ANSI page.
+                byte[] ansiBytes = ansi.GetBytes(content);
+                string expectedText = ansi.GetString(ansiBytes);
+                IDictionary<string, string> expected = DescriptIonParser.Parse(expectedText);
+                File.WriteAllBytes(path, ansiBytes);
+                IDictionary<string, string> actual = DescriptIonParser.ParseFile(path);
+                foreach (KeyValuePair<string, string> pair in expected)
+                    Equal(pair.Value, actual[pair.Key], "active Windows ANSI input " + ansi.CodePage);
+                Console.WriteLine("Encoding coverage: UTF-8 BOM/no BOM, UTF-16 LE/BE, ANSI code page " + ansi.CodePage + ".");
+            });
+        }
+
+        private static void DescriptionNotifiesStatus()
+        {
+            FileEntry entry = new FileEntry { Name = "demo.txt", Description = String.Empty };
+            List<string> changed = new List<string>();
+            entry.PropertyChanged += (_, args) => changed.Add(args.PropertyName);
+            entry.Description = "New description";
+            Equal("Described", entry.Status, "description updates status");
+            True(changed.Contains(nameof(FileEntry.Description)) && changed.Contains(nameof(FileEntry.Status)),
+                "description and dependent status notify bindings");
+            changed.Clear();
+            entry.Description = "New description";
+            True(changed.Count == 0, "unchanged description does not notify");
+            entry.Description = String.Empty;
+            Equal(String.Empty, entry.Status, "clearing description clears status");
         }
 
         private static void MergeFoldersFilesAndMissingEntries()

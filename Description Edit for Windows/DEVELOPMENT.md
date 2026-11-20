@@ -95,8 +95,55 @@ Sandbox when it is already available. Do not enable Windows features or change
 file associations as a side effect of a test. Keep screenshots and structured
 results under ignored `artifacts/` paths.
 
+The supplied regression script currently supports local execution only. It
+creates a unique fixture and never reuses a user document. Leave its window and
+the keyboard alone during the run:
+
+```text
+powershell -ExecutionPolicy Bypass -File .\tools\Test-UI.ps1 -Target local
+```
+
 The previously documented mouse-wheel issue is still a separate investigation;
 do not claim it fixed without reproducing it on affected hardware.
+
+## Review results — 2026-11-20
+
+| Severity | Finding | Result |
+|---|---|---|
+| Error | `Encoding.Default` is UTF-8 on .NET 10, so invalid UTF-8 legacy ANSI bytes were decoded incorrectly | Use the code-page provider's active Windows ANSI encoding; regression passed on Windows-1252 |
+| Error | Save enumerated the observable UI collection and read the mutable `document` field on a worker while navigation/editing could continue | Capture independent entry values and the document on the UI thread; block overlapping save, load, navigation, editing, and close operations |
+| Warning | `Status` used a OneTime binding and stayed stale after edits | Use OneWay binding; UI regression confirms clear/edit changes immediately |
+| Warning | Dialog invocations could overlap during reentrant navigation or close requests | Queue ContentDialogs and gate document actions before prompting |
+| Warning | Row editors and list lacked useful accessible names | Add names, path labeling, and explicit AutomationIds; inspect the real UI tree |
+
+Validation completed with .NET SDK 10.0.404, WinApp CLI 0.8.0, and private
+WinUI analyzer 0.8.0. Microsoft agent plugins `winui` and `winappcli` 0.8.1 are
+installed and enabled. VS Code has C# Dev Kit 3.40.215, C# 2.160.4, and WinApp
+0.4.0. Developer Mode was already enabled; Windows Sandbox is not enabled.
+
+- Debug and Release builds: zero warnings and errors; core tests passed.
+- Local UI batch: **9 passed, 0 failed**. Includes Cancel and Save during
+  navigation, close during an unsaved-changes dialog, external-change Cancel,
+  Discard/refresh, backup contents, keyboard shortcuts, and stale-line deletion.
+- Evidence: `artifacts/ui-tests/e9d2cc0466cb49a58c3496473f441c51/results.json`
+  and four PNGs in the same directory. All four images were visually inspected.
+- Visual follow-up: the final screenshot shows an apparently enabled Delete
+  button on the normal `Games` folder after removing a MISSING row. The click
+  handler explicitly rejects non-MISSING entries, so it cannot delete that
+  folder. The enabled appearance still needs a focused recycling/state review;
+  the nine functional assertions are not a full visual approval.
+- Remaining manual coverage: light/high-contrast themes, alternate DPI scales,
+  screen-reader behavior, slow/disconnected/read-only network shares, and the
+  existing physical mouse-wheel issue. F5 debugger configuration was validated
+  as JSON; an actual VS Code debugger launch was not exercised.
+
+The first local batch was interrupted by navigation outside its fixture. Later
+test-harness fixes use the dialog AutomationId and explicitly verify focus before
+sending keyboard shortcuts. A final safety guard checks that the process window
+still identifies a directory inside its disposable fixture before further input;
+that guard was syntax-reviewed after the passing batch, not rerun on the desktop.
+Failed reports remain in `artifacts/ui-tests/` for
+diagnosis; they are not counted as passing runs. No release ZIP was replaced.
 
 ## Review and rollback
 
